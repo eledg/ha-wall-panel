@@ -1,4 +1,4 @@
-# ha-wall-dashboard
+# Home Assistant Wall Dashboard
 
 A touch-friendly, dark-themed wall dashboard for a Shelly Wall Display X2i,
 backed by Home Assistant. It is a static web app that Home Assistant serves
