@@ -1,0 +1,55 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# PRs cancel superseded runs; every commit on main gets its own uninterrupted run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    name: prettier
+    steps:
+      - uses: actions/checkout@v7
+      - uses: eledg/github-actions/setup-pnpm@v1
+      - run: pnpm prettier
+
+  lint:
+    runs-on: ubuntu-latest
+    name: lint
+    steps:
+      - uses: actions/checkout@v7
+      - uses: eledg/github-actions/setup-pnpm@v1
+      - run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    name: type check
+    steps:
+      - uses: actions/checkout@v7
+      - uses: eledg/github-actions/setup-pnpm@v1
+      - run: pnpm typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    name: test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: eledg/github-actions/setup-pnpm@v1
+      - run: pnpm test
+
+  build:
+    runs-on: ubuntu-latest
+    name: build
+    steps:
+      - uses: actions/checkout@v7
+      - uses: eledg/github-actions/setup-pnpm@v1
+      - run: pnpm build
