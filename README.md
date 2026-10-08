@@ -1,5 +1,8 @@
 # Home Assistant Wall Dashboard
 
+[![CI](https://github.com/eledg/ha-wall-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/eledg/ha-wall-dashboard/actions/workflows/ci.yml)
+[![Release](https://github.com/eledg/ha-wall-dashboard/actions/workflows/release.yml/badge.svg)](https://github.com/eledg/ha-wall-dashboard/actions/workflows/release.yml)
+
 A touch-friendly, dark-themed wall dashboard for a Shelly Wall Display X2i,
 backed by Home Assistant. It is a static web app that Home Assistant serves
 from `/config/www/` and the display opens full-screen, replacing a standard
