@@ -11,5 +11,8 @@ export default defineConfig(({ mode }) => {
   return {
     base,
     plugins: [preact()],
+    build: {
+      target: 'es2023',
+    },
   };
 });

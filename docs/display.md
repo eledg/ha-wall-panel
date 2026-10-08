@@ -19,7 +19,7 @@ Findings from #1, measured on the device with a plain test page.
 - Touch works.
 - The user agent reports `ShellyStargate/2.7.4`, which does not reveal the Chromium version.
 - Every feature check passed on test page v2: arrow functions, async/await, optional chaining, nullish coalescing, class fields, CSS custom properties, CSS grid, `color-mix()`, `@property`, cascade layers, WebSocket, fetch, WebRTC, MSE and `localStorage`.
-- The engine is modern (optional chaining needs Chromium 80 or newer), so an ES2020 build target is safe and Tailwind v4 works.
+- The engine is modern (optional chaining needs Chromium 80 or newer), and `color-mix()` needs Chromium 111 or newer, so the engine is at least that. An ES2023 build target is safe and Tailwind v4 works.
 
 ## Home Assistant reachability
 
