@@ -47,28 +47,31 @@ export const Diagnostics = ({
           role="dialog"
           aria-modal="true"
           aria-label="Diagnostics"
-          class="fixed inset-edge z-10 overflow-auto rounded-tile border border-line bg-surface p-4"
+          class="fixed inset-edge z-10 rounded-tile border border-line bg-surface"
           onPointerDown={() => setActivity((n) => n + 1)}
         >
-          <div class="flex items-start justify-between gap-gap">
-            <dl class="font-mono text-small text-text-muted">
-              <dt class="sr-only">Version</dt>
-              <dd>Version {version}</dd>
-              <dt class="sr-only">Commit</dt>
-              <dd>Commit {commit.slice(0, 7)}</dd>
-              <dt class="sr-only">Built</dt>
-              <dd>Built {builtAt}</dd>
-            </dl>
-            <button
-              type="button"
-              aria-label="Close"
-              class="flex size-12 shrink-0 items-center justify-center rounded border border-line"
-              onClick={() => setOpen(false)}
-            >
-              <XIcon />
-            </button>
+          {/* Scrolls inside the rounded frame: the display's browser draws square corners when the rounded element itself scrolls. */}
+          <div class="size-full overflow-auto rounded-tile p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div class="flex items-start justify-between gap-gap">
+              <dl class="font-mono text-small text-text-muted">
+                <dt class="sr-only">Version</dt>
+                <dd>Version {version}</dd>
+                <dt class="sr-only">Commit</dt>
+                <dd>Commit {commit.slice(0, 7)}</dd>
+                <dt class="sr-only">Built</dt>
+                <dd>Built {builtAt}</dd>
+              </dl>
+              <button
+                type="button"
+                aria-label="Close"
+                class="flex size-12 shrink-0 items-center justify-center rounded border border-line"
+                onClick={() => setOpen(false)}
+              >
+                <XIcon />
+              </button>
+            </div>
+            {children}
           </div>
-          {children}
         </div>
       )}
     </>
