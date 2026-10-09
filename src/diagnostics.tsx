@@ -47,27 +47,26 @@ export const Diagnostics = ({
           role="dialog"
           aria-modal="true"
           aria-label="Diagnostics"
-          class="fixed inset-edge z-10 overflow-auto rounded-tile border border-line bg-surface p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          class="fixed inset-edge z-10 overflow-auto rounded-tile border border-line bg-surface p-4"
           onPointerDown={() => setActivity((n) => n + 1)}
         >
-          <div class="flex items-start justify-between gap-gap">
-            <dl class="font-mono text-small text-text-muted">
-              <dt class="sr-only">Version</dt>
-              <dd>Version {version}</dd>
-              <dt class="sr-only">Commit</dt>
-              <dd>Commit {commit.slice(0, 7)}</dd>
-              <dt class="sr-only">Built</dt>
-              <dd>Built {builtAt}</dd>
-            </dl>
-            <button
-              type="button"
-              aria-label="Close"
-              class="flex size-12 shrink-0 items-center justify-center rounded border border-line bg-surface"
-              onClick={() => setOpen(false)}
-            >
-              <XIcon />
-            </button>
-          </div>
+          {/* Sticky so it stays top right while the content scrolls. */}
+          <button
+            type="button"
+            aria-label="Close"
+            class="sticky top-0 z-10 float-right ml-gap flex size-12 items-center justify-center rounded border border-line bg-surface"
+            onClick={() => setOpen(false)}
+          >
+            <XIcon />
+          </button>
+          <dl class="font-mono text-small text-text-muted">
+            <dt class="sr-only">Version</dt>
+            <dd>Version {version}</dd>
+            <dt class="sr-only">Commit</dt>
+            <dd>Commit {commit.slice(0, 7)}</dd>
+            <dt class="sr-only">Built</dt>
+            <dd>Built {builtAt}</dd>
+          </dl>
           {children}
         </div>
       )}
