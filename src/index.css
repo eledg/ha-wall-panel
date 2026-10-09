@@ -37,13 +37,3 @@
   --font-sans: 'Open Sans Variable', system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
 }
-
-/*
- * The wall display's browser paints buttons with its native (blue) theme even
- * though Tailwind's reset makes them transparent. Opt out of native styling.
- */
-@layer base {
-  button {
-    appearance: none;
-  }
-}
