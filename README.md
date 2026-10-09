@@ -62,7 +62,11 @@ the build. The Home Assistant token is entered once on the device and kept in
   build on every PR and on every push to `main`.
 - **Release** (`.github/workflows/release.yml`) runs when CI succeeds on
   `main`. [semantic-release](https://semantic-release.gitbook.io) tags the commit
-  with the next version, worked out from the commit messages.
+  with the next version, worked out from the commit messages. When a version
+  is created, the workflow also builds the app (using `WALL_BASE_PATH`, set as a
+  repository variable, or the default) and publishes a GitHub Release with
+  `wall-dashboard-<tag>.tar.gz` and its `.sha256` attached. The archive has
+  `index.html` and `version.json` at its root.
 
 Deployment to Home Assistant is not automated yet.
 

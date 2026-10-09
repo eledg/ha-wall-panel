@@ -11,6 +11,7 @@ permissions:
 jobs:
   version:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: Version
     # Only a successful CI run triggered by a push to main (not a PR run).
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
@@ -20,9 +21,57 @@ jobs:
       queue: max
     permissions:
       contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - uses: eledg/github-actions/setup-pnpm@v1
       - run: pnpm exec semantic-release
+      # semantic-release tags the commit when it produces a version; pass that
+      # tag on so the release job only runs for commits that were released.
+      - name: Find release tag
+        id: tag
+        run: |
+          git fetch --tags --force origin
+          echo "tag=$(git tag --points-at HEAD --list 'v*' | head -n 1)" >> "$GITHUB_OUTPUT"
+
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: Release
+    needs: version
+    if: needs.version.outputs.tag != ''
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: eledg/github-actions/setup-pnpm@v1
+      # Lint, typecheck and tests already passed in CI for this commit.
+      - name: Build
+        run: pnpm build
+        env:
+          BUILD_VERSION: ${{ env.TAG }}
+          GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
+          WALL_BASE_PATH: ${{ vars.WALL_BASE_PATH }}
+      - name: Package
+        run: |
+          archive="wall-dashboard-${TAG}.tar.gz"
+          tar -czf "$archive" -C dist .
+          sha256sum "$archive" > "$archive.sha256"
+      - name: Publish GitHub Release
+        run: |
+          gh release create "$TAG" \
+            "wall-dashboard-${TAG}.tar.gz" \
+            "wall-dashboard-${TAG}.tar.gz.sha256" \
+            --verify-tag --title "$TAG" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

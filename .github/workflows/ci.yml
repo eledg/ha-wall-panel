@@ -16,6 +16,7 @@ permissions:
 jobs:
   prettier:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: prettier
     steps:
       - uses: actions/checkout@v7
@@ -24,6 +25,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: lint
     steps:
       - uses: actions/checkout@v7
@@ -32,6 +34,7 @@ jobs:
 
   typecheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: type check
     steps:
       - uses: actions/checkout@v7
@@ -40,6 +43,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: test
     steps:
       - uses: actions/checkout@v7
@@ -48,6 +52,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     name: build
     steps:
       - uses: actions/checkout@v7
