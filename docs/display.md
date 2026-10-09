@@ -29,3 +29,12 @@ Findings from #1, measured on the device with a plain test page.
 
 - The display's cache reset brought in a newly copied test page, which fits HA's caching behaviour (clients may keep files for about a month; a changing query string is the usual workaround).
 - `localStorage` survives a soft reboot, a full reboot and the cache reset (test page v3 kept its "First seen" time through each).
+
+## RPC interface
+
+Findings from #41, measured from Home Assistant at `http://<display-ip>/rpc/`.
+
+- `Shelly.ListMethods` answers without authentication from the HA host and lists 192 methods.
+- None of them reloads the page, so nothing in the release pull depends on one.
+- Untested, because they would disturb the display: `Sys.RestartApplication` and `Shelly.Reboot`.
+- Also present: `Ui.Tap`, `Ui.Swipe`, `Ui.Screen.Set`, `Script.*` and `HTTP.*`.
