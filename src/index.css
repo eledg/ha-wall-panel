@@ -1,17 +1,1 @@
-:root {
-  color-scheme: dark;
-}
-
-body {
-  margin: 0;
-  background: #000;
-  color: #fff;
-}
-
-.diagnostics {
-  position: fixed;
-  right: 8px;
-  bottom: 8px;
-  font: 12px monospace;
-  opacity: 0.5;
-}
+@import 'tailwindcss';

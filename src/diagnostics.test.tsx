@@ -8,6 +8,6 @@ describe('Diagnostics', () => {
   it('shows the embedded build id', () => {
     render(<Diagnostics />, document.body);
 
-    expect(document.querySelector('.diagnostics')?.textContent).toBe(buildId());
+    expect(document.querySelector('footer')?.textContent).toBe(buildId());
   });
 });

@@ -1,4 +1,5 @@
 import preact from '@preact/preset-vite';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv } from 'vite';
 
 import { buildInfoPlugin, resolveBuildInfo } from './build-info.ts';
@@ -12,7 +13,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
-    plugins: [preact(), buildInfoPlugin(resolveBuildInfo(env))],
+    plugins: [tailwindcss(), preact(), buildInfoPlugin(resolveBuildInfo(env))],
     build: {
       target: 'es2023',
     },
