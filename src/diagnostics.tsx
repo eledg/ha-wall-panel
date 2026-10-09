@@ -37,7 +37,7 @@ export const Diagnostics = ({
     <>
       <button
         type="button"
-        class="fixed right-edge bottom-edge flex min-h-12 min-w-12 items-center justify-end font-mono text-small text-text-muted"
+        class="fixed right-edge bottom-edge flex min-h-12 min-w-12 items-center justify-end bg-transparent font-mono text-small text-text-muted"
         onClick={() => setOpen(true)}
       >
         {version}
@@ -47,7 +47,7 @@ export const Diagnostics = ({
           role="dialog"
           aria-modal="true"
           aria-label="Diagnostics"
-          class="fixed inset-edge z-10 overflow-auto rounded-tile border border-line bg-surface p-4"
+          class="fixed inset-edge z-10 overflow-auto rounded-tile border border-line bg-surface p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onPointerDown={() => setActivity((n) => n + 1)}
         >
           <div class="flex items-start justify-between gap-gap">
@@ -62,7 +62,7 @@ export const Diagnostics = ({
             <button
               type="button"
               aria-label="Close"
-              class="flex size-12 shrink-0 items-center justify-center rounded border border-line"
+              class="flex size-12 shrink-0 items-center justify-center rounded border border-line bg-transparent"
               onClick={() => setOpen(false)}
             >
               <XIcon />

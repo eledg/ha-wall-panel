@@ -14,7 +14,8 @@ const describe = (name: string, el: Element | null | undefined) => {
   const style = getComputedStyle(el);
   const rect = el.getBoundingClientRect();
   const props = PROPS.map((p) => `${p}=${style[p] || '(unsupported)'}`);
-  return `${name} ${Math.round(rect.width)}x${Math.round(rect.height)}: ${props.join(' ')}`;
+  const scroll = `scroll ${el.scrollWidth}x${el.scrollHeight} in ${el.clientWidth}x${el.clientHeight}`;
+  return `${name} ${Math.round(rect.width)}x${Math.round(rect.height)}: ${props.join(' ')} ${scroll}`;
 };
 
 const collect = () => {
