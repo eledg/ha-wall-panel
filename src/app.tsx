@@ -6,10 +6,10 @@ import { Shell } from './shell.tsx';
 
 export const App = () => (
   <>
-    <Shell>
-      <HaDebug mock={mockHa?.controls} />
-    </Shell>
+    <Shell />
     <ConfigWarning />
-    <Diagnostics />
+    <Diagnostics>
+      <HaDebug mock={mockHa?.controls} />
+    </Diagnostics>
   </>
 );

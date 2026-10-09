@@ -64,7 +64,7 @@ export const HaDebug = ({
   const keys = Object.keys(config.entities) as EntityKey[];
 
   return (
-    <section class="col-span-full space-y-2 font-mono text-small text-text-muted">
+    <section class="mt-4 space-y-2 font-mono text-small text-text-muted">
       <p>
         HA{mock ? ' (mock)' : ''}: {status}
         {error && ` (${error})`}
@@ -82,15 +82,6 @@ export const HaDebug = ({
           );
         })}
       </ul>
-      {status === 'connected' && (
-        <button
-          type="button"
-          class="min-h-12 rounded border border-line px-4"
-          onClick={() => void store.callService('officeLight', 'toggle')}
-        >
-          Toggle office light
-        </button>
-      )}
       {mock && <MockPanel mock={mock} />}
     </section>
   );
