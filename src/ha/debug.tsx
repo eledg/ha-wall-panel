@@ -1,19 +1,8 @@
-import { useEffect, useState } from 'preact/hooks';
-
 import { config } from '../config.ts';
 import { haStore } from './instance.ts';
 import type { MockControls } from './mock.ts';
 import type { EntityKey, HaStore } from './store.ts';
-
-const useSnapshot = (store: HaStore) => {
-  const [snapshot, setSnapshot] = useState(store.getSnapshot);
-  useEffect(() => {
-    const sync = () => setSnapshot(store.getSnapshot());
-    sync();
-    return store.subscribe(sync);
-  }, [store]);
-  return snapshot;
-};
+import { useSnapshot } from './use-snapshot.ts';
 
 const MockPanel = ({ mock }: { mock: MockControls }) => {
   const light = config.entities.officeLight.id;
