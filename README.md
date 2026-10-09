@@ -28,6 +28,7 @@ pnpm dev
 | Command          | What it does                                            |
 | ---------------- | ------------------------------------------------------- |
 | `pnpm dev`       | Start the Vite dev server                               |
+| `pnpm dev:mock`  | Dev server against a fake HA, no token or HA needed     |
 | `pnpm build`     | Type-check and build to `dist/`                         |
 | `pnpm preview`   | Serve the built output locally                          |
 | `pnpm test`      | Run tests once (`pnpm test:watch` to watch)             |
@@ -53,8 +54,14 @@ The display opens the dashboard through the dock icon's Home Assistant URL
 `index.html`.
 
 Everything under `/local/` is served without login, so never put secrets in
-the build. The Home Assistant token is entered once on the device and kept in
-`localStorage`.
+the build. The display signs in to Home Assistant through the
+`trusted_networks` provider, so it needs no token; see
+[docs/deploy.md](docs/deploy.md#signing-in-to-ha).
+
+`pnpm dev` connects to your HA with `HA_DEV_URL` and `HA_DEV_TOKEN` from
+`.env.local`. `pnpm dev:mock` needs neither: it runs the app against a fake HA
+(`src/ha/mock.ts`) and shows buttons to change the light from "HA" or make it
+unavailable. Neither is ever part of a build.
 
 ## CI and releases
 

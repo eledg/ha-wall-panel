@@ -157,5 +157,3 @@ export const createHaStore = (
 };
 
 export type HaStore = ReturnType<typeof createHaStore>;
-
-export const haStore = createHaStore();

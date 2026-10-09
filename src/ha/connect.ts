@@ -1,3 +1,5 @@
+import type { Auth } from 'home-assistant-js-websocket';
+
 import {
   dropTokens,
   hasCallbackParams,
@@ -14,10 +16,11 @@ import type { HaStore } from './store.ts';
  */
 export const connectHa = async (
   store: HaStore,
+  getAuth: () => Promise<Auth> = () => resolveAuth(),
   reload = () => location.replace(location.pathname),
 ) => {
   const signedInNow = hasCallbackParams();
-  await store.start(() => resolveAuth());
+  await store.start(getAuth);
   if (store.getSnapshot().rejected && !signedInNow && !usesDevAuth()) {
     dropTokens();
     reload();

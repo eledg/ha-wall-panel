@@ -4,6 +4,7 @@ import type { Plugin } from 'vite';
 // named HA_DEV_TOKEN, without Vite's VITE_ prefix, so Vite never exposes it to
 // client code by itself, and it is defined here only for `vite` (the dev
 // server). Builds and tests get undefined, so a build cannot contain it.
+// __HA_MOCK__ follows the same rule, so the mock can't reach a build either.
 export const devHaPlugin = (env: Record<string, string>): Plugin => ({
   name: 'dev-ha',
   config: (_, { command, mode }) => ({
@@ -12,6 +13,8 @@ export const devHaPlugin = (env: Record<string, string>): Plugin => ({
         command === 'serve' && mode === 'development'
           ? JSON.stringify({ url: env.HA_DEV_URL, token: env.HA_DEV_TOKEN })
           : 'undefined',
+      // `vite --mode mock` runs the app against the fake HA in src/ha/mock.ts.
+      __HA_MOCK__: String(command === 'serve' && mode === 'mock'),
     },
   }),
 });

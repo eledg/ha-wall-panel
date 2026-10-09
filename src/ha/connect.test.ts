@@ -25,7 +25,7 @@ describe('connectHa', () => {
     const store = storeWith({ status: 'connected' });
     const reload = vi.fn();
 
-    await connectHa(store, reload);
+    await connectHa(store, undefined, reload);
     await store.start.mock.calls[0]![0]();
 
     expect(auth.resolveAuth).toHaveBeenCalled();
@@ -35,7 +35,11 @@ describe('connectHa', () => {
   it('drops stale saved tokens and reloads once', async () => {
     const reload = vi.fn();
 
-    await connectHa(storeWith({ status: 'error', rejected: true }), reload);
+    await connectHa(
+      storeWith({ status: 'error', rejected: true }),
+      undefined,
+      reload,
+    );
 
     expect(auth.dropTokens).toHaveBeenCalled();
     expect(reload).toHaveBeenCalledOnce();
@@ -45,7 +49,11 @@ describe('connectHa', () => {
     vi.mocked(auth.hasCallbackParams).mockReturnValue(true);
     const reload = vi.fn();
 
-    await connectHa(storeWith({ status: 'error', rejected: true }), reload);
+    await connectHa(
+      storeWith({ status: 'error', rejected: true }),
+      undefined,
+      reload,
+    );
 
     expect(auth.dropTokens).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
@@ -55,7 +63,11 @@ describe('connectHa', () => {
     vi.mocked(auth.usesDevAuth).mockReturnValue(true);
     const reload = vi.fn();
 
-    await connectHa(storeWith({ status: 'error', rejected: true }), reload);
+    await connectHa(
+      storeWith({ status: 'error', rejected: true }),
+      undefined,
+      reload,
+    );
 
     expect(reload).not.toHaveBeenCalled();
   });

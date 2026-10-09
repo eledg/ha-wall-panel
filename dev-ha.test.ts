@@ -7,6 +7,7 @@ import type { ConfigEnv, UserConfig } from 'vite';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { devHaPlugin } from './dev-ha.ts';
+import { MOCK_MARKER } from './src/ha/mock.ts';
 
 const env = { HA_DEV_URL: 'http://ha:8123', HA_DEV_TOKEN: 'sentinel-token' };
 
@@ -36,7 +37,26 @@ describe('dev-ha plugin', () => {
   });
 });
 
+describe('dev-ha plugin, mock switch', () => {
+  const mockFor = (command: ConfigEnv['command'], mode: string) => {
+    const hook = devHaPlugin(env).config as (
+      config: UserConfig,
+      env: ConfigEnv,
+    ) => UserConfig;
+    return hook({}, { command, mode }).define!.__HA_MOCK__;
+  };
+
+  it('is on only for the dev server in mock mode', () => {
+    expect(mockFor('serve', 'mock')).toBe('true');
+    expect(mockFor('serve', 'development')).toBe('false');
+    expect(mockFor('serve', 'test')).toBe('false');
+    expect(mockFor('build', 'production')).toBe('false');
+    expect(mockFor('build', 'mock')).toBe('false');
+  });
+});
+
 describe('production build', () => {
+  // Also covers `vite build --mode mock`: the mock is dev-server only.
   const out = mkdtempSync(join(tmpdir(), 'wall-build-'));
   afterEach(() => rmSync(out, { recursive: true, force: true }));
 
@@ -58,7 +78,9 @@ describe('production build', () => {
       .map((entry) => join(entry.parentPath, entry.name));
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) {
-      expect(readFileSync(file, 'utf8'), file).not.toContain('sentinel-token');
+      const text = readFileSync(file, 'utf8');
+      expect(text, file).not.toContain('sentinel-token');
+      expect(text, file).not.toContain(MOCK_MARKER);
     }
   }, 30_000);
 });
