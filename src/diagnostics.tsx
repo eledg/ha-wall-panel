@@ -3,7 +3,7 @@ export const buildId = () =>
 
 export const Diagnostics = () => (
   <footer
-    class="fixed right-2 bottom-2 font-mono text-xs opacity-50"
+    class="fixed right-2 bottom-2 font-mono text-small opacity-50"
     title={`Built ${__BUILD_INFO__.builtAt}`}
   >
     {buildId()}

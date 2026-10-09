@@ -1,1 +1,39 @@
 @import 'tailwindcss';
+/* Bundled with the build (no CDN); the wall display may be offline. */
+@import '@fontsource-variable/open-sans';
+
+/*
+ * Design tokens for the wall display (944 x 459 CSS px, landscape, DPR 1.5;
+ * see docs/display.md). Dark only: the screen is always on.
+ */
+@theme {
+  --color-*: initial;
+  --color-bg: #000;
+  --color-surface: #16181d;
+  --color-surface-active: #262a33;
+  --color-line: #2e323c;
+  --color-text: #f2f4f8;
+  --color-text-muted: #9aa1ae;
+  --color-accent: #f5b83d;
+  --color-warning: #d97706;
+
+  /* Kept clear of every screen edge so taps never start a system gesture. */
+  --spacing-edge: 2rem;
+  --spacing-gap: 1rem;
+  /* Minimum tile width: 5 columns across the landscape viewport, 2 in portrait. */
+  --spacing-tile: 10rem;
+  --spacing-tile-height: 8rem;
+
+  --text-label: 1rem;
+  --text-label--line-height: 1.5rem;
+  --text-value: 2rem;
+  --text-value--line-height: 2.5rem;
+  --text-small: 0.75rem;
+  --text-small--line-height: 1rem;
+
+  --radius-tile: 1.25rem;
+
+  /* Open Sans is self-hosted; system fonts are the fallback. */
+  --font-sans: 'Open Sans Variable', system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}

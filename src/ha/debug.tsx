@@ -17,9 +17,9 @@ const useSnapshot = (store: HaStore) => {
 
 const MockPanel = ({ mock }: { mock: MockControls }) => {
   const light = config.entities.officeLight.id;
-  const button = 'rounded border px-2 py-1';
+  const button = 'min-h-12 rounded border border-line px-4';
   return (
-    <fieldset class="flex flex-wrap gap-1 border-t pt-1">
+    <fieldset class="flex flex-wrap gap-2 border-t border-line pt-2">
       <legend>Mock HA</legend>
       <button
         type="button"
@@ -64,7 +64,7 @@ export const HaDebug = ({
   const keys = Object.keys(config.entities) as EntityKey[];
 
   return (
-    <section class="fixed bottom-2 left-2 max-w-md space-y-1 font-mono text-xs opacity-70">
+    <section class="col-span-full space-y-2 font-mono text-small text-text-muted">
       <p>
         HA{mock ? ' (mock)' : ''}: {status}
         {error && ` (${error})`}
@@ -85,7 +85,7 @@ export const HaDebug = ({
       {status === 'connected' && (
         <button
           type="button"
-          class="rounded border px-2 py-1"
+          class="min-h-12 rounded border border-line px-4"
           onClick={() => void store.callService('officeLight', 'toggle')}
         >
           Toggle office light

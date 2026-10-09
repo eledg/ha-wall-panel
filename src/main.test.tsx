@@ -9,6 +9,6 @@ describe('main', () => {
   it('renders the app into #app', async () => {
     await import('./main.tsx');
 
-    expect(document.querySelector('#app h1')?.textContent).toBe('Hello world');
+    expect(document.querySelector('#app main')).not.toBeNull();
   });
 });

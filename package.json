@@ -19,6 +19,7 @@
     "validate": "pnpm prettier:fix && pnpm lint:fix && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
+    "@fontsource-variable/open-sans": "^5.3.0",
     "home-assistant-js-websocket": "^9.7.1",
     "preact": "^11.0.0"
   },
