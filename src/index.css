@@ -3,3 +3,11 @@ body {
   background: #fff;
   color: #000;
 }
+
+.diagnostics {
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  font: 12px monospace;
+  opacity: 0.5;
+}
