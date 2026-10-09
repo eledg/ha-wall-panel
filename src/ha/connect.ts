@@ -1,8 +1,8 @@
 import {
-  devToken,
   dropTokens,
   hasCallbackParams,
   resolveAuth,
+  usesDevAuth,
 } from './auth.ts';
 import type { HaStore } from './store.ts';
 
@@ -18,7 +18,7 @@ export const connectHa = async (
 ) => {
   const signedInNow = hasCallbackParams();
   await store.start(() => resolveAuth());
-  if (store.getSnapshot().rejected && !signedInNow && !devToken()) {
+  if (store.getSnapshot().rejected && !signedInNow && !usesDevAuth()) {
     dropTokens();
     reload();
   }

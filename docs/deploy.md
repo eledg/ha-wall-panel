@@ -97,9 +97,11 @@ its RPC needs no auth, so nothing secret should be put in the device's KVS.
 
 ### Local development
 
-A laptop is not a trusted network, so dev uses a long-lived access token. Put
-`VITE_HA_URL` and `VITE_HA_TOKEN` in `.env.local` (git-ignored). The token is
-read only when `import.meta.env.DEV` is true, never in a release build.
+A laptop is not a trusted network, so `pnpm dev` uses a long-lived access
+token. Put `HA_DEV_URL` and `HA_DEV_TOKEN` in `.env.local` (git-ignored). They
+are deliberately not `VITE_` variables: `dev-ha.ts` passes them to the app only
+while the dev server runs, so a build, local or CI, never contains the token,
+and `dev-ha.test.ts` builds with a sentinel token to check that.
 
 ## Running by hand and rolling back
 

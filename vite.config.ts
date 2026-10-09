@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv } from 'vite';
 
 import { buildInfoPlugin, resolveBuildInfo } from './build-info.ts';
+import { devHaPlugin } from './dev-ha.ts';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -13,7 +14,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
-    plugins: [tailwindcss(), preact(), buildInfoPlugin(resolveBuildInfo(env))],
+    plugins: [
+      tailwindcss(),
+      preact(),
+      buildInfoPlugin(resolveBuildInfo(env)),
+      devHaPlugin(env),
+    ],
     build: {
       target: 'es2023',
     },

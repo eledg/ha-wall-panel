@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./auth.ts', () => ({
-  devToken: vi.fn(() => undefined),
+  usesDevAuth: vi.fn(() => false),
   dropTokens: vi.fn(),
   hasCallbackParams: vi.fn(() => false),
   resolveAuth: vi.fn(),
@@ -52,7 +52,7 @@ describe('connectHa', () => {
   });
 
   it('does not reload for a rejected dev token', async () => {
-    vi.mocked(auth.devToken).mockReturnValue('dev');
+    vi.mocked(auth.usesDevAuth).mockReturnValue(true);
     const reload = vi.fn();
 
     await connectHa(storeWith({ status: 'error', rejected: true }), reload);

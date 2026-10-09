@@ -6,7 +6,7 @@ export const TOKENS_KEY = 'ha-wall-dashboard:auth';
 /** Query parameters HA's sign-in redirect leaves on the URL. */
 const CALLBACK_PARAMS = ['auth_callback', 'code', 'state', 'storeToken'];
 
-type Env = { DEV: boolean; VITE_HA_URL?: string; VITE_HA_TOKEN?: string };
+type DevSettings = { url?: string; token?: string };
 
 const storage = () => {
   try {
@@ -45,9 +45,9 @@ const cleanUrl = () => {
   history.replaceState(history.state, '', url);
 };
 
-/** Dev only: a long-lived token from `.env.local`; never read in a release. */
-export const devToken = (env: Env = import.meta.env) =>
-  (env.DEV && env.VITE_HA_TOKEN) || undefined;
+/** True under the dev server, where a long-lived token replaces sign-in. */
+export const usesDevAuth = (dev: DevSettings | undefined = __HA_DEV__) =>
+  dev !== undefined;
 
 /**
  * Credentials for the HA websocket.
@@ -58,17 +58,18 @@ export const devToken = (env: Env = import.meta.env) =>
  * served by HA, so HA's own origin is the host. If the display has no tokens
  * this navigates to HA and back, and never settles.
  *
- * Dev uses a long-lived token instead, since a laptop isn't a trusted network.
+ * The dev server uses a long-lived token from `.env.local` instead, since a
+ * laptop isn't a trusted network. `__HA_DEV__` is undefined in builds, so the
+ * token can't reach a release (see `dev-ha.ts`).
  */
 export const resolveAuth = async (
-  env: Env = import.meta.env,
+  dev: DevSettings | undefined = __HA_DEV__,
 ): Promise<Auth> => {
-  const token = devToken(env);
-  if (token) {
-    return createLongLivedTokenAuth(env.VITE_HA_URL || location.origin, token);
-  }
-  if (env.DEV) {
-    throw new Error('Set VITE_HA_URL and VITE_HA_TOKEN in .env.local');
+  if (dev) {
+    if (!dev.token) {
+      throw new Error('Set HA_DEV_URL and HA_DEV_TOKEN in .env.local');
+    }
+    return createLongLivedTokenAuth(dev.url || location.origin, dev.token);
   }
 
   const options = { hassUrl: location.origin, saveTokens, loadTokens };

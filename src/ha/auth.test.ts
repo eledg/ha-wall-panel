@@ -10,7 +10,7 @@ const lib = vi.hoisted(() => ({
 }));
 vi.mock('home-assistant-js-websocket', () => lib);
 
-import { devToken, dropTokens, resolveAuth, TOKENS_KEY } from './auth.ts';
+import { dropTokens, resolveAuth, TOKENS_KEY, usesDevAuth } from './auth.ts';
 
 beforeEach(() => {
   lib.getAuth.mockReset();
@@ -19,33 +19,34 @@ beforeEach(() => {
 });
 afterEach(() => localStorage.clear());
 
-describe('devToken', () => {
-  it('is read in dev only', () => {
-    expect(devToken({ DEV: true, VITE_HA_TOKEN: 'dev' })).toBe('dev');
-    expect(devToken({ DEV: false, VITE_HA_TOKEN: 'leaked' })).toBeUndefined();
-  });
-});
-
 describe('resolveAuth', () => {
   it('uses the dev token and URL', async () => {
     const auth = await resolveAuth({
-      DEV: true,
-      VITE_HA_URL: 'http://ha:8123',
-      VITE_HA_TOKEN: 'dev',
+      url: 'http://ha:8123',
+      token: 'dev',
     });
 
     expect(auth).toEqual({ url: 'http://ha:8123', token: 'dev' });
     expect(lib.getAuth).not.toHaveBeenCalled();
   });
 
-  it('explains missing dev settings', async () => {
-    await expect(resolveAuth({ DEV: true })).rejects.toThrow('VITE_HA_TOKEN');
+  it('defaults the dev URL to the page origin', async () => {
+    await resolveAuth({ token: 'dev' });
+
+    expect(lib.createLongLivedTokenAuth).toHaveBeenCalledWith(
+      location.origin,
+      'dev',
+    );
   });
 
-  it('never uses the env token in a release', async () => {
+  it('explains missing dev settings', async () => {
+    await expect(resolveAuth({})).rejects.toThrow('HA_DEV_TOKEN');
+  });
+
+  it('signs in through HA when there are no dev settings', async () => {
     lib.getAuth.mockResolvedValue('auth');
 
-    await resolveAuth({ DEV: false, VITE_HA_TOKEN: 'leaked' });
+    await resolveAuth();
 
     expect(lib.createLongLivedTokenAuth).not.toHaveBeenCalled();
     expect(lib.getAuth).toHaveBeenCalledOnce();
@@ -57,7 +58,7 @@ describe('resolveAuth', () => {
       return 'auth';
     });
 
-    await expect(resolveAuth({ DEV: false })).resolves.toBe('auth');
+    await expect(resolveAuth()).resolves.toBe('auth');
 
     const options = lib.getAuth.mock.calls[0]![0];
     expect(options.hassUrl).toBe(location.origin);
@@ -70,7 +71,7 @@ describe('resolveAuth', () => {
   it('loads nothing when storage holds garbage', async () => {
     lib.getAuth.mockResolvedValue('auth');
     localStorage.setItem(TOKENS_KEY, '{nope');
-    await resolveAuth({ DEV: false });
+    await resolveAuth();
 
     await expect(
       lib.getAuth.mock.calls[0]![0].loadTokens(),
@@ -85,7 +86,7 @@ describe('resolveAuth', () => {
     );
     lib.getAuth.mockResolvedValue('auth');
 
-    await resolveAuth({ DEV: false });
+    await resolveAuth();
 
     expect(location.search).toBe('?keep=1');
   });
@@ -98,7 +99,7 @@ describe('resolveAuth', () => {
     );
     lib.getAuth.mockRejectedValueOnce(2).mockResolvedValueOnce('auth');
 
-    await expect(resolveAuth({ DEV: false })).resolves.toBe('auth');
+    await expect(resolveAuth()).resolves.toBe('auth');
 
     expect(lib.getAuth).toHaveBeenCalledTimes(2);
     expect(location.search).toBe('');
@@ -107,7 +108,14 @@ describe('resolveAuth', () => {
   it('rethrows other sign-in failures', async () => {
     lib.getAuth.mockRejectedValue(1);
 
-    await expect(resolveAuth({ DEV: false })).rejects.toBe(1);
+    await expect(resolveAuth()).rejects.toBe(1);
+  });
+});
+
+describe('usesDevAuth', () => {
+  it('is true only when dev settings exist', () => {
+    expect(usesDevAuth({})).toBe(true);
+    expect(usesDevAuth(undefined)).toBe(false);
   });
 });
 
