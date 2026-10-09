@@ -37,7 +37,7 @@ export const Diagnostics = ({
     <>
       <button
         type="button"
-        class="fixed right-edge bottom-edge flex min-h-12 min-w-12 items-center justify-end bg-transparent font-mono text-small text-text-muted"
+        class="fixed right-edge bottom-edge flex min-h-12 min-w-12 items-center justify-end bg-bg font-mono text-small text-text-muted"
         onClick={() => setOpen(true)}
       >
         {version}
@@ -62,7 +62,7 @@ export const Diagnostics = ({
             <button
               type="button"
               aria-label="Close"
-              class="flex size-12 shrink-0 items-center justify-center rounded border border-line bg-transparent"
+              class="flex size-12 shrink-0 items-center justify-center rounded border border-line bg-surface"
               onClick={() => setOpen(false)}
             >
               <XIcon />
