@@ -1,0 +1,23 @@
+import { validateConfig } from './config.ts';
+import type { ConfigIssue } from './config.ts';
+
+export const ConfigWarning = ({
+  issues = validateConfig(),
+}: {
+  issues?: ConfigIssue[];
+}) =>
+  issues.length === 0 ? null : (
+    <div
+      role="alert"
+      class="fixed top-0 right-0 left-0 bg-amber-600 p-2 text-sm text-white"
+    >
+      <strong>Config problem:</strong>
+      <ul>
+        {issues.map(({ key, message }) => (
+          <li key={key}>
+            <code>{key}</code>: {message}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
