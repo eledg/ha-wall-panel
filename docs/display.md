@@ -30,6 +30,24 @@ Findings from #1, measured on the device with a plain test page.
 - The display's cache reset brought in a newly copied test page, which fits HA's caching behaviour (clients may keep files for about a month; a changing query string is the usual workaround).
 - `localStorage` survives a soft reboot, a full reboot and the cache reset (test page v3 kept its "First seen" time through each).
 
+## Behaviour while the page is not in front
+
+Findings from #10, measured with test page v4 (one-second tick, animation frame count, and logged visibility, focus and page lifecycle events, kept in `localStorage`).
+
+- The page itself never dims or blanks. Only the Shelly app's default view does, so the screen never went dark while the page was showing.
+- To test, the display was moved from the page to the Shelly default view at about 12:36, left there for about 10 minutes, then touched.
+- One session ran for 15 minutes 56 seconds: 956 ticks, max gap 1004 ms, no stalls. Timers were not throttled or paused.
+- The page was not reloaded or restored. The session ID stayed the same and no second `load` was logged.
+- `visibilityState` stayed `visible`. `visibilitychange`, `pagehide`, `freeze` and `resume` never fired.
+- Only focus changed: `blur` when leaving the page, `focus` on return, and `pointerdown` for each touch. A touch is not needed for `focus` to return.
+- Not tested: a blank screen. The page was never shown while the display slept, and the run was short (about 16 minutes), so overnight behaviour is unknown.
+
+What this means for the app:
+
+- Timers and the HA connection keep running, so the `version.json` check in #11 can poll on a plain interval.
+- Nothing reloads the page on wake, so a new release only appears if the app reloads itself (#11).
+- Do not rely on `visibilitychange` to detect a wake. Use `focus` if the app needs to react.
+
 ## RPC interface
 
 Findings from #41, measured from Home Assistant at `http://<display-ip>/rpc/`.
