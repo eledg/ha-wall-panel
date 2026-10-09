@@ -1,7 +1,11 @@
+:root {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
-  background: #fff;
-  color: #000;
+  background: #000;
+  color: #fff;
 }
 
 .diagnostics {
