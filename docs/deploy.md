@@ -48,6 +48,59 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    notification with ID `office_wall_display_deploy` containing `deploy.stderr`;
    otherwise dismiss that notification.
 
+## Signing in to HA
+
+The app talks to HA over its websocket and needs credentials. `/local/` is
+served without login, so no secret can ship in a release. Instead HA signs the
+display in by its address, using the `trusted_networks` provider, and the app
+keeps the resulting tokens in `localStorage` (key `ha-wall-dashboard:auth`).
+
+1. Create a dedicated non-admin user for the display (Settings, People). With
+   Advanced mode on, open the user's dialog and copy its ID.
+2. Give the display a DHCP reservation so its address stays put.
+3. Add the provider to `configuration.yaml`, under `homeassistant:`, with the
+   display's address and the user's ID:
+
+   ```yaml
+   homeassistant:
+     auth_providers:
+       - type: trusted_networks
+         trusted_networks:
+           - 192.168.1.101/32
+         trusted_users:
+           192.168.1.101: <user id>
+         allow_bypass_login: true
+       - type: homeassistant
+   ```
+
+   Keep `type: homeassistant`: setting `auth_providers` disables every provider
+   not listed, so leaving it out locks out password logins. List
+   `trusted_networks` first, which is what allows the bypass. Check the
+   configuration (Developer tools, YAML), then do a full restart.
+
+4. HA must see the display's own address as the request's source. A router
+   doing NAT between subnets, or a reverse proxy in between, makes it see
+   another address and the sign-in is refused.
+
+On first load the app sends the display to HA's sign-in page and back, which
+takes a few seconds and needs no input, then removes the redirect's query
+parameters from the URL. After that the stored refresh token renews the
+30-minute access token. If HA rejects saved tokens (revoked, or the user was
+removed), the app drops them and reloads once to sign in again.
+
+The user can still read every entity and call any service: HA cannot limit a
+non-admin user to specific entities. It only cannot change HA's configuration.
+
+Measured on the display (#16): sign-in redirect and return in about 3 seconds
+with no interaction, the websocket connects, and `Shelly.GetDeviceInfo` shows
+its RPC needs no auth, so nothing secret should be put in the device's KVS.
+
+### Local development
+
+A laptop is not a trusted network, so dev uses a long-lived access token. Put
+`VITE_HA_URL` and `VITE_HA_TOKEN` in `.env.local` (git-ignored). The token is
+read only when `import.meta.env.DEV` is true, never in a release build.
+
 ## Running by hand and rolling back
 
 Run the automation from its menu with "Run actions", or call
