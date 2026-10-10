@@ -21,6 +21,9 @@ export default defineConfig(({ mode }) => {
       buildInfoPlugin(resolveBuildInfo(env)),
       devHaPlugin(env),
     ],
+    // Fail rather than drift to another port, so `pnpm dev` is never mistaken
+    // for a `pnpm dev:mock` server still running on the usual one.
+    server: { strictPort: true },
     build: {
       target: 'es2023',
     },

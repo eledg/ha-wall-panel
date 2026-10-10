@@ -1,24 +1,37 @@
 # Mock HA
 
-`pnpm dev:mock` runs the app against a fake Home Assistant (`src/ha/mock.ts`), so
-tiles can be checked by eye with no token and no real HA. It is never part of a
-build (a build test checks).
+`pnpm dev:mock` runs the app against a fake Home Assistant, so tiles can be checked
+by eye with no token and no real HA. All of it lives in `src/mock/`. It is never
+part of a build, and `pnpm dev` does not load it (a build test checks).
 
-The light buttons live in the Diagnostics modal (tap the version, bottom right).
-The weather controls are in the **Mock** dock, which opens beside the tiles so the
-effect of each button stays visible.
+## How it is wired
 
-The dock (button bottom left) has:
+- `src/mock/engine.ts` implements the store's `HaDeps` over in-memory entities, so
+  the store and tiles run unmodified.
+- `__HA_MOCK__` (a Vite `define`, true only for `vite --mode mock`) gates one
+  dynamic import in `src/ha/instance.ts`. That is the app's only link to the mock.
+- The overlay renders on its own Preact root (`#mock-overlay`), not inside `App`.
 
-- **Weather**: a scenario per condition, plus `All icons` (every icon in one
-  forecast), `Extremes` (`-12°`, `38°`, `100°`: layout width), `Odd data` (no
-  temperature, an unmapped condition, holes in the forecast), `No forecast`
-  (entity without hourly support) and `Short forecast` (fewer than five columns).
+## The overlay
+
+One **Mock** button, bottom left, opens a panel beside the tiles so the effect of
+each control stays visible. Its panels:
+
+- **Weather**: a scenario per condition, plus `All icons`, `Extremes` (`-12°`,
+  `38°`, `100°`: layout width), `Odd data` (no temperature, an unmapped condition,
+  holes in the forecast), `No forecast` and `Short forecast`.
 - **Entity**: Unavailable, Missing (wrong or deleted ID) and Restore.
-- **Connection**: Disconnected shows the tile dimmed with a `stale` badge.
 - **Forecast fetch**: Fails keeps the last forecast on screen.
+- **Light**: HA flips the light, unavailable, back.
+- **Connection**: Disconnected shows the tile dimmed with a `stale` badge.
 
-Scenarios live in `src/ha/mock-weather.ts`. To add a controllable entity for a new
-tile, extend `MockControls` in `src/ha/mock.ts` and the dock in `src/ha/mock-dock.tsx`.
-The dock takes only ids and labels from the mock, so scenario data stays out of
-the production bundle.
+Weather scenarios live in `src/mock/scenarios/weather.ts`.
+
+## Mocking a new tile
+
+1. Extend `MockControls` in `src/mock/engine.ts` if the tile needs new behaviour.
+2. Add `src/mock/panels/<tile>.tsx` exporting a `MockPanel` (see `light.tsx`).
+3. List it in `src/mock/panels/index.ts`.
+
+Keep scenario data inside `src/mock/`, and pass only ids and labels to the UI where
+you can, so nothing leaks into the production bundle.

@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { config } from '../config.ts';
 import { ToggleTile } from './toggle-tile.tsx';
-import { createMockHa } from '../ha/mock.ts';
 import { createHaStore } from '../ha/store.ts';
+import { createMockHa } from '../mock/engine.ts';
 
 const id = config.entities.officeLight.id;
 

@@ -1,8 +1,8 @@
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { config } from '../config.ts';
-import { forecastFor, weatherScenarios } from './mock-weather.ts';
-import type { HaDeps } from './store.ts';
+import type { HaDeps } from '../ha/store.ts';
+import { forecastFor, weatherScenarios } from './scenarios/weather.ts';
 
 /** Present only in mock code; a build test looks for it in `dist/`. */
 export const MOCK_MARKER = 'wall-dashboard-mock-ha';
@@ -34,6 +34,8 @@ export type MockControls = {
   setWeather: (scenarioId: string) => void;
   /** Ids and labels only: the data stays in mock code, out of the production bundle. */
   weatherScenarios: { id: string; label: string }[];
+  /** Calls `listener` after every change the mock makes; returns the unsubscribe. */
+  subscribe: (listener: () => void) => () => void;
 };
 
 const SWITCH_SERVICES = ['turn_on', 'turn_off', 'toggle'];
@@ -41,6 +43,12 @@ const SWITCH_SERVICES = ['turn_on', 'turn_off', 'toggle'];
 export const createMockHa = (cfg: typeof config = config) => {
   const entities = new Map<string, HassEntity>();
   const subscribers = new Set<(all: Record<string, HassEntity>) => void>();
+  const watchers = new Set<() => void>();
+  const publish = () => {
+    const all = Object.fromEntries(entities);
+    subscribers.forEach((subscriber) => subscriber(all));
+    watchers.forEach((watcher) => watcher());
+  };
 
   const make = (
     id: string,
@@ -76,8 +84,7 @@ export const createMockHa = (cfg: typeof config = config) => {
       id,
       make(id, state, attributes ?? entities.get(id)?.attributes),
     );
-    const all = Object.fromEntries(entities);
-    subscribers.forEach((subscriber) => subscriber(all));
+    publish();
   };
 
   const listeners = new Map<string, Set<() => void>>();
@@ -132,8 +139,7 @@ export const createMockHa = (cfg: typeof config = config) => {
     setUnavailable: (id) => setState(id, 'unavailable'),
     removeEntity: (id) => {
       entities.delete(id);
-      const all = Object.fromEntries(entities);
-      subscribers.forEach((subscriber) => subscriber(all));
+      publish();
     },
     setConnected: (connected) =>
       listeners.get(connected ? 'ready' : 'disconnected')?.forEach((l) => l()),
@@ -145,6 +151,10 @@ export const createMockHa = (cfg: typeof config = config) => {
       setState(weather, scenario.state, scenario.attributes);
     },
     weatherScenarios: scenarios.map(({ id, label }) => ({ id, label })),
+    subscribe: (listener) => {
+      watchers.add(listener);
+      return () => void watchers.delete(listener);
+    },
   };
 
   return {

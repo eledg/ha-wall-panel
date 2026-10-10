@@ -1,4 +1,4 @@
-import type { ForecastItem } from './store.ts';
+import type { ForecastItem } from '../../ha/store.ts';
 
 type Period = [condition: string, temperature: number];
 

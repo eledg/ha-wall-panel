@@ -2,8 +2,8 @@ import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it, vi } from 'vitest';
 
 import { config } from '../config.ts';
-import { createMockHa, UNRELATED_ID } from './mock.ts';
-import { createHaStore } from './store.ts';
+import { createMockHa, UNRELATED_ID } from './engine.ts';
+import { createHaStore } from '../ha/store.ts';
 
 const LIGHT = config.entities.officeLight.id;
 const LUX = config.entities.officeIlluminance.id;

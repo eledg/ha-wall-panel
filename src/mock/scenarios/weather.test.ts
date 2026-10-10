@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { forecastFor, weatherScenarios } from './mock-weather.ts';
+import { forecastFor, weatherScenarios } from './weather.ts';
 
 const start = Date.parse('2026-01-05T09:30:00Z');
 

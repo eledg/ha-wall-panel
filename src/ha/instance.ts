@@ -1,8 +1,10 @@
-import { createMockHa } from './mock.ts';
 import { createHaStore } from './store.ts';
 
 // __HA_MOCK__ is true only under `pnpm dev:mock` (see dev-ha.ts). In every
-// other build it is the literal `false`, so the mock is dropped from the bundle.
-export const mockHa = __HA_MOCK__ ? createMockHa() : undefined;
+// other build it is the literal `false`, so this branch and the whole of
+// src/mock/ are dropped from the bundle. This is the app's only seam to the mock.
+const mock = __HA_MOCK__ ? await import('../mock/index.tsx') : undefined;
+mock?.mountOverlay();
 
-export const haStore = createHaStore(mockHa?.deps);
+export const haAuth = mock?.getAuth;
+export const haStore = createHaStore(mock?.deps);

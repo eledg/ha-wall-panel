@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { config } from '../config.ts';
 import { pickForecast, WeatherTile } from './weather-tile.tsx';
-import { createMockHa } from '../ha/mock.ts';
 import { createHaStore } from '../ha/store.ts';
+import { createMockHa } from '../mock/engine.ts';
 
 const id = config.entities.weather.id;
 const text = () => document.body.textContent;
