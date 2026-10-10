@@ -50,6 +50,28 @@ jobs:
       - uses: eledg/github-actions/setup-pnpm@v1
       - run: pnpm test
 
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    name: e2e
+    # The image the baselines are generated in (docs/e2e.md); keep its version
+    # in step with @playwright/test. A bare runner renders text slightly differently.
+    container: mcr.microsoft.com/playwright:v1.64.0-noble
+    steps:
+      - uses: actions/checkout@v7
+      - uses: eledg/github-actions/setup-pnpm@v1
+      - run: pnpm test:e2e
+      # Holds the diff images on failure, and the rendered screenshots so a
+      # baseline can be taken from CI (see docs/e2e.md).
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10

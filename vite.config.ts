@@ -28,8 +28,8 @@ export default defineConfig(({ mode }) => {
       target: 'es2023',
     },
     test: {
-      // The git-ignored design prototype has its own tests and deps.
-      exclude: [...configDefaults.exclude, '.lovable-design/**'],
+      // The git-ignored design prototype has its own tests and deps; e2e/ is Playwright's.
+      exclude: [...configDefaults.exclude, '.lovable-design/**', 'e2e/**'],
     },
   };
 });

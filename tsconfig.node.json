@@ -25,6 +25,8 @@
     "build-info.ts",
     "build-info.test.ts",
     "dev-ha.ts",
-    "dev-ha.test.ts"
+    "dev-ha.test.ts",
+    "playwright.config.ts",
+    "e2e"
   ]
 }

@@ -32,6 +32,7 @@ pnpm dev
 | `pnpm build`     | Type-check and build to `dist/`                         |
 | `pnpm preview`   | Serve the built output locally                          |
 | `pnpm test`      | Run tests once (`pnpm test:watch` to watch)             |
+| `pnpm test:e2e`  | Playwright against the mock, comparing screenshots      |
 | `pnpm lint`      | ESLint (`pnpm lint:fix` to fix)                         |
 | `pnpm prettier`  | Check formatting (`pnpm prettier:fix` to fix)           |
 | `pnpm typecheck` | Type-check without building                             |

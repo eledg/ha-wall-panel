@@ -16,6 +16,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots",
     "validate": "pnpm prettier:fix && pnpm lint:fix && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.0",
     "@preact/preset-vite": "^2.10.6",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@tailwindcss/vite": "^4.3.3",
