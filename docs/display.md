@@ -56,3 +56,24 @@ Findings from #41, measured from Home Assistant at `http://<display-ip>/rpc/`.
 - None of them reloads the page, so nothing in the release pull depends on one.
 - Untested, because they would disturb the display: `Sys.RestartApplication` and `Shelly.Reboot`.
 - Also present: `Ui.Tap`, `Ui.Swipe`, `Ui.Screen.Set`, `Script.*` and `HTTP.*`.
+
+## Rendering quirks
+
+Findings from the first deploy of the app (#57 to #61), measured with a temporary probe that showed computed styles on the display. See the [PR history](https://github.com/eledg/ha-wall-dashboard/pulls?q=is%3Apr+57+OR+58+OR+59+OR+60+OR+61) for the probe if it is needed again.
+
+### Buttons get a default grey background
+
+- A `<button>` with no explicit background computed to `rgb(107, 107, 107)` with `appearance: button`, which is the browser's dark-mode default button colour. In dev it was transparent.
+- `color-mix()` and cascade layers are supported, so this is not a missing feature. The `background-color: transparent` in Tailwind's base-layer reset is not applied to buttons, and `bg-transparent` did not fix it either.
+- Opaque utility backgrounds do apply (the tile's `bg-accent` computed correctly). Give every button an opaque background that matches what is behind it, such as `bg-bg` on the page or `bg-surface` in the dialog. Do not "simplify" these back to transparent.
+- `appearance: none` on buttons made no visible difference.
+- If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
+
+### Unexplained
+
+- The diagnostics dialog showed a square bottom-right corner on the display despite a 20px radius. It was fixed along with the button backgrounds, but the cause was never confirmed. Hiding the scrollbars and moving the scroll into an inner element did nothing on their own.
+
+### Debugging on the display
+
+- Photos of the screen are misleading: the panel and the camera shift colours (black looks navy, the amber tile looks lime), and the firmware's "Please remove the protective film" splash shows through the page. Do not judge colours from photos.
+- Show computed styles (`getComputedStyle`), the user agent, viewport and scroll sizes on screen in a temporary probe in the diagnostics modal, then photograph the text. This found the button cause in one deploy after several rounds of guessing.
