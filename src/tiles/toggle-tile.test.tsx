@@ -80,16 +80,54 @@ describe('ToggleTile', () => {
     expect(button().textContent).not.toContain('stale');
   });
 
-  it('logs a failed toggle instead of throwing', async () => {
+  it('flips at once, before HA confirms', async () => {
+    const { mock, store, button } = await setup();
+    let resolve!: () => void;
+    vi.spyOn(store, 'callService').mockReturnValue(
+      new Promise<undefined>((r) => (resolve = () => r(undefined))) as never,
+    );
+
+    await act(async () => button().click());
+    expect(button().textContent).toContain('On');
+    expect(button().getAttribute('aria-pressed')).toBe('true');
+    expect(mock.controls.getState(id)?.state).toBe('off');
+
+    await act(async () => resolve());
+    expect(button().textContent).toContain('On');
+  });
+
+  it('reverts and flashes the tile when the call fails', async () => {
+    vi.useFakeTimers();
+    const { mock, button } = await setup();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mock.controls.failServices(true);
+
+    await act(async () => button().click());
+    expect(button().textContent).toContain('Off');
+    expect(button().getAttribute('aria-pressed')).toBe('false');
+    expect(button().className).toContain('bg-warn-soft');
+    expect(error).toHaveBeenCalledWith(
+      'Toggle Office light failed',
+      expect.any(Error),
+    );
+
+    await act(async () => void vi.advanceTimersByTime(1000));
+    expect(button().className).not.toContain('bg-warn-soft');
+
+    mock.controls.failServices(false);
+    await act(async () => button().click());
+    expect(button().textContent).toContain('On');
+    error.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('flashes when the store cannot call HA', async () => {
     const { store, button } = await setup();
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     store.stop();
 
     await act(async () => button().click());
-    expect(error).toHaveBeenCalledWith(
-      'Toggle Office light failed',
-      expect.any(Error),
-    );
+    expect(button().className).toContain('bg-warn-soft');
     error.mockRestore();
   });
 });

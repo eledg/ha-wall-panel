@@ -104,6 +104,24 @@ describe('store against the mock', () => {
   });
 });
 
+describe('mock service failures', () => {
+  it('rejects switch calls and leaves the state alone', async () => {
+    const mock = createMockHa();
+    const store = createHaStore(mock.deps);
+    await store.start(mock.getAuth);
+    mock.controls.failServices(true);
+
+    await expect(store.callService('officeLight', 'toggle')).rejects.toThrow(
+      'service call failed',
+    );
+    expect(store.getSnapshot().entities.officeLight?.state).toBe('off');
+
+    mock.controls.failServices(false);
+    await store.callService('officeLight', 'toggle');
+    expect(store.getSnapshot().entities.officeLight?.state).toBe('on');
+  });
+});
+
 describe('mock weather controls', () => {
   const setup = async () => {
     const mock = createMockHa();

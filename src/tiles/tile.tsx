@@ -27,6 +27,7 @@ export const Tile = ({
   disabled = false,
   pressed,
   warn,
+  flash = false,
   class: className = '',
   children,
 }: {
@@ -36,13 +37,17 @@ export const Tile = ({
   disabled?: boolean;
   pressed?: boolean;
   warn?: string;
+  /** Briefly paints the tile in the warning colours, e.g. after a failed call. */
+  flash?: boolean;
   class?: string;
   children?: ComponentChildren;
 }) => {
   const offline = useOffline();
   const state = requested === 'normal' && offline ? 'stale' : requested;
   const stale = state === 'stale';
-  const base = `relative min-w-0 overflow-hidden rounded-tile border border-line bg-surface p-4 text-left ${className}`;
+  const base = `relative min-w-0 overflow-hidden rounded-tile border p-4 text-left transition-colors duration-150 ${
+    flash ? 'border-warn bg-warn-soft' : 'border-line bg-surface'
+  } ${className}`;
   const body =
     state === 'loading' ? (
       <div class="flex h-full flex-col justify-center gap-2">

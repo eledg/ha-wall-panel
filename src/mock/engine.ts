@@ -34,6 +34,10 @@ export type MockControls = {
   failForecast: (failing: boolean) => void;
   /** Whether forecast fetches are currently set to fail. */
   isForecastFailing: () => boolean;
+  /** Makes switch service calls (the light toggle) fail, to test rollback. */
+  failServices: (failing: boolean) => void;
+  /** Whether switch service calls are currently set to fail. */
+  isServicesFailing: () => boolean;
   /** Switches the weather entity (state, attributes and forecast) to a scenario. */
   setWeather: (scenarioId: string) => void;
   /** The id of the current weather scenario. */
@@ -82,6 +86,7 @@ export const createMockHa = (cfg: typeof config = config) => {
   let scenario = scenarios[0]!;
   entities.set(weather, make(weather, scenario.state, scenario.attributes));
   let forecastFails = false;
+  let servicesFail = false;
   entities.set(UNRELATED_ID, make(UNRELATED_ID, 'off'));
 
   const setState: MockControls['setState'] = (id, state, attributes) => {
@@ -133,6 +138,9 @@ export const createMockHa = (cfg: typeof config = config) => {
           new Error(`Mock HA: no service ${domain}.${service}`),
         );
       }
+      if (servicesFail) {
+        return Promise.reject(new Error('Mock HA: service call failed'));
+      }
       const on =
         service === 'toggle' ? entity.state !== 'on' : service === 'turn_on';
       setState(id, on ? 'on' : 'off');
@@ -159,6 +167,11 @@ export const createMockHa = (cfg: typeof config = config) => {
       watchers.forEach((watcher) => watcher());
     },
     isForecastFailing: () => forecastFails,
+    failServices: (failing) => {
+      servicesFail = failing;
+      watchers.forEach((watcher) => watcher());
+    },
+    isServicesFailing: () => servicesFail,
     getWeatherScenario: () => scenario.id,
     setWeather: (id) => {
       scenario = scenarios.find((s) => s.id === id) ?? scenario;

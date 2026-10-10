@@ -22,7 +22,8 @@ each control stays visible. Its panels:
   holes in the forecast), `No forecast` and `Short forecast`.
 - **Entity**: Unavailable, Missing (wrong or deleted ID) and Restore.
 - **Forecast fetch**: Fails keeps the last forecast on screen.
-- **Light**: HA flips the light, unavailable, back.
+- **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the
+  next toggles, so the tile flips, reverts and flashes in the warning colours.
 - **Connection**: Disconnected shows the tile dimmed with a `stale` badge.
 
 Weather scenarios live in `src/mock/scenarios/weather.ts`.

@@ -24,6 +24,13 @@ export const lightPanel: MockPanel = {
           </Chip>
           <Chip onClick={() => mock.setState(light, 'off')}>Light back</Chip>
         </Group>
+        <Group label="Service calls">
+          <Chip onClick={() => mock.failServices(!mock.isServicesFailing())}>
+            {mock.isServicesFailing()
+              ? 'Calls fail (tap to fix)'
+              : 'Make calls fail'}
+          </Chip>
+        </Group>
       </>
     );
   },
