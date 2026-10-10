@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 
 import type { GridArea } from '../grid.ts';
+import { useOffline } from '../ha/connection.tsx';
 import { AlertIcon } from '../icons/alert-icon.tsx';
 
 export type TileState = 'loading' | 'normal' | 'unavailable' | 'stale';
@@ -15,12 +16,13 @@ export const Unavailable = ({ label = 'Unavailable' }: { label?: string }) => (
 
 /**
  * Shared tile shell from the design: border, surface, loading skeleton and
- * stale / warning badges. Renders a button when tappable, with an opaque
+ * stale / warning badges. While HA is disconnected (see `HaConnection`) a
+ * normal tile turns stale and a tappable one is disabled. Renders a button when tappable, with an opaque
  * background (the display paints bare buttons grey, see docs/display.md).
  */
 export const Tile = ({
   area,
-  state = 'normal',
+  state: requested = 'normal',
   onTap,
   disabled = false,
   pressed,
@@ -37,6 +39,8 @@ export const Tile = ({
   class?: string;
   children?: ComponentChildren;
 }) => {
+  const offline = useOffline();
+  const state = requested === 'normal' && offline ? 'stale' : requested;
   const stale = state === 'stale';
   const base = `relative min-w-0 overflow-hidden rounded-tile border border-line bg-surface p-4 text-left ${className}`;
   const body =
@@ -69,9 +73,9 @@ export const Tile = ({
       <button
         type="button"
         style={{ gridArea: area }}
-        class={`${base} tap min-h-14 disabled:opacity-50`}
+        class={`${base} tap min-h-14 ${stale ? '' : 'disabled:opacity-50'}`}
         aria-pressed={pressed}
-        disabled={disabled}
+        disabled={disabled || offline}
         onClick={onTap}
       >
         {body}

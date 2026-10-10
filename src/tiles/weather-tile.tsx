@@ -71,11 +71,10 @@ export const WeatherTile = ({
   const offline = status !== 'connected';
   const misconfigured = subscribed.length > 0 && !entity && status !== 'idle';
 
-  let state: TileState = 'normal';
+  let state: TileState = 'normal'; // Tile turns it stale while offline
   if (!entity && !offline) state = 'unavailable';
   else if (!entity) state = 'loading';
   else if (!usable) state = 'unavailable';
-  else if (offline) state = 'stale';
 
   if (state === 'loading') return <Tile area={area} state="loading" />;
   if (!usable || !entity) {

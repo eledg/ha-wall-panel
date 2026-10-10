@@ -164,6 +164,7 @@ describe('mock weather controls', () => {
 
     mock.controls.setConnected(false);
     expect(store.getSnapshot().status).toBe('disconnected');
+    expect(mock.controls.isConnected()).toBe(false);
 
     mock.controls.setConnected(true);
     expect(store.getSnapshot().status).toBe('connected');

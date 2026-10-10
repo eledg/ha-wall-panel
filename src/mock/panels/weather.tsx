@@ -1,5 +1,3 @@
-import { useState } from 'preact/hooks';
-
 import { config } from '../../config.ts';
 import { Chip, Group, useMockChanges } from '../ui.tsx';
 import type { MockPanel } from './types.ts';
@@ -11,8 +9,8 @@ export const weatherPanel: MockPanel = {
   title: 'Weather',
   Panel: ({ mock }) => {
     useMockChanges(mock);
-    const [scenario, setScenario] = useState(mock.weatherScenarios[0]?.id);
-    const [failing, setFailing] = useState(false);
+    const scenario = mock.getWeatherScenario();
+    const failing = mock.isForecastFailing();
     return (
       <>
         <p class="mb-3 font-mono text-small text-fg-dim">
@@ -23,10 +21,7 @@ export const weatherPanel: MockPanel = {
             <Chip
               key={key}
               active={scenario === key}
-              onClick={() => {
-                setScenario(key);
-                mock.setWeather(key);
-              }}
+              onClick={() => mock.setWeather(key)}
             >
               {label}
             </Chip>
@@ -35,27 +30,13 @@ export const weatherPanel: MockPanel = {
         <Group label="Entity state">
           <Chip onClick={() => mock.setUnavailable(id)}>Unavailable</Chip>
           <Chip onClick={() => mock.removeEntity(id)}>Missing</Chip>
-          <Chip onClick={() => scenario && mock.setWeather(scenario)}>
-            Restore
-          </Chip>
+          <Chip onClick={() => mock.setWeather(scenario)}>Restore</Chip>
         </Group>
         <Group label="Forecast fetch">
-          <Chip
-            active={!failing}
-            onClick={() => {
-              setFailing(false);
-              mock.failForecast(false);
-            }}
-          >
+          <Chip active={!failing} onClick={() => mock.failForecast(false)}>
             Works
           </Chip>
-          <Chip
-            active={failing}
-            onClick={() => {
-              setFailing(true);
-              mock.failForecast(true);
-            }}
-          >
+          <Chip active={failing} onClick={() => mock.failForecast(true)}>
             Fails
           </Chip>
         </Group>

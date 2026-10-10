@@ -1,17 +1,13 @@
-import { useState } from 'preact/hooks';
-
-import { Chip, Group } from '../ui.tsx';
+import { Chip, Group, useMockChanges } from '../ui.tsx';
 import type { MockPanel } from './types.ts';
 
 export const connectionPanel: MockPanel = {
   id: 'connection',
   title: 'Home Assistant',
   Panel: ({ mock }) => {
-    const [connected, setConnected] = useState(true);
-    const set = (value: boolean) => {
-      setConnected(value);
-      mock.setConnected(value);
-    };
+    useMockChanges(mock);
+    const connected = mock.isConnected();
+    const set = mock.setConnected;
     return (
       <Group label="Connection">
         <Chip active={connected} onClick={() => set(true)}>

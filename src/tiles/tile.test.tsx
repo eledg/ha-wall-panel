@@ -1,8 +1,12 @@
 // @vitest-environment happy-dom
 import { render } from 'preact';
+import { act } from 'preact/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Tile } from './tile.tsx';
+import { HaConnection } from '../ha/connection.tsx';
+import { createHaStore } from '../ha/store.ts';
+import { createMockHa } from '../mock/engine.ts';
 
 const mount = (ui: preact.ComponentChildren) => render(ui, document.body);
 
@@ -45,5 +49,27 @@ describe('Tile', () => {
     expect(document.body.textContent).toContain('stale');
     expect(document.body.textContent).toContain('entity missing');
     expect(document.body.textContent).toContain('body');
+  });
+
+  it('goes stale and ignores taps while HA is disconnected', async () => {
+    const mock = createMockHa();
+    const store = createHaStore(mock.deps);
+    const onTap = vi.fn();
+    await act(async () => {
+      await store.start(mock.getAuth);
+      mount(
+        <HaConnection store={store}>
+          <Tile area="light" onTap={onTap}>
+            x
+          </Tile>
+        </HaConnection>,
+      );
+    });
+    const button = () => document.querySelector('button')!;
+    expect(button().disabled).toBe(false);
+
+    await act(() => mock.controls.setConnected(false));
+    expect(button().disabled).toBe(true);
+    expect(button().textContent).toContain('stale');
   });
 });

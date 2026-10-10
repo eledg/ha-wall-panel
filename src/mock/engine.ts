@@ -28,10 +28,16 @@ export type MockControls = {
   removeEntity: (id: string) => void;
   /** Fires the connection's `disconnected` / `ready` events. */
   setConnected: (connected: boolean) => void;
+  /** Whether the mock connection is currently up, as last set by `setConnected`. */
+  isConnected: () => boolean;
   /** Makes `weather.get_forecasts` fail, to test the tile keeping its last forecast. */
   failForecast: (failing: boolean) => void;
+  /** Whether forecast fetches are currently set to fail. */
+  isForecastFailing: () => boolean;
   /** Switches the weather entity (state, attributes and forecast) to a scenario. */
   setWeather: (scenarioId: string) => void;
+  /** The id of the current weather scenario. */
+  getWeatherScenario: () => string;
   /** Ids and labels only: the data stays in mock code, out of the production bundle. */
   weatherScenarios: { id: string; label: string }[];
   /** Calls `listener` after every change the mock makes; returns the unsubscribe. */
@@ -43,6 +49,7 @@ const SWITCH_SERVICES = ['turn_on', 'turn_off', 'toggle'];
 export const createMockHa = (cfg: typeof config = config) => {
   const entities = new Map<string, HassEntity>();
   const subscribers = new Set<(all: Record<string, HassEntity>) => void>();
+  let connected = true;
   const watchers = new Set<() => void>();
   const publish = () => {
     const all = Object.fromEntries(entities);
@@ -141,11 +148,18 @@ export const createMockHa = (cfg: typeof config = config) => {
       entities.delete(id);
       publish();
     },
-    setConnected: (connected) =>
-      listeners.get(connected ? 'ready' : 'disconnected')?.forEach((l) => l()),
+    setConnected: (value) => {
+      connected = value;
+      listeners.get(value ? 'ready' : 'disconnected')?.forEach((l) => l());
+      watchers.forEach((watcher) => watcher());
+    },
+    isConnected: () => connected,
     failForecast: (failing) => {
       forecastFails = failing;
+      watchers.forEach((watcher) => watcher());
     },
+    isForecastFailing: () => forecastFails,
+    getWeatherScenario: () => scenario.id,
     setWeather: (id) => {
       scenario = scenarios.find((s) => s.id === id) ?? scenario;
       setState(weather, scenario.state, scenario.attributes);

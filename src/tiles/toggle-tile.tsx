@@ -1,5 +1,6 @@
 import type { GridArea } from '../grid.ts';
 import { Tile, Unavailable } from './tile.tsx';
+import { useOffline } from '../ha/connection.tsx';
 import { haStore } from '../ha/instance.ts';
 import type { EntityKey, HaStore, ServiceName } from '../ha/store.ts';
 import { useSnapshot } from '../ha/use-snapshot.ts';
@@ -27,16 +28,17 @@ export const ToggleTile = ({
   store?: HaStore;
 }) => {
   const state = useSnapshot(store).entities[entity]?.state;
+  const offline = useOffline();
   const on = state === 'on';
   const usable = state === 'on' || state === 'off';
 
   return (
     <Tile
       area={area}
-      state={state === undefined ? 'loading' : 'normal'}
+      state={state === undefined ? 'loading' : offline ? 'stale' : 'normal'}
       pressed={on}
       disabled={!usable}
-      class={on ? 'border-accent! bg-accent-soft!' : ''}
+      class={on && !offline ? 'border-accent! bg-accent-soft!' : ''}
       onTap={() =>
         void store
           .callService(entity, 'toggle' as ServiceName<typeof entity>)

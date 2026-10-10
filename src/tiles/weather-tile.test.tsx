@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { config } from '../config.ts';
 import { pickForecast, WeatherTile } from './weather-tile.tsx';
+import { HaConnection } from '../ha/connection.tsx';
 import { createHaStore } from '../ha/store.ts';
 import { createMockHa } from '../mock/engine.ts';
 
@@ -77,10 +78,12 @@ describe('WeatherTile', () => {
     const offline = { ...store.getSnapshot(), status: 'disconnected' as const };
     await act(async () => {
       render(
-        <WeatherTile
-          area="weather"
-          store={{ ...store, getSnapshot: () => offline }}
-        />,
+        <HaConnection store={{ ...store, getSnapshot: () => offline }}>
+          <WeatherTile
+            area="weather"
+            store={{ ...store, getSnapshot: () => offline }}
+          />
+        </HaConnection>,
         document.body,
       );
     });

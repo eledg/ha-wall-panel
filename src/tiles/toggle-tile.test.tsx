@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { config } from '../config.ts';
 import { ToggleTile } from './toggle-tile.tsx';
+import { HaConnection } from '../ha/connection.tsx';
 import { createHaStore } from '../ha/store.ts';
 import { createMockHa } from '../mock/engine.ts';
 
@@ -16,12 +17,14 @@ const setup = async () => {
   await act(async () => {
     await store.start(mock.getAuth);
     render(
-      <ToggleTile
-        entity="officeLight"
-        label="Office light"
-        area="light"
-        store={store}
-      />,
+      <HaConnection store={store}>
+        <ToggleTile
+          entity="officeLight"
+          label="Office light"
+          area="light"
+          store={store}
+        />
+      </HaConnection>,
       document.body,
     );
   });
@@ -62,6 +65,19 @@ describe('ToggleTile', () => {
     await act(() => mock.controls.setUnavailable(id));
     expect(button().disabled).toBe(true);
     expect(button().textContent).toContain('Unavailable');
+  });
+
+  it('is stale and disabled while HA is disconnected, then recovers', async () => {
+    const { mock, button } = await setup();
+
+    await act(() => mock.controls.setConnected(false));
+    expect(button().disabled).toBe(true);
+    expect(button().textContent).toContain('stale');
+    expect(button().textContent).toContain('Off');
+
+    await act(() => mock.controls.setConnected(true));
+    expect(button().disabled).toBe(false);
+    expect(button().textContent).not.toContain('stale');
   });
 
   it('logs a failed toggle instead of throwing', async () => {
