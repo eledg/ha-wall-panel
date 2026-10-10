@@ -1,6 +1,7 @@
 import preact from '@preact/preset-vite';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, loadEnv } from 'vite';
+import { loadEnv } from 'vite';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 import { buildInfoPlugin, resolveBuildInfo } from './build-info.ts';
 import { devHaPlugin } from './dev-ha.ts';
@@ -22,6 +23,10 @@ export default defineConfig(({ mode }) => {
     ],
     build: {
       target: 'es2023',
+    },
+    test: {
+      // The git-ignored design prototype has its own tests and deps.
+      exclude: [...configDefaults.exclude, '.lovable-design/**'],
     },
   };
 });

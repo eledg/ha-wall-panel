@@ -15,6 +15,7 @@ export default defineConfig([
     'node_modules',
     'playwright-report',
     'test-results',
+    '.lovable-design',
   ]),
 
   js.configs.recommended,

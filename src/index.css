@@ -8,21 +8,26 @@
  */
 @theme {
   --color-*: initial;
-  --color-bg: #000;
-  --color-surface: #16181d;
-  --color-surface-active: #262a33;
-  --color-line: #2e323c;
-  --color-text: #f2f4f8;
-  --color-text-muted: #9aa1ae;
-  --color-accent: #f5b83d;
-  --color-warning: #d97706;
+  /* Ported from the Lovable design (docs/design.md). oklch needs Chromium 111+. */
+  --color-bg: oklch(0.08 0 0);
+  --color-surface: oklch(0.16 0.004 250);
+  --color-surface-2: oklch(0.22 0.006 250);
+  --color-line: oklch(0.28 0.006 250);
+  --color-fg: oklch(0.96 0.003 90);
+  --color-fg-dim: oklch(0.68 0.006 250);
+  --color-fg-faint: oklch(0.45 0.006 250);
+  --color-accent: oklch(0.82 0.15 78);
+  --color-accent-fg: oklch(0.16 0.03 78);
+  --color-accent-soft: oklch(0.3 0.06 78);
+  --color-warn: oklch(0.68 0.19 32);
+  --color-warn-soft: oklch(0.28 0.08 32);
+  --color-cal-family: oklch(0.74 0.12 230);
+  --color-cal-birthdays: oklch(0.76 0.13 350);
+  --color-cal-f1: oklch(0.8 0.15 140);
 
   /* Kept clear of every screen edge so taps never start a system gesture. */
   --spacing-edge: 2rem;
-  --spacing-gap: 1rem;
-  /* Minimum tile width: 5 columns across the landscape viewport, 2 in portrait. */
-  --spacing-tile: 10rem;
-  --spacing-tile-height: 8rem;
+  --spacing-gap: 0.75rem;
 
   --text-label: 1rem;
   --text-label--line-height: 1.5rem;
@@ -31,9 +36,40 @@
   --text-small: 0.75rem;
   --text-small--line-height: 1rem;
 
-  --radius-tile: 1.25rem;
+  --radius-tile: 18px;
 
   /* Open Sans is self-hosted; system fonts are the fallback. */
   --font-sans: 'Open Sans Variable', system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
+}
+
+@utility tap {
+  transition:
+    transform 100ms ease-out,
+    background-color 120ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  &:active {
+    transform: scale(0.97);
+    background-color: var(--color-surface-2);
+  }
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tile grid; areas come from src/grid.ts through --cols, --rows and --areas. */
+@utility dash-grid {
+  display: grid;
+  gap: var(--spacing-gap);
+  grid-template-columns: var(--cols);
+  grid-template-rows: var(--rows);
+  grid-template-areas: var(--areas);
+  @media (orientation: portrait) {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: none;
+    grid-auto-rows: minmax(7.5rem, auto);
+    grid-template-areas: var(--areas-narrow);
+  }
 }

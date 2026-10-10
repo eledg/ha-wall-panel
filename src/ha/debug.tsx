@@ -53,7 +53,7 @@ export const HaDebug = ({
   const keys = Object.keys(config.entities) as EntityKey[];
 
   return (
-    <section class="mt-4 space-y-2 font-mono text-small text-text-muted">
+    <section class="mt-4 space-y-2 font-mono text-small text-fg-dim">
       <p>
         HA{mock ? ' (mock)' : ''}: {status}
         {error && ` (${error})`}

@@ -15,6 +15,7 @@ describe('Shell', () => {
 
     const main = document.querySelector('main')!;
     expect(main.className).toContain('p-edge');
-    expect(main.querySelector('.grid p')?.textContent).toBe('tile');
+    expect(main.querySelector('.dash-grid')).not.toBeNull();
+    expect(main.querySelector('.dash-grid p')?.textContent).toBe('tile');
   });
 });

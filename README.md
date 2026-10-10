@@ -85,3 +85,4 @@ convention in [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Docs
 
 - [docs/display.md](docs/display.md): findings from testing on the display
+- [docs/design.md](docs/design.md): the Lovable design reference and port status

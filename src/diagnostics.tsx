@@ -37,7 +37,7 @@ export const Diagnostics = ({
     <>
       <button
         type="button"
-        class="fixed right-edge bottom-edge flex min-h-12 min-w-12 items-center justify-end bg-bg font-mono text-small text-text-muted"
+        class="fixed right-edge bottom-edge flex min-h-12 min-w-12 items-center justify-end bg-bg font-mono text-small text-fg-dim"
         onClick={() => setOpen(true)}
       >
         {version}
@@ -59,7 +59,7 @@ export const Diagnostics = ({
           >
             <XIcon />
           </button>
-          <dl class="font-mono text-small text-text-muted">
+          <dl class="font-mono text-small text-fg-dim">
             <dt class="sr-only">Version</dt>
             <dd>Version {version}</dd>
             <dt class="sr-only">Commit</dt>

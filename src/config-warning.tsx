@@ -9,7 +9,7 @@ export const ConfigWarning = ({
   issues.length === 0 ? null : (
     <div
       role="alert"
-      class="fixed top-0 right-0 left-0 bg-warning p-2 text-label text-text"
+      class="fixed top-0 right-0 left-0 bg-warn p-2 text-label text-fg"
     >
       <strong>Config problem:</strong>
       <ul>

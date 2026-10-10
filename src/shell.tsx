@@ -1,12 +1,22 @@
 import type { ComponentChildren } from 'preact';
 
+import { GRID } from './grid.ts';
+
 /**
- * Page frame: keeps everything out of the edge zone and lays tiles out on a
- * grid that fills the width in landscape and drops to fewer columns in portrait.
+ * Page frame: keeps everything out of the edge zone and lays tiles out on the
+ * named-area grid in `grid.ts`. Tiles place themselves with their `area`.
  */
 export const Shell = ({ children }: { children?: ComponentChildren }) => (
-  <main class="min-h-dvh p-edge">
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-tile),1fr))] auto-rows-(--spacing-tile-height) gap-gap">
+  <main class="box-border h-dvh p-edge">
+    <div
+      class="dash-grid h-full"
+      style={{
+        '--cols': GRID.cols,
+        '--rows': GRID.rows,
+        '--areas': GRID.areas,
+        '--areas-narrow': GRID.areasNarrow,
+      }}
+    >
       {children}
     </div>
   </main>

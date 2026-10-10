@@ -16,7 +16,12 @@ const setup = async () => {
   await act(async () => {
     await store.start(mock.getAuth);
     render(
-      <ToggleTile entity="officeLight" label="Office" store={store} />,
+      <ToggleTile
+        entity="officeLight"
+        label="Office light"
+        area="light"
+        store={store}
+      />,
       document.body,
     );
   });
@@ -66,7 +71,7 @@ describe('ToggleTile', () => {
 
     await act(async () => button().click());
     expect(error).toHaveBeenCalledWith(
-      'Toggle Office failed',
+      'Toggle Office light failed',
       expect.any(Error),
     );
     error.mockRestore();

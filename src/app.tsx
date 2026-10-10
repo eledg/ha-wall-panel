@@ -8,7 +8,7 @@ import { ToggleTile } from './tiles/toggle-tile.tsx';
 export const App = () => (
   <>
     <Shell>
-      <ToggleTile entity="officeLight" label="Office" />
+      <ToggleTile entity="officeLight" label="Office light" area="light" />
     </Shell>
     <ConfigWarning />
     <Diagnostics>

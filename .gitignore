@@ -36,3 +36,6 @@ test-results
 # Build cache
 *.tsbuildinfo
 .vite
+
+# Lovable design prototype (local reference only, see docs/design.md)
+.lovable-design/
