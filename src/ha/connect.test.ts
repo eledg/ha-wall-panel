@@ -16,9 +16,14 @@ const storeWith = (snapshot: object) =>
   ({
     start: vi.fn().mockResolvedValue(undefined),
     getSnapshot: () => snapshot,
+    subscribe: () => () => {},
   }) as unknown as HaStore & { start: ReturnType<typeof vi.fn> };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(auth.hasCallbackParams).mockReturnValue(false);
+  vi.mocked(auth.usesDevAuth).mockReturnValue(false);
+});
 
 describe('connectHa', () => {
   it('starts the store with the resolved auth', async () => {
@@ -70,5 +75,28 @@ describe('connectHa', () => {
     );
 
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('reloads once when a later reconnect is refused', async () => {
+    let snapshot: object = { status: 'connected' };
+    let notify = () => {};
+    const store = {
+      start: vi.fn().mockResolvedValue(undefined),
+      getSnapshot: () => snapshot,
+      subscribe: (listener: () => void) => {
+        notify = listener;
+        return () => {};
+      },
+    } as unknown as HaStore;
+    const reload = vi.fn();
+    await connectHa(store, undefined, reload);
+    expect(reload).not.toHaveBeenCalled();
+
+    snapshot = { status: 'error', rejected: true };
+    notify();
+    notify();
+
+    expect(auth.dropTokens).toHaveBeenCalledOnce();
+    expect(reload).toHaveBeenCalledOnce();
   });
 });

@@ -2,6 +2,7 @@ import { ConfigWarning } from './config-warning.tsx';
 import { Diagnostics } from './diagnostics.tsx';
 import { HaConnection } from './ha/connection.tsx';
 import { HaDebug } from './ha/debug.tsx';
+import { DisconnectedBanner } from './ha/disconnected-banner.tsx';
 import { Shell } from './shell.tsx';
 import { ClockTile } from './tiles/clock-tile.tsx';
 import { ToggleTile } from './tiles/toggle-tile.tsx';
@@ -17,6 +18,7 @@ export const App = () => (
       </HaConnection>
     </Shell>
     <ConfigWarning />
+    <DisconnectedBanner />
     <Diagnostics>
       <HaDebug />
     </Diagnostics>

@@ -24,7 +24,10 @@ each control stays visible. Its panels:
 - **Forecast fetch**: Fails keeps the last forecast on screen.
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the
   next toggles, so the tile flips, reverts and flashes in the warning colours.
-- **Connection**: Disconnected shows the tile dimmed with a `stale` badge.
+- **Connection**: Disconnected shows tiles dimmed with a `stale` badge and the
+  `Reconnecting… last updated HH:MM` pill at the top. Changes made meanwhile are
+  held and service calls fail; Connected replays the latest state, as a real
+  reconnect does.
 
 Weather scenarios live in `src/mock/scenarios/weather.ts`.
 

@@ -56,8 +56,11 @@ export const createMockHa = (cfg: typeof config = config) => {
   let connected = true;
   const watchers = new Set<() => void>();
   const publish = () => {
-    const all = Object.fromEntries(entities);
-    subscribers.forEach((subscriber) => subscriber(all));
+    // While disconnected HA's updates don't arrive; they are replayed on reconnect.
+    if (connected) {
+      const all = Object.fromEntries(entities);
+      subscribers.forEach((subscriber) => subscriber(all));
+    }
     watchers.forEach((watcher) => watcher());
   };
 
@@ -117,6 +120,9 @@ export const createMockHa = (cfg: typeof config = config) => {
       return () => void subscribers.delete(onChange);
     },
     callService: (_conn, domain, service, _data, target) => {
+      if (!connected) {
+        return Promise.reject(new Error('Mock HA: connection lost'));
+      }
       if (domain === 'weather' && service === 'get_forecasts') {
         const id = (target as { entity_id: string }).entity_id;
         if (!entities.has(id)) {
@@ -159,7 +165,8 @@ export const createMockHa = (cfg: typeof config = config) => {
     setConnected: (value) => {
       connected = value;
       listeners.get(value ? 'ready' : 'disconnected')?.forEach((l) => l());
-      watchers.forEach((watcher) => watcher());
+      // Like the library's resubscribe, bring subscribers up to date.
+      publish();
     },
     isConnected: () => connected,
     failForecast: (failing) => {

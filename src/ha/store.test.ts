@@ -6,7 +6,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import { config, placeholder } from '../config.ts';
-import { createHaStore, FORECAST_REFRESH_MS } from './store.ts';
+import { createHaStore, FORECAST_REFRESH_MS, retryDelay } from './store.ts';
 import type { HaDeps } from './store.ts';
 
 const settings = () => Promise.resolve({} as Auth);
@@ -113,6 +113,106 @@ describe('createHaStore', () => {
     expect(store.getSnapshot()).toMatchObject({
       status: 'error',
       error: 'Home Assistant rejected the login',
+      rejected: true,
+    });
+  });
+
+  it('retries the first connect with backoff until HA answers', async () => {
+    vi.useFakeTimers();
+    try {
+      const { store, deps, conn } = setup();
+      deps.createConnection
+        .mockRejectedValueOnce(1)
+        .mockRejectedValueOnce(1)
+        .mockResolvedValue(conn);
+
+      const started = store.start(settings);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(store.getSnapshot()).toMatchObject({
+        status: 'error',
+        error: 'Cannot reach Home Assistant',
+      });
+
+      await vi.advanceTimersByTimeAsync(retryDelay(0));
+      expect(deps.createConnection).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(retryDelay(1));
+      await started;
+
+      expect(deps.createConnection).toHaveBeenCalledTimes(3);
+      expect(store.getSnapshot()).toMatchObject({
+        status: 'connected',
+        error: undefined,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('caps the retry delay', () => {
+    expect([0, 1, 2, 3, 10].map(retryDelay)).toEqual([
+      1000, 2000, 4000, 5000, 5000,
+    ]);
+  });
+
+  it('does not retry a rejected login', async () => {
+    const { store, deps } = setup();
+    deps.createConnection.mockRejectedValue(2);
+
+    await store.start(settings);
+
+    expect(deps.createConnection).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops retrying after stop()', async () => {
+    vi.useFakeTimers();
+    try {
+      const { store, deps } = setup();
+      deps.createConnection.mockRejectedValue(1);
+      const started = store.start(settings);
+      await vi.advanceTimersByTimeAsync(0);
+
+      store.stop();
+      await started;
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(deps.createConnection).toHaveBeenCalledTimes(1);
+      expect(store.getSnapshot().status).toBe('idle');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('records when data last arrived once the connection drops', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-03-14T09:41:00Z'));
+      const { store, listeners, push } = setup();
+      await store.start(settings);
+      vi.setSystemTime(new Date('2026-03-14T09:45:00Z'));
+      push({ [config.entities.officeLight.id]: entity('light', 'on') });
+      expect(store.getSnapshot().lastUpdate).toBeUndefined();
+
+      vi.setSystemTime(new Date('2026-03-14T09:50:00Z'));
+      listeners.disconnected!();
+      expect(store.getSnapshot().lastUpdate).toBe(
+        Date.parse('2026-03-14T09:45:00Z'),
+      );
+
+      listeners.ready!();
+      expect(store.getSnapshot().lastUpdate).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports a refused reconnect as a rejected login', async () => {
+    const { store, listeners } = setup();
+    await store.start(settings);
+
+    listeners['reconnect-error']!();
+
+    expect(store.getSnapshot()).toMatchObject({
+      status: 'error',
       rejected: true,
     });
   });

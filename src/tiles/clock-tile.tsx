@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 
+import { formatTime } from '../format.ts';
 import type { GridArea } from '../grid.ts';
 
-const time = new Intl.DateTimeFormat('en-GB', {
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
 const date = new Intl.DateTimeFormat('en-GB', {
   weekday: 'long',
   day: 'numeric',
@@ -56,7 +52,7 @@ export const ClockTile = ({
       class="flex min-w-0 flex-col justify-center px-2"
     >
       <div class="tnum text-[88px] leading-none font-semibold tracking-tight">
-        {time.format(current)}
+        {formatTime(current)}
       </div>
       <div class="mt-2 truncate text-2xl text-fg-dim">
         {date.format(current)}

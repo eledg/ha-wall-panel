@@ -203,4 +203,17 @@ describe('mock weather controls', () => {
     expect(store.getSnapshot().forecasts.weather).toBe(before);
     error.mockRestore();
   });
+
+  it('holds changes while disconnected and replays them on reconnect', async () => {
+    const { mock, call, seen, latest } = await connect();
+    mock.controls.setConnected(false);
+    const before = seen.length;
+
+    mock.controls.setState(LIGHT, 'on');
+    await expect(call('toggle')).rejects.toThrow();
+
+    expect(seen).toHaveLength(before);
+    mock.controls.setConnected(true);
+    expect(latest()[LIGHT]?.state).toBe('on');
+  });
 });

@@ -8,6 +8,7 @@ import {
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { config, validateConfig } from '../config.ts';
+import { cancellableDelay } from './delay.ts';
 
 type Entities = typeof config.entities;
 export type EntityKey = keyof Entities;
@@ -24,6 +25,13 @@ const FORECAST_HOURLY = 2;
 
 /** How often the forecast is re-fetched; HA pushes no event when it changes. */
 export const FORECAST_REFRESH_MS = 30 * 60_000;
+
+/** Longest wait between connect attempts; the library's own reconnects cap at 5s too. */
+export const RETRY_MAX_MS = 5_000;
+
+/** Wait before the next connect attempt: 1s, 2s, 4s, then `RETRY_MAX_MS`. */
+export const retryDelay = (attempt: number) =>
+  Math.min(1000 * 2 ** attempt, RETRY_MAX_MS);
 
 /** One period of a weather entity's hourly forecast. */
 export type ForecastItem = {
@@ -42,6 +50,8 @@ export type HaSnapshot = {
   error?: string;
   /** True when HA refused the login, so saved credentials are stale. */
   rejected?: boolean;
+  /** When data last arrived (epoch ms). Set while the connection is down. */
+  lastUpdate?: number;
   /** Entity IDs the store tracks: the configured ones that pass validation. */
   subscribed: string[];
   entities: Partial<Record<EntityKey, HassEntity>>;
@@ -92,11 +102,16 @@ export const createHaStore = (
   let connection: Connection | undefined;
   let unsubscribe: (() => void) | undefined;
   let forecastTimer: ReturnType<typeof setInterval> | undefined;
+  let cancelRetry: (() => void) | undefined;
+  // Kept outside the snapshot so HA's event stream doesn't re-render the app.
+  let lastSeen: number | undefined;
   // Bumped by every start/stop so a slow connect can tell it was superseded.
   let generation = 0;
 
   const stop = () => {
     generation++;
+    cancelRetry?.();
+    lastSeen = undefined;
     unsubscribe?.();
     connection?.close();
     clearInterval(forecastTimer);
@@ -105,6 +120,7 @@ export const createHaStore = (
       status: 'idle',
       error: undefined,
       rejected: undefined,
+      lastUpdate: undefined,
       entities: {},
       forecasts: {},
     });
@@ -151,28 +167,61 @@ export const createHaStore = (
       .filter((key) => cfg.entities[key].domain === 'weather')
       .forEach((key) => void refreshForecast(key));
 
-  /** `getAuth` may navigate away to sign in, in which case it never settles. */
+  /**
+   * Retries until HA answers, so a display that wakes before HA is up recovers
+   * on its own. A refused login is final. `getAuth` may navigate away to sign
+   * in, in which case it never settles.
+   */
   const start = async (getAuth: () => Promise<Auth>) => {
     stop();
     const mine = generation;
     update({ status: 'connecting' });
     try {
-      const conn = await deps.createConnection({ auth: await getAuth() });
+      const auth = await getAuth();
+      let conn: Connection | undefined;
+      for (let attempt = 0; !conn; attempt++) {
+        try {
+          conn = await deps.createConnection({ auth });
+        } catch (err) {
+          if (err === ERR_INVALID_AUTH || mine !== generation) throw err;
+          update({ status: 'error', error: describeError(err) });
+          const { done, cancel } = cancellableDelay(retryDelay(attempt));
+          cancelRetry = cancel;
+          await done;
+          if (mine !== generation) return;
+        }
+      }
       if (mine !== generation) {
         conn.close();
         return;
       }
       connection = conn;
       conn.addEventListener('ready', () => {
-        update({ status: 'connected' });
+        lastSeen = Date.now();
+        update({
+          status: 'connected',
+          error: undefined,
+          lastUpdate: undefined,
+        });
         refreshForecasts();
       });
       conn.addEventListener('disconnected', () =>
-        update({ status: 'disconnected' }),
+        update({ status: 'disconnected', lastUpdate: lastSeen }),
+      );
+      // Fired when a reconnect is refused: the library gives up, so the
+      // credentials are stale (connectHa signs in again).
+      conn.addEventListener('reconnect-error', () =>
+        update({
+          status: 'error',
+          error: describeError(ERR_INVALID_AUTH),
+          rejected: true,
+          lastUpdate: lastSeen,
+        }),
       );
       // The library has no entity filter: HA sends every entity and the
       // store keeps only the configured ones.
       unsubscribe = deps.subscribeEntities(conn, (all) => {
+        lastSeen = Date.now();
         const entities: HaSnapshot['entities'] = {};
         for (const key of tracked) {
           const entity = all[cfg.entities[key].id];
@@ -190,7 +239,8 @@ export const createHaStore = (
         }
       });
       forecastTimer = setInterval(refreshForecasts, FORECAST_REFRESH_MS);
-      update({ status: 'connected' });
+      lastSeen = Date.now();
+      update({ status: 'connected', error: undefined });
     } catch (err) {
       if (mine === generation) {
         update({
