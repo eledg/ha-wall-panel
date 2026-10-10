@@ -5,6 +5,7 @@ import {
   calendarWindow,
   normaliseEvent,
   normaliseEvents,
+  shortenF1,
 } from './calendar.ts';
 
 describe('normaliseEvent', () => {
@@ -87,5 +88,87 @@ describe('calendarWindow', () => {
 
     expect(start).toEqual(new Date(2026, 9, 10));
     expect(end).toEqual(new Date(2026, 9, 10 + CALENDAR_DAYS));
+  });
+});
+
+describe('shortenF1', () => {
+  const title = (emoji: string, gp: string, session: string) =>
+    `${emoji} FORMULA 1 ${gp} 2026 - ${session}`;
+
+  it.each([
+    ['🏁', 'SINGAPORE AIRLINES SINGAPORE GRAND PRIX', 'Singapore', 'Race'],
+    [
+      '🏎',
+      'MSC CRUISES UNITED STATES GRAND PRIX',
+      'United States',
+      'Practice 1',
+    ],
+    ['⏱️', 'QATAR AIRWAYS AZERBAIJAN GRAND PRIX', 'Azerbaijan', 'Qualifying'],
+    [
+      '🏁',
+      'SINGAPORE AIRLINES SINGAPORE GRAND PRIX',
+      'Singapore',
+      'Sprint Race',
+    ],
+    [
+      '⏱️',
+      'GRAN PREMIO DE LA CIUDAD DE MÉXICO',
+      'Mexico',
+      'Sprint Qualification',
+    ],
+    [
+      '🏎',
+      'ETIHAD AIRWAYS ABU DHABI GRAND PRIX',
+      'United Arab Emirates',
+      'Practice 3',
+    ],
+  ])('shortens %s %s', (emoji, gp, location, session) => {
+    expect(shortenF1(title(emoji, gp, session), location)).toBe(
+      `${emoji} F1 ${location} - ${session}`,
+    );
+  });
+
+  it('keeps the emoji exactly, including a variation selector', () => {
+    expect(shortenF1(title('⏱️', 'X GRAND PRIX', 'Race'), 'Place')).toMatch(
+      /^⏱️ F1 /u,
+    );
+  });
+
+  it('uses the last " - " for the session', () => {
+    expect(
+      shortenF1('🏁 FORMULA 1 A - B GRAND PRIX 2026 - Race', 'Place'),
+    ).toBe('🏁 F1 Place - Race');
+  });
+
+  it('leaves the title alone without a location', () => {
+    const original = title('🏁', 'SINGAPORE GRAND PRIX', 'Race');
+    expect(shortenF1(original, undefined)).toBe(original);
+    expect(shortenF1(original, null)).toBe(original);
+    expect(shortenF1(original, '  ')).toBe(original);
+  });
+
+  it('leaves a title that is not an F1 session alone', () => {
+    expect(shortenF1('Dinner - with friends', 'Place')).toBe(
+      'Dinner - with friends',
+    );
+    expect(shortenF1('🏁 FORMULA 1 SINGAPORE GRAND PRIX 2026', 'Place')).toBe(
+      '🏁 FORMULA 1 SINGAPORE GRAND PRIX 2026',
+    );
+  });
+});
+
+describe('normaliseEvent, F1 titles', () => {
+  const raw = {
+    summary: '🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race',
+    location: 'Singapore',
+    start: { dateTime: '2026-10-11T13:00:00+01:00' },
+    end: { dateTime: '2026-10-11T15:00:00+01:00' },
+  };
+
+  it('shortens titles on the F1 calendar only', () => {
+    expect(normaliseEvent('calendarF1', raw)?.summary).toBe(
+      '🏁 F1 Singapore - Race',
+    );
+    expect(normaliseEvent('calendarFamily', raw)?.summary).toBe(raw.summary);
   });
 });

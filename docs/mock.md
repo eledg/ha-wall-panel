@@ -23,7 +23,7 @@ each control stays visible. Its panels:
 - **Entity**: Unavailable, Missing (wrong or deleted ID) and Restore.
 - **Forecast fetch**: Fails keeps the last forecast on screen.
 - **Calendar**: a scenario per day shape (`Normal`, `Empty day`, `Busy day`,
-  `All-day only`), event lists in HA's REST shape and in no particular order, plus
+  `All-day only`, `F1 weekend` with the longest real F1 titles), event lists in HA's REST shape and in no particular order, plus
   `Fails`, which keeps the last events on screen (badged `stale` after 15 minutes
   without a successful refresh). Picking a scenario touches the
   calendar entities, as HA does when events change, so the tile refetches.

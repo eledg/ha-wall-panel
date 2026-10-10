@@ -18,8 +18,10 @@ const timed = (
   summary: string,
   start: Date,
   minutes: number,
+  location?: string,
 ): RawCalendarEvent => ({
   summary,
+  ...(location ? { location } : {}),
   start: { dateTime: start.toISOString() },
   end: { dateTime: new Date(start.getTime() + minutes * 60_000).toISOString() },
 });
@@ -56,7 +58,9 @@ export const calendarScenarios: CalendarScenario[] = [
           timed('Pick up groceries', at(now, 0, later, 30), 30),
         ],
         calendarBirthdays: [allDay("Alex's Birthday", now, 1)],
-        calendarF1: [timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120)],
+        calendarF1: [
+          timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120, 'Singapore'),
+        ],
       };
     },
   },
@@ -66,7 +70,9 @@ export const calendarScenarios: CalendarScenario[] = [
     events: (now) => ({
       calendarFamily: [],
       calendarBirthdays: [allDay("Jo's Birthday", now, 3)],
-      calendarF1: [timed(`⏱️ ${F1} - Qualifying`, at(now, 2, 17), 60)],
+      calendarF1: [
+        timed(`⏱️ ${F1} - Qualifying`, at(now, 2, 17), 60, 'Singapore'),
+      ],
     }),
   },
   {
@@ -91,11 +97,53 @@ export const calendarScenarios: CalendarScenario[] = [
             `🏎 ${F1} - Practice 3`,
             at(now, 0, Math.min(later + 1, 23), 30),
             60,
+            'Singapore',
           ),
-          timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120),
+          timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120, 'Singapore'),
         ],
       };
     },
+  },
+  {
+    id: 'f1',
+    label: 'F1 weekend',
+    // The longest titles in a real season: a long place name, a long session.
+    events: (now) => ({
+      calendarFamily: [],
+      calendarBirthdays: [],
+      calendarF1: [
+        timed(
+          '🏎 FORMULA 1 ETIHAD AIRWAYS ABU DHABI GRAND PRIX 2026 - Practice 1',
+          at(now, 0, Math.min(now.getHours() + 1, 22)),
+          60,
+          'United Arab Emirates',
+        ),
+        timed(
+          '⏱️ FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Sprint Qualification',
+          at(now, 1, 12),
+          60,
+          'Singapore',
+        ),
+        timed(
+          '🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Sprint Race',
+          at(now, 1, 16),
+          60,
+          'Singapore',
+        ),
+        timed(
+          '🏎 FORMULA 1 MSC CRUISES UNITED STATES GRAND PRIX 2026 - Practice 2',
+          at(now, 2, 22),
+          60,
+          'United States',
+        ),
+        timed(
+          '🏁 FORMULA 1 GRAN PREMIO DE LA CIUDAD DE MÉXICO 2026 - Race',
+          at(now, 3, 20),
+          120,
+          'Mexico',
+        ),
+      ],
+    }),
   },
   {
     id: 'allday',

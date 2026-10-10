@@ -33,8 +33,13 @@ three `calendar.octopus_energy_*` entities; the dashboard ignores them.
     are ~1.5 KB of links, so the store keeps only `summary`, `start` and `end`.
 - **Order is not guaranteed.** Neither this endpoint nor the `calendar.get_events`
   service sorts or takes a sort option, so the tile sorts by start time.
-- F1 summaries are long (`🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX
-2026 - Race`); the tile truncates them.
+- F1 summaries are long and carry sponsor names (`🏁 FORMULA 1 SINGAPORE AIRLINES
+SINGAPORE GRAND PRIX 2026 - Race`), so the store rewrites them as
+  `🏁 F1 Singapore - Race`: the leading emoji, `F1`, the event's `location`
+  (clean: `Singapore`, `United States`, ...) and the text after the last `-`.
+  Sessions seen in 2026: Practice 1-3, Qualifying, Race, Sprint Qualification and
+  Sprint Race. A title that doesn't fit the pattern, or has no location, is kept
+  as HA sends it. `location` is read for this only; other calendars are untouched.
 - **Health:** a calendar whose entity is missing is a config error and is left out.
   One that is `unavailable` is usually transient, so its cached events stay,
   flagged in the legend. Cached events are badged `stale` once 15 minutes pass

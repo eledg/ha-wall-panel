@@ -24,12 +24,37 @@ export type CalendarEvent = {
 /** An item from `GET /api/calendars/<entity_id>`, as far as the store reads it. */
 export type RawCalendarEvent = {
   summary?: string;
+  /** Only read to shorten titles; descriptions are ignored (F1's are ~1.5 KB). */
+  location?: string | null;
   start: { date?: string; dateTime?: string };
   end: { date?: string; dateTime?: string };
 };
 
 /** `YYYY-MM-DD` as local midnight; `new Date('2026-10-10')` would be UTC. */
 const localMidnight = (date: string) => new Date(`${date}T00:00:00`);
+
+/** The leading emoji (which may carry a variation selector), then `FORMULA 1`. */
+const F1_TITLE = /^(\S+)\s+FORMULA 1\s.*\s-\s(.+)$/u;
+
+/**
+ * `🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race` becomes
+ * `🏁 F1 Singapore - Race`. The grand prix name carries sponsors and varies by
+ * race, so the place comes from the event's `location`. A title that doesn't fit
+ * the pattern, or an event with no location, is left as it is.
+ */
+export const shortenF1 = (summary: string, location?: string | null) => {
+  const match = F1_TITLE.exec(summary);
+  const place = location?.trim();
+  if (!match || !place) return summary;
+  return `${match[1]} F1 ${place} - ${match[2]}`;
+};
+
+/** Per-calendar tidying of titles that are too long for the tile. */
+const SUMMARY_FORMATTERS: Partial<
+  Record<EntityKey, (summary: string, raw: RawCalendarEvent) => string>
+> = {
+  calendarF1: (summary, raw) => shortenF1(summary, raw.location),
+};
 
 /**
  * Reduces a REST calendar item to a `CalendarEvent`, or `undefined` when it
@@ -50,9 +75,10 @@ export const normaliseEvent = (
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return undefined;
   }
+  const summary = raw.summary?.trim() || 'Untitled';
   return {
     calendar,
-    summary: raw.summary?.trim() || 'Untitled',
+    summary: SUMMARY_FORMATTERS[calendar]?.(summary, raw) ?? summary,
     start: start.toISOString(),
     end: end.toISOString(),
     allDay,
