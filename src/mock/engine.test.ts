@@ -8,6 +8,11 @@ import { createHaStore } from '../ha/store.ts';
 const LIGHT = config.entities.officeLight.id;
 const LUX = config.entities.officeIlluminance.id;
 const WEATHER = config.entities.weather.id;
+const CALENDARS = [
+  config.entities.calendarFamily,
+  config.entities.calendarF1,
+  config.entities.calendarBirthdays,
+];
 
 const connect = async () => {
   const mock = createMockHa();
@@ -26,7 +31,13 @@ describe('createMockHa', () => {
     const { latest } = await connect();
 
     expect(Object.keys(latest()).sort()).toEqual(
-      [LIGHT, LUX, WEATHER, UNRELATED_ID].sort(),
+      [
+        LIGHT,
+        LUX,
+        WEATHER,
+        ...CALENDARS.map(({ id }) => id),
+        UNRELATED_ID,
+      ].sort(),
     );
     expect(latest()[LIGHT]?.state).toBe('off');
   });
@@ -91,6 +102,9 @@ describe('store against the mock', () => {
     const { status, entities } = store.getSnapshot();
     expect(status).toBe('connected');
     expect(Object.keys(entities).sort()).toEqual([
+      'calendarBirthdays',
+      'calendarF1',
+      'calendarFamily',
       'officeIlluminance',
       'officeLight',
       'weather',

@@ -2,6 +2,7 @@ import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { config } from '../config.ts';
 import type { HaDeps } from '../ha/store.ts';
+import { calendarScenarios } from './scenarios/calendar.ts';
 import { forecastFor, weatherScenarios } from './scenarios/weather.ts';
 
 /** Present only in mock code; a build test looks for it in `dist/`. */
@@ -44,6 +45,16 @@ export type MockControls = {
   getWeatherScenario: () => string;
   /** Ids and labels only: the data stays in mock code, out of the production bundle. */
   weatherScenarios: { id: string; label: string }[];
+  /** Switches every calendar's events to a scenario. */
+  setCalendar: (scenarioId: string) => void;
+  /** The id of the current calendar scenario. */
+  getCalendarScenario: () => string;
+  /** Makes calendar event fetches fail, to test the tile keeping its events. */
+  failCalendar: (failing: boolean) => void;
+  /** Whether calendar fetches are currently set to fail. */
+  isCalendarFailing: () => boolean;
+  /** Ids and labels only, as for weather. */
+  calendarScenarios: { id: string; label: string }[];
   /** Calls `listener` after every change the mock makes; returns the unsubscribe. */
   subscribe: (listener: () => void) => () => void;
 };
@@ -88,6 +99,16 @@ export const createMockHa = (cfg: typeof config = config) => {
   const scenarios = weatherScenarios();
   let scenario = scenarios[0]!;
   entities.set(weather, make(weather, scenario.state, scenario.attributes));
+  let calendarScenario = calendarScenarios[0]!;
+  let calendarFails = false;
+  const calendarKeys = [
+    'calendarFamily',
+    'calendarF1',
+    'calendarBirthdays',
+  ] as const;
+  for (const key of calendarKeys) {
+    entities.set(cfg.entities[key].id, make(cfg.entities[key].id, 'off'));
+  }
   let forecastFails = false;
   let servicesFail = false;
   entities.set(UNRELATED_ID, make(UNRELATED_ID, 'off'));
@@ -118,6 +139,21 @@ export const createMockHa = (cfg: typeof config = config) => {
       subscribers.add(onChange);
       onChange(Object.fromEntries(entities));
       return () => void subscribers.delete(onChange);
+    },
+    fetchCalendarEvents: (_auth, entityId) => {
+      if (!connected) {
+        return Promise.reject(new Error('Mock HA: connection lost'));
+      }
+      if (calendarFails) {
+        return Promise.reject(new Error('Mock HA: calendar failed'));
+      }
+      const key = (
+        Object.keys(cfg.entities) as (keyof typeof cfg.entities)[]
+      ).find((k) => cfg.entities[k].id === entityId);
+      if (!key || !entities.has(entityId)) {
+        return Promise.reject(new Error(`Mock HA: unknown entity ${entityId}`));
+      }
+      return Promise.resolve(calendarScenario.events(new Date())[key] ?? []);
     },
     callService: (_conn, domain, service, _data, target) => {
       if (!connected) {
@@ -184,6 +220,25 @@ export const createMockHa = (cfg: typeof config = config) => {
       scenario = scenarios.find((s) => s.id === id) ?? scenario;
       setState(weather, scenario.state, scenario.attributes);
     },
+    getCalendarScenario: () => calendarScenario.id,
+    setCalendar: (id) => {
+      calendarScenario =
+        calendarScenarios.find((s) => s.id === id) ?? calendarScenario;
+      // As HA does when events change, touch the entities so the store refetches.
+      for (const key of calendarKeys) {
+        entities.set(cfg.entities[key].id, make(cfg.entities[key].id, 'off'));
+      }
+      publish();
+    },
+    failCalendar: (failing) => {
+      calendarFails = failing;
+      watchers.forEach((watcher) => watcher());
+    },
+    isCalendarFailing: () => calendarFails,
+    calendarScenarios: calendarScenarios.map(({ id, label }) => ({
+      id,
+      label,
+    })),
     weatherScenarios: scenarios.map(({ id, label }) => ({ id, label })),
     subscribe: (listener) => {
       watchers.add(listener);

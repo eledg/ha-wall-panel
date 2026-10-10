@@ -6,6 +6,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import { config, placeholder } from '../config.ts';
+import { CALENDAR_REFRESH_MS } from './calendar.ts';
 import { createHaStore, FORECAST_REFRESH_MS, retryDelay } from './store.ts';
 import type { HaDeps } from './store.ts';
 
@@ -30,6 +31,7 @@ const setup = () => {
       return vi.fn();
     }),
     callService: vi.fn().mockResolvedValue(undefined),
+    fetchCalendarEvents: vi.fn().mockResolvedValue([]),
   };
   const store = createHaStore(deps as unknown as HaDeps);
   return {
@@ -63,6 +65,9 @@ describe('createHaStore', () => {
     expect(store.getSnapshot().subscribed).toEqual([
       config.entities.officeIlluminance.id,
       config.entities.weather.id,
+      config.entities.calendarFamily.id,
+      config.entities.calendarF1.id,
+      config.entities.calendarBirthdays.id,
     ]);
   });
 
@@ -327,5 +332,164 @@ describe('createHaStore', () => {
       push({ [id]: hourly(3) as HassEntities[string] });
       expect(forecastCalls(deps)).toHaveLength(1);
     });
+  });
+});
+
+describe('calendars', () => {
+  const raw = [
+    {
+      summary: 'Dentist',
+      start: { dateTime: '2026-10-10T10:00:00+01:00' },
+      end: { dateTime: '2026-10-10T10:30:00+01:00' },
+    },
+  ];
+  const calls = (deps: ReturnType<typeof setup>['deps']) =>
+    deps.fetchCalendarEvents.mock.calls;
+
+  it('fetches each calendar once connected, for a week from midnight', async () => {
+    const { store, deps } = setup();
+    deps.fetchCalendarEvents.mockResolvedValue(raw);
+
+    await store.start(settings);
+
+    await vi.waitFor(() =>
+      expect(Object.keys(store.getSnapshot().calendars).sort()).toEqual([
+        'calendarBirthdays',
+        'calendarF1',
+        'calendarFamily',
+      ]),
+    );
+    expect(
+      calls(deps)
+        .map(([, id]) => id)
+        .sort(),
+    ).toEqual(
+      [
+        config.entities.calendarBirthdays.id,
+        config.entities.calendarF1.id,
+        config.entities.calendarFamily.id,
+      ].sort(),
+    );
+    const [, , start, end] = calls(deps)[0]!;
+    expect(start.getHours()).toBe(0);
+    expect(end.getTime() - start.getTime()).toBeGreaterThanOrEqual(
+      6.9 * 86_400_000,
+    );
+    expect(store.getSnapshot().calendars.calendarFamily?.[0]?.summary).toBe(
+      'Dentist',
+    );
+  });
+
+  it('refreshes on an interval and stops with the store', async () => {
+    vi.useFakeTimers();
+    try {
+      const { store, deps } = setup();
+      await store.start(settings);
+      const initial = calls(deps).length;
+
+      await vi.advanceTimersByTimeAsync(CALENDAR_REFRESH_MS);
+      expect(calls(deps).length).toBe(initial * 2);
+
+      store.stop();
+      await vi.advanceTimersByTimeAsync(CALENDAR_REFRESH_MS * 2);
+      expect(calls(deps).length).toBe(initial * 2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('refetches when a calendar entity changes', async () => {
+    const { store, deps, push } = setup();
+    await store.start(settings);
+    const before = calls(deps).length;
+
+    push({
+      [config.entities.calendarF1.id]: entity(
+        config.entities.calendarF1.id,
+        'on',
+      ),
+    });
+
+    expect(calls(deps).length).toBe(before + 1);
+  });
+
+  it('keeps the last events when a refresh fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { store, deps, listeners } = setup();
+    deps.fetchCalendarEvents.mockResolvedValue(raw);
+    await store.start(settings);
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().calendars.calendarFamily).toHaveLength(1),
+    );
+
+    deps.fetchCalendarEvents.mockRejectedValue(new Error('boom'));
+    listeners.ready!();
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalled());
+
+    expect(store.getSnapshot().calendars.calendarFamily).toHaveLength(1);
+    expect(store.getSnapshot().calendarFailed).toBe(false);
+  });
+
+  it('flags a calendar that has never loaded, and clears it on success', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { store, deps, listeners } = setup();
+    deps.fetchCalendarEvents.mockRejectedValue(new Error('boom'));
+    await store.start(settings);
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().calendarFailed).toBe(true),
+    );
+
+    deps.fetchCalendarEvents.mockResolvedValue(raw);
+    listeners.ready!();
+
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().calendarFailed).toBe(false),
+    );
+  });
+
+  it('records when each calendar last loaded', async () => {
+    const { store, deps } = setup();
+    deps.fetchCalendarEvents.mockResolvedValue(raw);
+    const before = Date.now();
+
+    await store.start(settings);
+
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().calendarUpdated.calendarF1).toBeDefined(),
+    );
+    expect(
+      store.getSnapshot().calendarUpdated.calendarF1,
+    ).toBeGreaterThanOrEqual(before);
+  });
+
+  it('keeps the last load time when a refresh fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { store, deps, listeners } = setup();
+    deps.fetchCalendarEvents.mockResolvedValue(raw);
+    await store.start(settings);
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().calendarUpdated.calendarF1).toBeDefined(),
+    );
+    const loaded = store.getSnapshot().calendarUpdated.calendarF1;
+
+    deps.fetchCalendarEvents.mockRejectedValue(new Error('boom'));
+    listeners.ready!();
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalled());
+
+    expect(store.getSnapshot().calendarUpdated.calendarF1).toBe(loaded);
+  });
+
+  it('drops calendars on stop', async () => {
+    const { store, deps } = setup();
+    deps.fetchCalendarEvents.mockResolvedValue(raw);
+    await store.start(settings);
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().calendars.calendarFamily).toBeDefined(),
+    );
+
+    store.stop();
+
+    expect(store.getSnapshot().calendars).toEqual({});
+    expect(store.getSnapshot().calendarUpdated).toEqual({});
   });
 });

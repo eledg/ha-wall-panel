@@ -8,6 +8,13 @@ import {
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { config, validateConfig } from '../config.ts';
+import {
+  CALENDAR_REFRESH_MS,
+  calendarWindow,
+  fetchCalendarEvents,
+  normaliseEvents,
+} from './calendar.ts';
+import type { CalendarEvent, RawCalendarEvent } from './calendar.ts';
 import { cancellableDelay } from './delay.ts';
 
 type Entities = typeof config.entities;
@@ -18,6 +25,7 @@ type DomainServices = {
   switch: 'turn_on' | 'turn_off' | 'toggle';
   sensor: never;
   weather: never;
+  calendar: never;
 };
 
 /** `WeatherEntityFeature.FORECAST_HOURLY`: bit 2 of `supported_features`. */
@@ -39,6 +47,7 @@ export type ForecastItem = {
   condition?: string;
   temperature?: number;
 };
+
 export type ServiceName<K extends EntityKey> =
   DomainServices[Entities[K]['domain']];
 
@@ -57,6 +66,12 @@ export type HaSnapshot = {
   entities: Partial<Record<EntityKey, HassEntity>>;
   /** Last forecast fetched per weather entity; kept while HA is unreachable. */
   forecasts: Partial<Record<EntityKey, ForecastItem[]>>;
+  /** Last events fetched per calendar entity; kept when a fetch fails. */
+  calendars: Partial<Record<EntityKey, CalendarEvent[]>>;
+  /** When each calendar last loaded (epoch ms), so the tile can tell old events. */
+  calendarUpdated: Partial<Record<EntityKey, number>>;
+  /** True when a calendar has failed to load and has no earlier events to show. */
+  calendarFailed: boolean;
 };
 
 /** The library calls the store uses, so tests can stand in for HA. */
@@ -64,12 +79,20 @@ export type HaDeps = {
   createConnection: typeof createConnection;
   subscribeEntities: typeof subscribeEntities;
   callService: typeof haCallService;
+  /** Events of one calendar between two instants, in HA's REST shape. */
+  fetchCalendarEvents: (
+    auth: Auth,
+    entityId: string,
+    start: Date,
+    end: Date,
+  ) => Promise<RawCalendarEvent[]>;
 };
 
 const realDeps: HaDeps = {
   createConnection,
   subscribeEntities,
   callService: haCallService,
+  fetchCalendarEvents,
 };
 
 const describeError = (err: unknown) => {
@@ -92,6 +115,9 @@ export const createHaStore = (
     subscribed: tracked.map((key) => cfg.entities[key].id),
     entities: {},
     forecasts: {},
+    calendars: {},
+    calendarUpdated: {},
+    calendarFailed: false,
   };
   const listeners = new Set<() => void>();
   const update = (patch: Partial<HaSnapshot>) => {
@@ -102,6 +128,11 @@ export const createHaStore = (
   let connection: Connection | undefined;
   let unsubscribe: (() => void) | undefined;
   let forecastTimer: ReturnType<typeof setInterval> | undefined;
+  let calendarTimer: ReturnType<typeof setInterval> | undefined;
+  // Kept for the calendar's REST calls, which the websocket library cannot make.
+  let calendarAuth: Auth | undefined;
+  // Calendars whose fetch failed with nothing earlier to show.
+  const calendarsFailed = new Set<EntityKey>();
   let cancelRetry: (() => void) | undefined;
   // Kept outside the snapshot so HA's event stream doesn't re-render the app.
   let lastSeen: number | undefined;
@@ -115,7 +146,10 @@ export const createHaStore = (
     unsubscribe?.();
     connection?.close();
     clearInterval(forecastTimer);
-    unsubscribe = connection = forecastTimer = undefined;
+    clearInterval(calendarTimer);
+    unsubscribe = connection = forecastTimer = calendarTimer = undefined;
+    calendarAuth = undefined;
+    calendarsFailed.clear();
     update({
       status: 'idle',
       error: undefined,
@@ -123,6 +157,9 @@ export const createHaStore = (
       lastUpdate: undefined,
       entities: {},
       forecasts: {},
+      calendars: {},
+      calendarUpdated: {},
+      calendarFailed: false,
     });
   };
 
@@ -168,6 +205,40 @@ export const createHaStore = (
       .forEach((key) => void refreshForecast(key));
 
   /**
+   * Fetches today and the next week of one calendar. A failed fetch keeps the
+   * previous events, so the tile never goes blank over a hiccup.
+   */
+  const refreshCalendar = async (key: EntityKey) => {
+    const { id } = cfg.entities[key];
+    const mine = generation;
+    const auth = calendarAuth;
+    if (!auth) return;
+    const { start, end } = calendarWindow();
+    try {
+      const raw = await deps.fetchCalendarEvents(auth, id, start, end);
+      if (mine !== generation) return;
+      const events = normaliseEvents(key, raw);
+      calendarsFailed.delete(key);
+      update({
+        calendars: { ...snapshot.calendars, [key]: events },
+        calendarUpdated: { ...snapshot.calendarUpdated, [key]: Date.now() },
+        calendarFailed: calendarsFailed.size > 0,
+      });
+    } catch (err) {
+      console.error(`Calendar ${id} failed`, err);
+      if (mine === generation && !snapshot.calendars[key]) {
+        calendarsFailed.add(key);
+        update({ calendarFailed: true });
+      }
+    }
+  };
+
+  const refreshCalendars = () =>
+    tracked
+      .filter((key) => cfg.entities[key].domain === 'calendar')
+      .forEach((key) => void refreshCalendar(key));
+
+  /**
    * Retries until HA answers, so a display that wakes before HA is up recovers
    * on its own. A refused login is final. `getAuth` may navigate away to sign
    * in, in which case it never settles.
@@ -196,6 +267,7 @@ export const createHaStore = (
         return;
       }
       connection = conn;
+      calendarAuth = auth;
       conn.addEventListener('ready', () => {
         lastSeen = Date.now();
         update({
@@ -204,6 +276,7 @@ export const createHaStore = (
           lastUpdate: undefined,
         });
         refreshForecasts();
+        refreshCalendars();
       });
       conn.addEventListener('disconnected', () =>
         update({ status: 'disconnected', lastUpdate: lastSeen }),
@@ -236,9 +309,16 @@ export const createHaStore = (
             .filter((key) => cfg.entities[key].domain === 'weather')
             .filter((key) => entities[key])
             .forEach((key) => void refreshForecast(key));
+          // A calendar entity changes when its current or next event does.
+          changed
+            .filter((key) => cfg.entities[key].domain === 'calendar')
+            .filter((key) => entities[key])
+            .forEach((key) => void refreshCalendar(key));
         }
       });
       forecastTimer = setInterval(refreshForecasts, FORECAST_REFRESH_MS);
+      calendarTimer = setInterval(refreshCalendars, CALENDAR_REFRESH_MS);
+      refreshCalendars();
       lastSeen = Date.now();
       update({ status: 'connected', error: undefined });
     } catch (err) {

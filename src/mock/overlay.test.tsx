@@ -63,7 +63,12 @@ describe('Overlay', () => {
     const headings = [...document.querySelectorAll('h2')].map(
       (h) => h.textContent,
     );
-    expect(headings).toEqual(['Home Assistant', 'Weather', 'Light']);
+    expect(headings).toEqual([
+      'Home Assistant',
+      'Weather',
+      'Calendar',
+      'Light',
+    ]);
   });
 
   it('switches weather, entity and connection state', async () => {

@@ -22,6 +22,11 @@ each control stays visible. Its panels:
   holes in the forecast), `No forecast` and `Short forecast`.
 - **Entity**: Unavailable, Missing (wrong or deleted ID) and Restore.
 - **Forecast fetch**: Fails keeps the last forecast on screen.
+- **Calendar**: a scenario per day shape (`Normal`, `Empty day`, `Busy day`,
+  `All-day only`), event lists in HA's REST shape and in no particular order, plus
+  `Fails`, which keeps the last events on screen (badged `stale` after 15 minutes
+  without a successful refresh). Picking a scenario touches the
+  calendar entities, as HA does when events change, so the tile refetches.
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the
   next toggles, so the tile flips, reverts and flashes in the warning colours.
 - **Connection**: Disconnected shows tiles dimmed with a `stale` badge and the
@@ -29,7 +34,8 @@ each control stays visible. Its panels:
   held and service calls fail; Connected replays the latest state, as a real
   reconnect does.
 
-Weather scenarios live in `src/mock/scenarios/weather.ts`.
+Weather scenarios live in `src/mock/scenarios/weather.ts`, calendar ones in
+`src/mock/scenarios/calendar.ts`.
 
 ## Mocking a new tile
 

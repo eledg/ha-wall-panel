@@ -3,7 +3,7 @@ export const PLACEHOLDER_PREFIX = 'TODO:';
 
 export const placeholder = (what: string) => `${PLACEHOLDER_PREFIX}${what}`;
 
-export type EntityDomain = 'sensor' | 'switch' | 'weather';
+export type EntityDomain = 'calendar' | 'sensor' | 'switch' | 'weather';
 
 type EntitySpec = { domain: EntityDomain; id: string };
 
@@ -21,6 +21,12 @@ export const config = {
     ),
     /** Met Office, London: current conditions plus hourly forecast. */
     weather: spec('weather', 'weather.met_office_london'),
+    /** Shared family calendar. */
+    calendarFamily: spec('calendar', 'calendar.family'),
+    /** Formula 1 race weekends. */
+    calendarF1: spec('calendar', 'calendar.f1'),
+    /** Birthdays: yearly all-day events. */
+    calendarBirthdays: spec('calendar', 'calendar.birthdays'),
   },
 } as const satisfies { entities: Record<string, EntitySpec> };
 

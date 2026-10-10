@@ -1,0 +1,58 @@
+import { config } from '../../config.ts';
+import { Chip, Group, useMockChanges } from '../ui.tsx';
+import type { MockPanel } from './types.ts';
+
+const ids = [
+  config.entities.calendarFamily.id,
+  config.entities.calendarF1.id,
+  config.entities.calendarBirthdays.id,
+];
+
+export const calendarPanel: MockPanel = {
+  id: 'calendar',
+  title: 'Calendar',
+  Panel: ({ mock }) => {
+    useMockChanges(mock);
+    const scenario = mock.getCalendarScenario();
+    const failing = mock.isCalendarFailing();
+    return (
+      <>
+        <p class="mb-3 font-mono text-small text-fg-dim">{ids.join(', ')}</p>
+        <Group label="Scenario">
+          {mock.calendarScenarios.map(({ id, label }) => (
+            <Chip
+              key={id}
+              active={scenario === id}
+              onClick={() => mock.setCalendar(id)}
+            >
+              {label}
+            </Chip>
+          ))}
+        </Group>
+        <Group label="Entity state">
+          <Chip onClick={() => ids.forEach((id) => mock.setUnavailable(id))}>
+            Unavailable
+          </Chip>
+          <Chip onClick={() => ids.forEach((id) => mock.removeEntity(id))}>
+            Missing
+          </Chip>
+          <Chip onClick={() => mock.setCalendar(scenario)}>Restore</Chip>
+        </Group>
+        <p class="mb-1 text-small text-fg-dim">
+          Fetching only happens on a connect, an entity change or every 5
+          minutes, so Fails shows nothing until then. Picking a scenario or
+          Restore triggers one: the tile keeps its last events, and shows stale
+          once 15 minutes pass without a successful refresh.
+        </p>
+        <Group label="Event fetch">
+          <Chip active={!failing} onClick={() => mock.failCalendar(false)}>
+            Works
+          </Chip>
+          <Chip active={failing} onClick={() => mock.failCalendar(true)}>
+            Fails
+          </Chip>
+        </Group>
+      </>
+    );
+  },
+};
