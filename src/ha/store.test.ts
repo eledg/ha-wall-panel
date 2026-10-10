@@ -6,7 +6,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import { config, placeholder } from '../config.ts';
-import { createHaStore } from './store.ts';
+import { createHaStore, FORECAST_REFRESH_MS } from './store.ts';
 import type { HaDeps } from './store.ts';
 
 const settings = () => Promise.resolve({} as Auth);
@@ -62,6 +62,7 @@ describe('createHaStore', () => {
 
     expect(store.getSnapshot().subscribed).toEqual([
       config.entities.officeIlluminance.id,
+      config.entities.weather.id,
     ]);
   });
 
@@ -146,5 +147,85 @@ describe('createHaStore', () => {
 
     expect(conn.close).toHaveBeenCalled();
     expect(store.getSnapshot()).toMatchObject({ status: 'idle', entities: {} });
+  });
+
+  it('fetches the forecast when a weather entity changes and keeps it on failure', async () => {
+    const { store, deps, push } = setup();
+    const id = config.entities.weather.id;
+    const forecast = [{ datetime: '2026-01-05T10:00:00Z', temperature: 9 }];
+    deps.callService.mockResolvedValueOnce({
+      response: { [id]: { forecast } },
+    });
+    await store.start(settings);
+
+    await vi.waitFor(() => {
+      push({ [id]: entity(id, 'sunny') });
+      expect(store.getSnapshot().forecasts.weather).toEqual(forecast);
+    });
+    expect(deps.callService).toHaveBeenCalledWith(
+      expect.anything(),
+      'weather',
+      'get_forecasts',
+      { type: 'hourly' },
+      { entity_id: id },
+      true,
+    );
+
+    deps.callService.mockRejectedValueOnce(new Error('boom'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    push({ [id]: entity(id, 'rainy') });
+    await vi.waitFor(() => expect(error).toHaveBeenCalled());
+    expect(store.getSnapshot().forecasts.weather).toEqual(forecast);
+    error.mockRestore();
+  });
+
+  describe('forecast refresh', () => {
+    const id = config.entities.weather.id;
+    const forecastCalls = (deps: ReturnType<typeof setup>['deps']) =>
+      deps.callService.mock.calls.filter(
+        ([, , service]) => service === 'get_forecasts',
+      );
+    const hourly = (features: number) => ({
+      ...entity(id, 'sunny'),
+      attributes: { supported_features: features },
+    });
+
+    it('refetches on a timer while connected, and stops on stop()', async () => {
+      vi.useFakeTimers();
+      try {
+        const { store, deps } = setup();
+        await store.start(settings);
+        expect(forecastCalls(deps)).toHaveLength(0);
+
+        await vi.advanceTimersByTimeAsync(FORECAST_REFRESH_MS);
+        expect(forecastCalls(deps)).toHaveLength(1);
+
+        store.stop();
+        await vi.advanceTimersByTimeAsync(FORECAST_REFRESH_MS * 2);
+        expect(forecastCalls(deps)).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('refetches when the connection comes back', async () => {
+      const { store, deps, listeners } = setup();
+      await store.start(settings);
+
+      listeners.ready!();
+
+      await vi.waitFor(() => expect(forecastCalls(deps)).toHaveLength(1));
+    });
+
+    it('skips entities without hourly forecasts', async () => {
+      const { store, deps, push } = setup();
+      await store.start(settings);
+
+      push({ [id]: hourly(1) as HassEntities[string] });
+      expect(forecastCalls(deps)).toHaveLength(0);
+
+      push({ [id]: hourly(3) as HassEntities[string] });
+      expect(forecastCalls(deps)).toHaveLength(1);
+    });
   });
 });

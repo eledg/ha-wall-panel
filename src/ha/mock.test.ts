@@ -1,5 +1,5 @@
 import type { HassEntities } from 'home-assistant-js-websocket';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { config } from '../config.ts';
 import { createMockHa, UNRELATED_ID } from './mock.ts';
@@ -7,6 +7,7 @@ import { createHaStore } from './store.ts';
 
 const LIGHT = config.entities.officeLight.id;
 const LUX = config.entities.officeIlluminance.id;
+const WEATHER = config.entities.weather.id;
 
 const connect = async () => {
   const mock = createMockHa();
@@ -25,7 +26,7 @@ describe('createMockHa', () => {
     const { latest } = await connect();
 
     expect(Object.keys(latest()).sort()).toEqual(
-      [LIGHT, LUX, UNRELATED_ID].sort(),
+      [LIGHT, LUX, WEATHER, UNRELATED_ID].sort(),
     );
     expect(latest()[LIGHT]?.state).toBe('off');
   });
@@ -92,6 +93,7 @@ describe('store against the mock', () => {
     expect(Object.keys(entities).sort()).toEqual([
       'officeIlluminance',
       'officeLight',
+      'weather',
     ]);
 
     await store.callService('officeLight', 'toggle');
@@ -99,5 +101,87 @@ describe('store against the mock', () => {
 
     mock.controls.setUnavailable(LIGHT);
     expect(store.getSnapshot().entities.officeLight?.state).toBe('unavailable');
+  });
+});
+
+describe('mock weather controls', () => {
+  const setup = async () => {
+    const mock = createMockHa();
+    const store = createHaStore(mock.deps);
+    await store.start(mock.getAuth);
+    return { mock, store };
+  };
+
+  it('switches scenario: state, attributes and forecast follow', async () => {
+    const { mock, store } = await setup();
+
+    mock.controls.setWeather('snowy');
+
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().forecasts.weather?.[2]?.condition).toBe(
+        'snowy',
+      ),
+    );
+    expect(store.getSnapshot().entities.weather).toMatchObject({
+      state: 'snowy',
+      attributes: { temperature: -1 },
+    });
+  });
+
+  it('drops the old forecast when the entity has no hourly support', async () => {
+    const { mock, store } = await setup();
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().forecasts.weather).toBeDefined(),
+    );
+
+    mock.controls.setWeather('no-forecast');
+
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().forecasts.weather).toBeUndefined(),
+    );
+  });
+
+  it('removes an entity and refuses forecasts for it', async () => {
+    const { mock, store } = await setup();
+
+    mock.controls.removeEntity(WEATHER);
+
+    expect(store.getSnapshot().entities.weather).toBeUndefined();
+    await expect(
+      mock.deps.callService(
+        {} as never,
+        'weather',
+        'get_forecasts',
+        { type: 'hourly' },
+        { entity_id: WEATHER },
+        true,
+      ),
+    ).rejects.toThrow('unknown');
+  });
+
+  it('drives the connection status', async () => {
+    const { mock, store } = await setup();
+
+    mock.controls.setConnected(false);
+    expect(store.getSnapshot().status).toBe('disconnected');
+
+    mock.controls.setConnected(true);
+    expect(store.getSnapshot().status).toBe('connected');
+  });
+
+  it('keeps the last forecast when fetches fail', async () => {
+    const { mock, store } = await setup();
+    await vi.waitFor(() =>
+      expect(store.getSnapshot().forecasts.weather).toBeDefined(),
+    );
+    const before = store.getSnapshot().forecasts.weather;
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    mock.controls.failForecast(true);
+    mock.controls.setWeather('rainy');
+
+    await vi.waitFor(() => expect(error).toHaveBeenCalled());
+    expect(store.getSnapshot().forecasts.weather).toBe(before);
+    error.mockRestore();
   });
 });

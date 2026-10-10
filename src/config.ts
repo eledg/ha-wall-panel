@@ -3,13 +3,13 @@ export const PLACEHOLDER_PREFIX = 'TODO:';
 
 export const placeholder = (what: string) => `${PLACEHOLDER_PREFIX}${what}`;
 
-export type EntityDomain = 'sensor' | 'switch';
+export type EntityDomain = 'sensor' | 'switch' | 'weather';
 
 type EntitySpec = { domain: EntityDomain; id: string };
 
 const spec = (domain: EntityDomain, id: string): EntitySpec => ({ domain, id });
 
-/** Only the entities Milestone 1 needs; add to this each milestone. */
+/** The entities the dashboard needs; add to this each milestone. */
 export const config = {
   entities: {
     /** Office light, via the display's relay. A plain switch: no dimming. */
@@ -19,6 +19,8 @@ export const config = {
       'sensor',
       'sensor.shellywallx2i_office_illuminance',
     ),
+    /** Met Office, London: current conditions plus hourly forecast. */
+    weather: spec('weather', 'weather.met_office_london'),
   },
 } as const satisfies { entities: Record<string, EntitySpec> };
 

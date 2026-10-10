@@ -81,6 +81,9 @@ describe('production build', () => {
       const text = readFileSync(file, 'utf8');
       expect(text, file).not.toContain('sentinel-token');
       expect(text, file).not.toContain(MOCK_MARKER);
+      // Mock-only data and UI: weather scenarios and the dev dock.
+      expect(text, file).not.toContain('banana');
+      expect(text, file).not.toContain('Forecast fetch');
     }
   }, 30_000);
 });

@@ -42,7 +42,7 @@ describe('HaDebug', () => {
     expect(text).toContain('HA: connected');
     expect(text).toContain(`${config.entities.officeLight.id}: on`);
     expect(text).toContain(
-      `Subscribed: ${config.entities.officeLight.id}, ${config.entities.officeIlluminance.id}`,
+      `Subscribed: ${config.entities.officeLight.id}, ${config.entities.officeIlluminance.id}, ${config.entities.weather.id}`,
     );
   });
 });

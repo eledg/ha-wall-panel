@@ -1,6 +1,7 @@
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { config } from '../config.ts';
+import { forecastFor, weatherScenarios } from './mock-weather.ts';
 import type { HaDeps } from './store.ts';
 
 /** Present only in mock code; a build test looks for it in `dist/`. */
@@ -23,6 +24,16 @@ export type MockControls = {
     attributes?: Record<string, unknown>,
   ) => void;
   setUnavailable: (id: string) => void;
+  /** Drops an entity from HA entirely, as a wrong or deleted ID would. */
+  removeEntity: (id: string) => void;
+  /** Fires the connection's `disconnected` / `ready` events. */
+  setConnected: (connected: boolean) => void;
+  /** Makes `weather.get_forecasts` fail, to test the tile keeping its last forecast. */
+  failForecast: (failing: boolean) => void;
+  /** Switches the weather entity (state, attributes and forecast) to a scenario. */
+  setWeather: (scenarioId: string) => void;
+  /** Ids and labels only: the data stays in mock code, out of the production bundle. */
+  weatherScenarios: { id: string; label: string }[];
 };
 
 const SWITCH_SERVICES = ['turn_on', 'turn_off', 'toggle'];
@@ -51,6 +62,11 @@ export const createMockHa = (cfg: typeof config = config) => {
   const lux = cfg.entities.officeIlluminance.id;
   entities.set(light, make(light, 'off'));
   entities.set(lux, make(lux, '120', { unit_of_measurement: 'lx' }));
+  const weather = cfg.entities.weather.id;
+  const scenarios = weatherScenarios();
+  let scenario = scenarios[0]!;
+  entities.set(weather, make(weather, scenario.state, scenario.attributes));
+  let forecastFails = false;
   entities.set(UNRELATED_ID, make(UNRELATED_ID, 'off'));
 
   const setState: MockControls['setState'] = (id, state, attributes) => {
@@ -64,9 +80,13 @@ export const createMockHa = (cfg: typeof config = config) => {
     subscribers.forEach((subscriber) => subscriber(all));
   };
 
+  const listeners = new Map<string, Set<() => void>>();
   const connection = {
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    addEventListener: (event: string, listener: () => void) => {
+      listeners.set(event, (listeners.get(event) ?? new Set()).add(listener));
+    },
+    removeEventListener: (event: string, listener: () => void) =>
+      void listeners.get(event)?.delete(listener),
     close: () => {},
   } as unknown as Connection;
 
@@ -78,6 +98,17 @@ export const createMockHa = (cfg: typeof config = config) => {
       return () => void subscribers.delete(onChange);
     },
     callService: (_conn, domain, service, _data, target) => {
+      if (domain === 'weather' && service === 'get_forecasts') {
+        const id = (target as { entity_id: string }).entity_id;
+        if (!entities.has(id)) {
+          return Promise.reject(new Error(`Mock HA: unknown entity ${id}`));
+        }
+        if (forecastFails) {
+          return Promise.reject(new Error('Mock HA: forecast failed'));
+        }
+        const forecast = forecastFor(scenario, Date.now());
+        return Promise.resolve({ response: { [id]: { forecast } } });
+      }
       const id = (target as { entity_id?: string } | undefined)?.entity_id;
       const entity = id ? entities.get(id) : undefined;
       if (!id || !entity) {
@@ -99,6 +130,21 @@ export const createMockHa = (cfg: typeof config = config) => {
     getState: (id) => entities.get(id),
     setState,
     setUnavailable: (id) => setState(id, 'unavailable'),
+    removeEntity: (id) => {
+      entities.delete(id);
+      const all = Object.fromEntries(entities);
+      subscribers.forEach((subscriber) => subscriber(all));
+    },
+    setConnected: (connected) =>
+      listeners.get(connected ? 'ready' : 'disconnected')?.forEach((l) => l()),
+    failForecast: (failing) => {
+      forecastFails = failing;
+    },
+    setWeather: (id) => {
+      scenario = scenarios.find((s) => s.id === id) ?? scenario;
+      setState(weather, scenario.state, scenario.attributes);
+    },
+    weatherScenarios: scenarios.map(({ id, label }) => ({ id, label })),
   };
 
   return {
