@@ -64,6 +64,7 @@ export const calendarScenarios: CalendarScenario[] = [
             location: 'Recreation ground, main pitch',
             description: 'Meet at the pavilion 15 minutes before kick-off.',
           }),
+          timed('Swimming lessons', at(now, 3, 17), 60),
           timed('Pick up groceries', at(now, 0, later, 30), 30, {
             location: 'Supermarket click & collect',
             description:

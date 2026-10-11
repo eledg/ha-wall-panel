@@ -18,6 +18,20 @@ test('dashboard against the mock HA', async ({ page }) => {
   await expect(page).toHaveScreenshot('dashboard.png');
 });
 
+test('calendar: all four rows fit inside the tile', async ({ page }) => {
+  const row = page.getByRole('button', { name: /Swimming lessons/ });
+  await expect(row).toBeVisible();
+  const rowBox = await row.boundingBox();
+  const tileBox = await page
+    .locator('.rounded-tile')
+    .filter({ has: row })
+    .boundingBox();
+  // The tile has 16px of padding, so the row must end above that.
+  expect(rowBox!.y + rowBox!.height).toBeLessThanOrEqual(
+    tileBox!.y + tileBox!.height - 16,
+  );
+});
+
 test('event details: the next event', async ({ page }) => {
   await page.getByRole('button', { name: /Pick up groceries/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();

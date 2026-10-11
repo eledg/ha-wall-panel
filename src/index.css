@@ -28,7 +28,7 @@
   --color-ok-soft: oklch(0.28 0.06 140);
 
   /* Kept clear of every screen edge so taps never start a system gesture. */
-  --spacing-edge: 2rem;
+  --spacing-edge: 1.6rem;
   --spacing-gap: 0.75rem;
 
   --text-label: 1rem;
