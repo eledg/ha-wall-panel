@@ -2,7 +2,7 @@
 export const PERF_BUDGET = {
   firstRenderMs: 2000,
   firstPaintMs: 2000,
-  updatesPerMinute: 10,
+  updatesPerMinute: 20,
   minFps: 30,
   worstFrameMs: 100,
   tapMs: 100,

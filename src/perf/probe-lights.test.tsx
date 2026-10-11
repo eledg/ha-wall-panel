@@ -53,7 +53,7 @@ describe('PerfProbe lights', () => {
     setup({
       render: 2500, // 1.25x: Slow
       paint: 4000, // 2x: Over
-      updates: 30, // 3x: Over
+      updates: 50, // 2.5x: Over
       frame: { fps: 25, worstMs: 90 }, // fps 25: Slow
       slowestTap: 80, // OK
     });
