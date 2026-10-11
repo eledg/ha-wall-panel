@@ -3,6 +3,12 @@ import { haStore } from './instance.ts';
 import type { EntityKey, HaStore } from './store.ts';
 import { useSnapshot } from './use-snapshot.ts';
 
+/** HA calendars are `on` only while an event is happening, so say that. */
+const CALENDAR_STATE: Record<string, string> = {
+  on: 'Event in progress',
+  off: 'No event now',
+};
+
 /** Live state for each configured entity, plus what the store subscribes to. */
 export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
   const { status, error, entities } = useSnapshot(store);
@@ -19,6 +25,11 @@ export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
         {keys.map((key) => {
           const entity = entities[key];
           const unit = entity?.attributes.unit_of_measurement;
+          const raw = entity?.state;
+          const state =
+            config.entities[key].domain === 'calendar' && raw
+              ? (CALENDAR_STATE[raw] ?? raw)
+              : (raw ?? 'no state');
           return (
             <div
               key={key}
@@ -29,7 +40,7 @@ export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
               </dt>
               <dd class="tnum text-sm font-medium text-fg">
                 {status === 'connected'
-                  ? `${entity?.state ?? 'no state'}${entity && unit ? ` ${unit}` : ''}`
+                  ? `${state}${entity && unit ? ` ${unit}` : ''}`
                   : 'Unavailable'}
               </dd>
             </div>

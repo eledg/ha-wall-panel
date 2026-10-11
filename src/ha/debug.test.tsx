@@ -34,12 +34,17 @@ describe('HaDebug', () => {
           state: 'on',
           attributes: {},
         },
+        [config.entities.calendarFamily.id]: {
+          state: 'off',
+          attributes: {},
+        },
       });
     });
 
     const text = document.body.textContent;
     expect(text).not.toContain('Mock');
     expect(text).toContain('on');
+    expect(text).toContain('No event now');
     expect(text).toContain(`${Object.keys(config.entities).length} entities`);
   });
 });
