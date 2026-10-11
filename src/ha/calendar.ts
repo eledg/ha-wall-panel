@@ -63,6 +63,38 @@ const NO_NOTES = new Set<EntityKey>(['calendarF1']);
 /** Trimmed text, or `undefined` when HA sends nothing, `null` or `""`. */
 const textOf = (value?: string | null) => value?.trim() || undefined;
 
+const ordinalRules = new Intl.PluralRules('en-GB', { type: 'ordinal' });
+const ORDINAL_SUFFIX = {
+  one: 'st',
+  two: 'nd',
+  few: 'rd',
+  other: 'th',
+} as const;
+
+/** `1st`, `22nd`, `39th`. */
+const ordinal = (n: number) =>
+  `${n}${ORDINAL_SUFFIX[ordinalRules.select(n) as keyof typeof ORDINAL_SUFFIX] ?? 'th'}`;
+
+const BIRTHDAY_TITLE = /^(.+?)(['\u2019]s) Birthday$/u;
+const BORN_YEAR = /\bBorn (\d{4})\b/u;
+
+/**
+ * `Alex Example's Birthday` with a description of `Born 1977`, falling in
+ * 2026, becomes `Alex Example's 49th Birthday`. Without a birth year (or with
+ * a title that doesn't fit) the title is left as it is.
+ */
+export const withBirthdayAge = (
+  summary: string,
+  description: string | null | undefined,
+  eventDate: Date,
+) => {
+  const match = BIRTHDAY_TITLE.exec(summary);
+  const born = Number(BORN_YEAR.exec(description ?? '')?.[1]);
+  const age = eventDate.getFullYear() - born;
+  if (!match || !Number.isFinite(born) || age < 1) return summary;
+  return `${match[1]}${match[2]} ${ordinal(age)} Birthday`;
+};
+
 /** Per-calendar tidying of titles that are too long for the tile. */
 const SUMMARY_FORMATTERS: Partial<
   Record<EntityKey, (summary: string, raw: RawCalendarEvent) => string>
@@ -89,7 +121,11 @@ export const normaliseEvent = (
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return undefined;
   }
-  const fullSummary = raw.summary?.trim() || 'Untitled';
+  const rawSummary = raw.summary?.trim() || 'Untitled';
+  const fullSummary =
+    calendar === 'calendarBirthdays'
+      ? withBirthdayAge(rawSummary, raw.description, start)
+      : rawSummary;
   const location = textOf(raw.location);
   const description = NO_NOTES.has(calendar)
     ? undefined

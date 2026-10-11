@@ -6,6 +6,7 @@ import {
   normaliseEvent,
   normaliseEvents,
   shortenF1,
+  withBirthdayAge,
 } from './calendar.ts';
 
 describe('normaliseEvent', () => {
@@ -84,6 +85,56 @@ describe('normaliseEvent', () => {
     expect(event?.allDay).toBe(true);
     expect(new Date(event!.start)).toEqual(new Date(2026, 9, 12));
     expect(new Date(event!.end)).toEqual(new Date(2026, 9, 13));
+  });
+
+  it('adds the age to a birthday when the description gives a birth year', () => {
+    const birthday = (summary: string, description: string) =>
+      normaliseEvent('calendarBirthdays', {
+        summary,
+        description,
+        start: { date: '2026-10-14' },
+        end: { date: '2026-10-15' },
+      });
+
+    expect(birthday("Alex Example's Birthday", 'Born 1977')?.summary).toBe(
+      "Alex Example's 49th Birthday",
+    );
+    expect(birthday('Jo Example’s Birthday', 'Born 2009')?.fullSummary).toBe(
+      'Jo Example’s 17th Birthday',
+    );
+    expect(birthday("Sam's Birthday", 'Born 2004')?.summary).toBe(
+      "Sam's 22nd Birthday",
+    );
+    expect(birthday("Pat Example's Birthday", '')?.summary).toBe(
+      "Pat Example's Birthday",
+    );
+    expect(birthday("Anna's Birthday", 'Born 2026')?.summary).toBe(
+      "Anna's Birthday",
+    );
+  });
+
+  it('picks the right ordinal suffix', () => {
+    const age = (years: number) =>
+      withBirthdayAge(
+        "Sam's Birthday",
+        `Born ${2026 - years}`,
+        new Date(2026, 5, 1),
+      );
+
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(age)).toEqual([
+      "Sam's 1st Birthday",
+      "Sam's 2nd Birthday",
+      "Sam's 3rd Birthday",
+      "Sam's 4th Birthday",
+      "Sam's 11th Birthday",
+      "Sam's 12th Birthday",
+      "Sam's 13th Birthday",
+      "Sam's 21st Birthday",
+      "Sam's 22nd Birthday",
+      "Sam's 23rd Birthday",
+      "Sam's 101st Birthday",
+      "Sam's 111th Birthday",
+    ]);
   });
 
   it('names an event without a summary and drops one without times', () => {
