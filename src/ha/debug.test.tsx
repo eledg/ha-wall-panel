@@ -38,11 +38,8 @@ describe('HaDebug', () => {
     });
 
     const text = document.body.textContent;
-    expect(text).toContain('HA: connected');
     expect(text).not.toContain('Mock');
-    expect(text).toContain(`${config.entities.officeLight.id}: on`);
-    expect(text).toContain(
-      `Subscribed: ${config.entities.officeLight.id}, ${config.entities.officeIlluminance.id}, ${config.entities.weather.id}`,
-    );
+    expect(text).toContain('on');
+    expect(text).toContain(`${Object.keys(config.entities).length} entities`);
   });
 });

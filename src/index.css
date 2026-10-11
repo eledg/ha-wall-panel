@@ -25,6 +25,7 @@
   --color-cal-birthdays: oklch(0.76 0.13 350);
   --color-cal-f1: oklch(0.8 0.15 140);
   --color-ok: oklch(0.8 0.15 140);
+  --color-ok-soft: oklch(0.28 0.06 140);
 
   /* Kept clear of every screen edge so taps never start a system gesture. */
   --spacing-edge: 2rem;

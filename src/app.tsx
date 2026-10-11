@@ -23,8 +23,8 @@ export const App = () => (
     <ConfigWarning />
     <DisconnectedBanner />
     <Diagnostics>
-      <HaDebug />
       <PerfProbe />
+      <HaDebug />
     </Diagnostics>
   </>
 );

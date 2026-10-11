@@ -33,20 +33,20 @@ describe('Diagnostics', () => {
       document.body,
     );
 
-    await click(__BUILD_INFO__.version);
+    await click('Diagnostics');
     const dialog = document.querySelector('[role=dialog]')!;
     expect(dialog.textContent).toContain(__BUILD_INFO__.commit.slice(0, 7));
-    expect(dialog.textContent).toContain(__BUILD_INFO__.builtAt);
+    expect(dialog.textContent).toContain('Home Assistant');
     expect(dialog.textContent).toContain('debug content');
 
-    await click('Close');
+    await click('Close diagnostics');
     expect(document.querySelector('[role=dialog]')).toBeNull();
   });
 
   it('closes itself after the idle time, restarted by touches', async () => {
     vi.useFakeTimers();
     render(<Diagnostics idleMs={1000} />, document.body);
-    await click(__BUILD_INFO__.version);
+    await click('Diagnostics');
 
     await act(() => {
       vi.advanceTimersByTime(800);

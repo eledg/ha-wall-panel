@@ -14,23 +14,52 @@ import type { Light } from './status.ts';
 const ms = (value: number | undefined) =>
   value === undefined ? 'n/a' : `${Math.round(value)} ms`;
 
-const LIGHTS: Record<Light, { word: string; dot: string; text: string }> = {
-  good: { word: 'OK', dot: 'bg-ok', text: 'text-ok' },
-  warn: { word: 'Slow', dot: 'bg-accent', text: 'text-accent' },
-  bad: { word: 'Over', dot: 'bg-warn', text: 'text-warn' },
-  unknown: { word: 'n/a', dot: 'bg-fg-faint', text: 'text-fg-faint' },
+const LIGHTS: Record<Light, { word: string; tone: string }> = {
+  good: { word: 'OK', tone: 'bg-ok-soft text-ok' },
+  warn: { word: 'Slow', tone: 'bg-accent-soft text-accent' },
+  bad: { word: 'Over', tone: 'bg-warn-soft text-warn' },
+  unknown: { word: 'n/a', tone: 'bg-surface-2 text-fg-faint' },
 };
 
-/** Status dot and word; the word keeps it readable when colours are off. */
+/** Status pill; the word keeps it readable when colours are off. */
 const Status = ({ light }: { light: Light }) => {
-  const { word, dot, text } = LIGHTS[light];
+  const { word, tone } = LIGHTS[light];
   return (
-    <span class={`inline-flex items-center gap-1 ${text}`}>
-      <span role="img" aria-label={word} class={`size-2 rounded-full ${dot}`} />
+    <span
+      class={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 text-small font-semibold ${tone}`}
+    >
+      <span
+        role="img"
+        aria-label={word}
+        class="size-1.5 shrink-0 rounded-full bg-current"
+      />
       {word}
     </span>
   );
 };
+
+const Row = ({
+  label,
+  value,
+  detail,
+  light,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+  light: Light;
+}) => (
+  <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 py-3">
+    <dt class="min-w-0 text-sm text-fg">{label}</dt>
+    <dd class="min-w-0">
+      <span class="text-label font-semibold text-fg">{value}</span>
+      {detail && <span class="ml-2 text-small text-fg-dim">{detail}</span>}
+    </dd>
+    <dd>
+      <Status light={light} />
+    </dd>
+  </div>
+);
 
 /**
  * Performance readout for the diagnostics modal, so the budget in
@@ -66,28 +95,36 @@ export const PerfProbe = () => {
     taps: rateMax(taps.slowest, PERF_BUDGET.tapMs),
   };
   return (
-    <section class="tnum mt-4 font-mono text-small text-fg-dim">
-      <h3 class="flex items-center gap-2 text-fg">
-        Performance <Status light={worst(...Object.values(lights))} />
-      </h3>
-      <p>
-        First render {ms(renderMs)} <Status light={lights.render} />
-      </p>
-      <p>
-        First paint {ms(paintMs)} <Status light={lights.paint} />
-      </p>
-      <p>
-        Store updates, last 60 s: {updates} <Status light={lights.updates} />
-      </p>
-      <p>
-        Frames: {frame ? `${frame.fps.toFixed(0)} fps` : 'sampling'}, worst{' '}
-        {ms(frame?.worstMs)} <Status light={lights.frames} />
-      </p>
-      <p>
-        Tap to frame: last {ms(taps.last)}, slowest {ms(taps.slowest)} (
-        {taps.count} in 60 s) <Status light={lights.taps} />
-      </p>
-      {heap !== undefined && <p>JS heap {heap.toFixed(1)} MB</p>}
+    <section class="border-b border-line py-5">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <h3 class="text-lg font-semibold text-fg">Performance</h3>
+        <Status light={worst(...Object.values(lights))} />
+      </div>
+      <dl class="divide-y divide-line">
+        <Row label="First render" value={ms(renderMs)} light={lights.render} />
+        <Row label="First paint" value={ms(paintMs)} light={lights.paint} />
+        <Row
+          label="Store updates"
+          value={String(updates)}
+          detail="Last 60 s"
+          light={lights.updates}
+        />
+        <Row
+          label="Frames"
+          value={frame ? `${frame.fps.toFixed(0)} fps` : 'sampling'}
+          detail={`Worst ${ms(frame?.worstMs)}`}
+          light={lights.frames}
+        />
+        <Row
+          label="Tap to frame"
+          value={ms(taps.last)}
+          detail={`Slowest ${ms(taps.slowest)} · ${taps.count} taps in 60 s`}
+          light={lights.taps}
+        />
+      </dl>
+      {heap !== undefined && (
+        <p class="mt-3 text-small text-fg-dim">JS heap {heap.toFixed(1)} MB</p>
+      )}
     </section>
   );
 };
