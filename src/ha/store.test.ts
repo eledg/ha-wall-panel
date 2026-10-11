@@ -30,7 +30,7 @@ const setup = () => {
       push = cb;
       return vi.fn();
     }),
-    callService: vi.fn().mockResolvedValue(undefined),
+    callService: vi.fn().mockResolvedValue({ response: {} }),
     fetchCalendarEvents: vi.fn().mockResolvedValue([]),
   };
   const store = createHaStore(deps as unknown as HaDeps);
