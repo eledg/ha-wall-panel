@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
+import { type CheckNowResult, createManualUpdate } from './auto-reload.ts';
 import { haStore } from './ha/instance.ts';
 import type { HaStatus } from './ha/store.ts';
 import { useSnapshot } from './ha/use-snapshot.ts';
@@ -33,6 +34,16 @@ const formatBuilt = (iso: string) => {
   return Number.isNaN(date.getTime()) ? iso : BUILT_FORMAT.format(date);
 };
 
+const CHECKED_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Europe/London',
+});
+
+export type ManualUpdate = {
+  checkNow: () => Promise<CheckNowResult>;
+};
+
 /**
  * The build version, bottom right. Tapping it opens a modal with the build
  * details and whatever debug content is passed as children.
@@ -40,13 +51,19 @@ const formatBuilt = (iso: string) => {
 export const Diagnostics = ({
   children,
   idleMs = IDLE_CLOSE_MS,
+  update,
 }: {
   children?: ComponentChildren;
   idleMs?: number;
+  /** Replaces the real check and reload, for tests. */
+  update?: ManualUpdate;
 }) => {
   const [open, setOpen] = useState(false);
   // Bumped by every touch inside the modal to restart the idle timer.
   const [activity, setActivity] = useState(0);
+  const [manual] = useState(() => update ?? createManualUpdate(__BUILD_INFO__));
+  // undefined until the first tap; 'checking' while the fetch runs.
+  const [checked, setChecked] = useState<CheckNowResult | 'checking'>();
   const { version, commit, builtAt } = __BUILD_INFO__;
   const { status } = useSnapshot(haStore);
   const connected = status === 'connected';
@@ -61,6 +78,22 @@ export const Diagnostics = ({
       window.removeEventListener('keydown', onKey);
     };
   }, [open, activity, idleMs]);
+
+  const statusText =
+    checked === undefined
+      ? ''
+      : checked === 'checking'
+        ? 'Checking for updates…'
+        : checked.status === 'reloading'
+          ? 'Update found. Reloading…'
+          : checked.status === 'failed'
+            ? "Couldn't check"
+            : `Up to date — ${version} (${commit.slice(0, 7)}) · checked ${CHECKED_FORMAT.format(checked.at)}`;
+
+  const getLatest = async () => {
+    setChecked('checking');
+    setChecked(await manual.checkNow());
+  };
 
   return (
     <>
@@ -129,6 +162,28 @@ export const Diagnostics = ({
               </dl>
             </section>
             {children}
+            <section class="pt-5" aria-labelledby="update-title">
+              <h3
+                id="update-title"
+                class="mb-3 text-sm font-semibold text-fg-dim"
+              >
+                SOFTWARE UPDATE
+              </h3>
+              <p
+                aria-live="polite"
+                class={`text-sm ${statusText && 'mb-3'} ${checked !== 'checking' && checked?.status === 'current' ? 'text-ok' : 'text-fg-dim'}`}
+              >
+                {statusText}
+              </p>
+              <button
+                type="button"
+                disabled={checked === 'checking'}
+                class="tap flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-accent-fg transition-opacity duration-150 disabled:opacity-60"
+                onClick={() => void getLatest()}
+              >
+                Get latest version
+              </button>
+            </section>
           </div>
         </div>
       )}

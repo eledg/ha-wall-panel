@@ -29,6 +29,11 @@ const parseBuild = (value: unknown): BuildFields | undefined => {
     : undefined;
 };
 
+export type CheckNowResult =
+  | { status: 'reloading' }
+  | { status: 'current'; at: number }
+  | { status: 'failed' };
+
 export type AutoReloadDeps = {
   runningKey: string;
   versionUrl: string;
@@ -71,26 +76,38 @@ export const createAutoReload = (deps: AutoReloadDeps) => {
     }
   };
 
+  // Fetches version.json and returns the published build's key. Throws if
+  // it is unreachable or malformed.
+  const fetchPublishedKey = async () => {
+    const response = await deps.fetchImpl(
+      `${deps.versionUrl}?t=${deps.now()}`,
+      {
+        cache: 'no-store',
+      },
+    );
+    if (!response.ok) throw new Error(`version.json: ${response.status}`);
+    const remote = parseBuild(await response.json());
+    if (!remote) throw new Error('version.json: malformed');
+    return buildKey(remote);
+  };
+
+  const reloadTo = (v: string) => {
+    const target = new URL(deps.indexUrl);
+    target.searchParams.set('v', v);
+    deps.reload(target.toString());
+  };
+
   // Resolves to 'waiting' when a different build is published but the page
   // is not idle yet.
   const run = async (): Promise<'waiting' | undefined> => {
     try {
-      const response = await deps.fetchImpl(
-        `${deps.versionUrl}?t=${deps.now()}`,
-        { cache: 'no-store' },
-      );
-      if (!response.ok) return;
-      const remote = parseBuild(await response.json());
-      if (!remote) return;
-      const key = buildKey(remote);
+      const key = await fetchPublishedKey();
       if (key === deps.runningKey) return;
       if (deps.isBlocked() || deps.now() - lastActivity < idleMs) {
         return 'waiting';
       }
       if (!claimReload(key)) return;
-      const target = new URL(deps.indexUrl);
-      target.searchParams.set('v', key);
-      deps.reload(target.toString());
+      reloadTo(key);
     } catch {
       // Unreachable or malformed version.json: carry on quietly.
     }
@@ -106,20 +123,41 @@ export const createAutoReload = (deps: AutoReloadDeps) => {
     }
   };
 
-  return { check, touch };
+  // The user asked, so there is no idle wait and no rate limit: reload as
+  // soon as the published build differs from the running one.
+  const checkNow = async (): Promise<CheckNowResult> => {
+    try {
+      const key = await fetchPublishedKey();
+      if (key === deps.runningKey) return { status: 'current', at: deps.now() };
+      reloadTo(key);
+      return { status: 'reloading' };
+    } catch {
+      return { status: 'failed' };
+    }
+  };
+
+  return { check, checkNow, touch };
+};
+
+const browserDeps = (info: BuildFields): AutoReloadDeps => ({
+  runningKey: buildKey(info),
+  versionUrl: new URL('version.json', location.href).toString(),
+  indexUrl: new URL('index.html', location.href).toString(),
+  fetchImpl: fetch.bind(globalThis),
+  now: Date.now,
+  storage: localStorage,
+  isBlocked: () => document.querySelector(`[${BLOCKS_RELOAD_ATTR}]`) !== null,
+  reload: (url) => location.replace(url),
+});
+
+/** Manual check for the diagnostics modal; works in dev and mock too. */
+export const createManualUpdate = (info: BuildFields) => {
+  const { checkNow } = createAutoReload(browserDeps(info));
+  return { checkNow };
 };
 
 export const startAutoReload = (info: BuildFields) => {
-  const { check, touch } = createAutoReload({
-    runningKey: buildKey(info),
-    versionUrl: new URL('version.json', location.href).toString(),
-    indexUrl: new URL('index.html', location.href).toString(),
-    fetchImpl: fetch.bind(globalThis),
-    now: Date.now,
-    storage: localStorage,
-    isBlocked: () => document.querySelector(`[${BLOCKS_RELOAD_ATTR}]`) !== null,
-    reload: (url) => location.replace(url),
-  });
+  const { check, touch } = createAutoReload(browserDeps(info));
 
   for (const name of ['pointerdown', 'touchstart', 'keydown']) {
     window.addEventListener(name, touch, { capture: true, passive: true });

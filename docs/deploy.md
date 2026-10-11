@@ -139,6 +139,13 @@ Overlays such as the doorbell must set that attribute while open.
   script is never cached separately. Keep the two in step.
 - The first build with this check needs one manual cache reset on the display.
 
+The diagnostics modal has a **Get latest version** button for doing this by
+hand (also in `pnpm dev:mock`, where `version.json` isn't served, so the check
+reports "Couldn't check"). It runs the same check at once. A different build
+reloads straight away, ignoring the idle wait, overlays and the rate limit. The
+same build shows "Up to date" with the build and time; a failed fetch shows
+"Couldn't check". Neither reloads.
+
 ## Checks
 
 Verify by hand on the HA box:

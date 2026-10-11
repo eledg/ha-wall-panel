@@ -189,6 +189,71 @@ describe('auto reload', () => {
   });
 });
 
+describe('manual update', () => {
+  it('reloads straight away to a different build, ignoring idle, overlays and the rate limit', async () => {
+    const t = setup();
+    t.blocked.value = true;
+    t.storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ at: 1_000_000, to: buildKey(published) }),
+    );
+
+    const result = await t.checkNow();
+
+    expect(result).toEqual({ status: 'reloading' });
+    expect(t.reload).toHaveBeenCalledWith(
+      'http://ha/local/wall/index.html?v=v1.1.0%40bbb',
+    );
+  });
+
+  it('reloads for an older build too, so rollbacks apply', async () => {
+    const t = setup(() => jsonResponse({ version: 'v0.9.0', commit: 'ccc' }));
+
+    await t.checkNow();
+
+    expect(t.reload).toHaveBeenCalledOnce();
+  });
+
+  it('reports up to date, with the time, and does not reload', async () => {
+    const t = setup(() => jsonResponse(running));
+    t.advance(5_000);
+
+    const result = await t.checkNow();
+
+    expect(result).toEqual({ status: 'current', at: 1_005_000 });
+    expect(t.reload).not.toHaveBeenCalled();
+  });
+
+  it('fetches with a unique query string and no-store', async () => {
+    const t = setup(() => jsonResponse(running));
+
+    await t.checkNow();
+    t.advance(1);
+    await t.checkNow();
+
+    const calls = vi.mocked(t.fetchImpl).mock.calls;
+    expect(calls.map(([url]) => url)).toEqual([
+      'http://ha/local/wall/version.json?t=1000000',
+      'http://ha/local/wall/version.json?t=1000001',
+    ]);
+    expect(calls[0]![1]).toEqual({ cache: 'no-store' });
+  });
+
+  it.each([
+    ['is unreachable', () => Promise.reject(new Error('offline'))],
+    ['returns an error status', () => jsonResponse(published, false)],
+    ['is malformed', () => jsonResponse({ nope: true })],
+  ])(
+    'reports a failed check and leaves the page alone when version.json %s',
+    async (_name, respond) => {
+      const t = setup(respond);
+
+      expect(await t.checkNow()).toEqual({ status: 'failed' });
+      expect(t.reload).not.toHaveBeenCalled();
+    },
+  );
+});
+
 // The inline copy (recover.js) must behave the same, so run it for real.
 describe('inline recovery script (recover.js)', () => {
   const source = recoverSource.replace(
