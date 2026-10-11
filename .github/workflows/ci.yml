@@ -63,7 +63,7 @@ jobs:
       - run: pnpm test:e2e
       # Holds the diff images on failure, and the rendered screenshots so a
       # baseline can be taken from CI (see docs/e2e.md).
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
