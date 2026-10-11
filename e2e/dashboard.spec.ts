@@ -17,3 +17,18 @@ test('dashboard against the mock HA', async ({ page }) => {
   await expect(page.getByText('09:41')).toBeVisible();
   await expect(page).toHaveScreenshot('dashboard.png');
 });
+
+test('event details: the next event', async ({ page }) => {
+  await page.getByRole('button', { name: /Pick up groceries/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page).toHaveScreenshot('event-next.png');
+});
+
+test('event details: F1 shows the full title', async ({ page }) => {
+  await page.getByRole('button', { name: /F1 Singapore - Race/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('heading')).toContainText(
+    'FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race',
+  );
+  await expect(page).toHaveScreenshot('event-f1.png');
+});

@@ -27,6 +27,8 @@ each control stays visible. Its panels:
   `Fails`, which keeps the last events on screen (badged `stale` after 15 minutes
   without a successful refresh). Picking a scenario touches the
   calendar entities, as HA does when events change, so the tile refetches.
+  Tapping an event opens its detail sheet; some mock events carry a location and
+  notes (the F1 ones carry the promotional text the real feed has, which is dropped).
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the
   next toggles, so the tile flips, reverts and flashes in the warning colours.
 - **Connection**: Disconnected shows tiles dimmed with a `stale` badge and the

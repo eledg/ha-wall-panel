@@ -3,12 +3,8 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  buildAgenda,
-  CalendarTile,
-  dayLabel,
-  shortDay,
-} from './calendar-tile.tsx';
+import { dayLabel, shortDay } from './calendar-labels.ts';
+import { buildAgenda, CalendarTile } from './calendar-tile.tsx';
 import { config } from '../config.ts';
 import { CALENDAR_STALE_MS } from '../ha/calendar.ts';
 import type { CalendarEvent } from '../ha/calendar.ts';
@@ -30,6 +26,7 @@ const timed = (
 ): CalendarEvent => ({
   calendar,
   summary,
+  fullSummary: summary,
   start: new Date(2026, 9, day, hour).toISOString(),
   end: new Date(2026, 9, day, hour + 1).toISOString(),
   allDay: false,
@@ -38,6 +35,7 @@ const timed = (
 const allDay = (summary: string, day: number, days = 1): CalendarEvent => ({
   calendar: 'calendarBirthdays',
   summary,
+  fullSummary: summary,
   start: new Date(2026, 9, day).toISOString(),
   end: new Date(2026, 9, day + days).toISOString(),
   allDay: true,
@@ -271,6 +269,68 @@ describe('CalendarTile', () => {
     await act(async () => mock.controls.setCalendar('normal'));
 
     await vi.waitFor(() => expect(text()).toContain('Football practice'));
+  });
+
+  const open = (label: string) =>
+    act(() => {
+      [...document.querySelectorAll('button')]
+        .find((b) => b.textContent?.includes(label))!
+        .click();
+    });
+  const dialog = () => document.querySelector('[role=dialog]');
+
+  it('opens the details of a row, with its location and notes', async () => {
+    await setup();
+
+    await open('Football practice');
+
+    expect(dialog()?.textContent).toContain('Football practice');
+    expect(dialog()?.textContent).toContain('Recreation ground, main pitch');
+    expect(dialog()?.textContent).toContain('Meet at the pavilion');
+  });
+
+  it('opens the next event from the highlighted card', async () => {
+    const { mock } = await setup();
+    // All-day only: the next event is always one that is under way today.
+    await act(async () => mock.controls.setCalendar('allday'));
+    await vi.waitFor(() => expect(text()).toContain('All day'));
+
+    await open('All day');
+
+    expect(dialog()?.textContent).toContain('Friends staying (3 days)');
+    expect(dialog()?.textContent).toContain('3 days');
+  });
+
+  it('shows the full F1 title in the details, and no promotional notes', async () => {
+    await setup();
+    expect(text()).toContain('F1 Singapore - Race');
+
+    await open('F1 Singapore - Race');
+
+    expect(dialog()?.querySelector('h2')?.textContent).toMatch(
+      /^.+ FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race$/u,
+    );
+    expect(dialog()?.textContent).toContain('Singapore');
+    expect(dialog()?.textContent).not.toContain('Notes');
+    expect(dialog()?.textContent).not.toContain('Race Hub');
+  });
+
+  it('closes the details, and does not dim the sheet when stale', async () => {
+    const { mock } = await setup();
+    await open('Football practice');
+
+    await act(async () => mock.controls.setConnected(false));
+
+    expect(text()).toContain('stale');
+    expect(dialog()?.closest('.opacity-60')).toBeNull();
+
+    await act(() => {
+      document
+        .querySelector<HTMLButtonElement>('button[aria-label=Close]')!
+        .click();
+    });
+
+    expect(dialog()).toBeNull();
   });
 
   it('dims as stale while disconnected', async () => {

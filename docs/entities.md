@@ -29,8 +29,12 @@ three `calendar.octopus_energy_*` entities; the dashboard ignores them.
     differs across a clock change (`+01:00`, then `+00:00`).
   - All-day events: `start` / `end` are `{ date }`, and `end` is **exclusive**
     (a one-day event ends the next day).
-  - `description` and `location` may be missing, `null` or `""`. F1 descriptions
-    are ~1.5 KB of links, so the store keeps only `summary`, `start` and `end`.
+  - `description` and `location` may be missing, `null` or `""`; the store keeps
+    them only when they hold text. The store reads `summary`, `start`, `end`,
+    `location` and `description` and ignores the rest. The detail sheet shows
+    the full title, the times, the `location` and the description as notes.
+  - F1 descriptions are the same ~1.5 KB of promotional links on every event, so
+    the store drops the description for that calendar and the sheet shows no notes.
 - **Order is not guaranteed.** Neither this endpoint nor the `calendar.get_events`
   service sorts or takes a sort option, so the tile sorts by start time.
 - F1 summaries are long and carry sponsor names (`🏁 FORMULA 1 SINGAPORE AIRLINES
@@ -39,7 +43,7 @@ SINGAPORE GRAND PRIX 2026 - Race`), so the store rewrites them as
   (clean: `Singapore`, `United States`, ...) and the text after the last `-`.
   Sessions seen in 2026: Practice 1-3, Qualifying, Race, Sprint Qualification and
   Sprint Race. A title that doesn't fit the pattern, or has no location, is kept
-  as HA sends it. `location` is read for this only; other calendars are untouched.
+  as HA sends it. Other calendars' titles are untouched. The detail sheet shows the title in full, as HA sends it.
 - **Health:** a calendar whose entity is missing is a config error and is left out.
   One that is `unavailable` is usually transient, so its cached events stay,
   flagged in the legend. Cached events are badged `stale` once 15 minutes pass

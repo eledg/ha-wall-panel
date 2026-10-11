@@ -12,19 +12,51 @@ describe('normaliseEvent', () => {
   it('reads a timed event and parses its offset', () => {
     const event = normaliseEvent('calendarFamily', {
       summary: 'Dentist',
-      description: 'ignored',
-      location: 'ignored',
+      location: 'High Street',
+      description: 'Check in early',
       start: { dateTime: '2026-10-10T10:00:00+01:00' },
       end: { dateTime: '2026-10-10T10:30:00+01:00' },
-    } as Parameters<typeof normaliseEvent>[1]);
+    });
 
     expect(event).toEqual({
       calendar: 'calendarFamily',
       summary: 'Dentist',
+      fullSummary: 'Dentist',
+      location: 'High Street',
+      description: 'Check in early',
       start: '2026-10-10T09:00:00.000Z',
       end: '2026-10-10T09:30:00.000Z',
       allDay: false,
     });
+  });
+
+  it.each([undefined, null, '', '   '])(
+    'leaves out a location and description of %j',
+    (empty) => {
+      const event = normaliseEvent('calendarFamily', {
+        summary: 'Dentist',
+        location: empty,
+        description: empty,
+        start: { dateTime: '2026-10-10T10:00:00+01:00' },
+        end: { dateTime: '2026-10-10T10:30:00+01:00' },
+      });
+
+      expect(event).not.toHaveProperty('location');
+      expect(event).not.toHaveProperty('description');
+    },
+  );
+
+  it('trims the location and description', () => {
+    const event = normaliseEvent('calendarFamily', {
+      summary: 'Dentist',
+      location: '  High Street ',
+      description: '\nCheck in early\n',
+      start: { date: '2026-10-10' },
+      end: { date: '2026-10-11' },
+    });
+
+    expect(event?.location).toBe('High Street');
+    expect(event?.description).toBe('Check in early');
   });
 
   it('reads events with differing offsets as the same instant', () => {
@@ -164,6 +196,24 @@ describe('normaliseEvent, F1 titles', () => {
     start: { dateTime: '2026-10-11T13:00:00+01:00' },
     end: { dateTime: '2026-10-11T15:00:00+01:00' },
   };
+
+  it('keeps the full title for the detail view, and the location', () => {
+    const event = normaliseEvent('calendarF1', raw);
+
+    expect(event?.fullSummary).toBe(raw.summary);
+    expect(event?.location).toBe('Singapore');
+  });
+
+  it('drops the F1 promotional description but not other calendars', () => {
+    const withNotes = { ...raw, description: 'Follow all the action on F1 TV' };
+
+    expect(normaliseEvent('calendarF1', withNotes)).not.toHaveProperty(
+      'description',
+    );
+    expect(normaliseEvent('calendarFamily', withNotes)?.description).toBe(
+      'Follow all the action on F1 TV',
+    );
+  });
 
   it('shortens titles on the F1 calendar only', () => {
     expect(normaliseEvent('calendarF1', raw)?.summary).toBe(

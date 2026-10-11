@@ -11,10 +11,15 @@ export const CALENDAR_STALE_MS = 3 * CALENDAR_REFRESH_MS;
 /** How many days ahead of today the store fetches events for. */
 export const CALENDAR_DAYS = 7;
 
-/** One calendar event, reduced to what the tile shows. */
+/** One calendar event, reduced to what the tile and its detail sheet show. */
 export type CalendarEvent = {
   calendar: EntityKey;
+  /** The title for the tile's rows, shortened for some calendars (see `shortenF1`). */
   summary: string;
+  /** The title as HA sends it, for the detail sheet. */
+  fullSummary: string;
+  location?: string;
+  description?: string;
   /** ISO timestamps. An all-day event runs from local midnight to local midnight. */
   start: string;
   end: string;
@@ -24,8 +29,8 @@ export type CalendarEvent = {
 /** An item from `GET /api/calendars/<entity_id>`, as far as the store reads it. */
 export type RawCalendarEvent = {
   summary?: string;
-  /** Only read to shorten titles; descriptions are ignored (F1's are ~1.5 KB). */
   location?: string | null;
+  description?: string | null;
   start: { date?: string; dateTime?: string };
   end: { date?: string; dateTime?: string };
 };
@@ -48,6 +53,15 @@ export const shortenF1 = (summary: string, location?: string | null) => {
   if (!match || !place) return summary;
   return `${match[1]} F1 ${place} - ${match[2]}`;
 };
+
+/**
+ * Calendars whose descriptions aren't worth showing. F1's is the same ~1.5 KB
+ * of promotional links on every event.
+ */
+const NO_NOTES = new Set<EntityKey>(['calendarF1']);
+
+/** Trimmed text, or `undefined` when HA sends nothing, `null` or `""`. */
+const textOf = (value?: string | null) => value?.trim() || undefined;
 
 /** Per-calendar tidying of titles that are too long for the tile. */
 const SUMMARY_FORMATTERS: Partial<
@@ -75,10 +89,17 @@ export const normaliseEvent = (
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return undefined;
   }
-  const summary = raw.summary?.trim() || 'Untitled';
+  const fullSummary = raw.summary?.trim() || 'Untitled';
+  const location = textOf(raw.location);
+  const description = NO_NOTES.has(calendar)
+    ? undefined
+    : textOf(raw.description);
   return {
     calendar,
-    summary: SUMMARY_FORMATTERS[calendar]?.(summary, raw) ?? summary,
+    summary: SUMMARY_FORMATTERS[calendar]?.(fullSummary, raw) ?? fullSummary,
+    fullSummary,
+    ...(location && { location }),
+    ...(description && { description }),
     start: start.toISOString(),
     end: end.toISOString(),
     allDay,

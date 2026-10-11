@@ -14,14 +14,16 @@ const at = (now: Date, dayOffset: number, hour: number, minute = 0) => {
   return d;
 };
 
+type Detail = { location?: string; description?: string };
+
 const timed = (
   summary: string,
   start: Date,
   minutes: number,
-  location?: string,
+  detail: Detail = {},
 ): RawCalendarEvent => ({
   summary,
-  ...(location ? { location } : {}),
+  ...detail,
   start: { dateTime: start.toISOString() },
   end: { dateTime: new Date(start.getTime() + minutes * 60_000).toISOString() },
 });
@@ -45,6 +47,10 @@ const allDay = (summary: string, now: Date, dayOffset: number, days = 1) => {
 
 const F1 = 'FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026';
 
+/** What the real F1 feed puts on every event: promotional text, with links. */
+const F1_BLURB =
+  'Follow all the action on F1 TV and F1.com.\n\nVisit the Race Hub\nhttps://example.com/race-hub\n\nFree sign up to F1 Unlocked\nhttps://example.com/unlocked';
+
 /** Like HA, each list is in no particular order. */
 export const calendarScenarios: CalendarScenario[] = [
   {
@@ -54,12 +60,22 @@ export const calendarScenarios: CalendarScenario[] = [
       const later = Math.min(now.getHours() + 2, 22);
       return {
         calendarFamily: [
-          timed('Football practice', at(now, 2, 10), 90),
-          timed('Pick up groceries', at(now, 0, later, 30), 30),
+          timed('Football practice', at(now, 2, 10), 90, {
+            location: 'Recreation ground, main pitch',
+            description: 'Meet at the pavilion 15 minutes before kick-off.',
+          }),
+          timed('Pick up groceries', at(now, 0, later, 30), 30, {
+            location: 'Supermarket click & collect',
+            description:
+              'Use the collection bays. The order code is in the app.',
+          }),
         ],
         calendarBirthdays: [allDay("Alex's Birthday", now, 1)],
         calendarF1: [
-          timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120, 'Singapore'),
+          timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120, {
+            location: 'Singapore',
+            description: F1_BLURB,
+          }),
         ],
       };
     },
@@ -71,7 +87,10 @@ export const calendarScenarios: CalendarScenario[] = [
       calendarFamily: [],
       calendarBirthdays: [allDay("Jo's Birthday", now, 3)],
       calendarF1: [
-        timed(`⏱️ ${F1} - Qualifying`, at(now, 2, 17), 60, 'Singapore'),
+        timed(`⏱️ ${F1} - Qualifying`, at(now, 2, 17), 60, {
+          location: 'Singapore',
+          description: F1_BLURB,
+        }),
       ],
     }),
   },
@@ -88,6 +107,11 @@ export const calendarScenarios: CalendarScenario[] = [
             'Dentist appointment (bring the referral letter and insurance details)',
             at(now, 0, later),
             45,
+            {
+              location: 'High Street Dental Practice',
+              description:
+                'Check in 10 minutes early.\nBring the referral letter and insurance details.',
+            },
           ),
           timed('Swimming lessons', at(now, 0, Math.min(later + 1, 23)), 60),
         ],
@@ -97,9 +121,12 @@ export const calendarScenarios: CalendarScenario[] = [
             `🏎 ${F1} - Practice 3`,
             at(now, 0, Math.min(later + 1, 23), 30),
             60,
-            'Singapore',
+            { location: 'Singapore', description: F1_BLURB },
           ),
-          timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120, 'Singapore'),
+          timed(`🏁 ${F1} - Race`, at(now, 1, 13), 120, {
+            location: 'Singapore',
+            description: F1_BLURB,
+          }),
         ],
       };
     },
@@ -116,31 +143,31 @@ export const calendarScenarios: CalendarScenario[] = [
           '🏎 FORMULA 1 ETIHAD AIRWAYS ABU DHABI GRAND PRIX 2026 - Practice 1',
           at(now, 0, Math.min(now.getHours() + 1, 22)),
           60,
-          'United Arab Emirates',
+          { location: 'United Arab Emirates', description: F1_BLURB },
         ),
         timed(
           '⏱️ FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Sprint Qualification',
           at(now, 1, 12),
           60,
-          'Singapore',
+          { location: 'Singapore', description: F1_BLURB },
         ),
         timed(
           '🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Sprint Race',
           at(now, 1, 16),
           60,
-          'Singapore',
+          { location: 'Singapore', description: F1_BLURB },
         ),
         timed(
           '🏎 FORMULA 1 MSC CRUISES UNITED STATES GRAND PRIX 2026 - Practice 2',
           at(now, 2, 22),
           60,
-          'United States',
+          { location: 'United States', description: F1_BLURB },
         ),
         timed(
           '🏁 FORMULA 1 GRAN PREMIO DE LA CIUDAD DE MÉXICO 2026 - Race',
           at(now, 3, 20),
           120,
-          'Mexico',
+          { location: 'Mexico', description: F1_BLURB },
         ),
       ],
     }),
