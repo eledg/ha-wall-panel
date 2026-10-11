@@ -63,7 +63,6 @@ describe('createHaStore', () => {
     const store = createHaStore(undefined, bad);
 
     expect(store.getSnapshot().subscribed).toEqual([
-      config.entities.officeIlluminance.id,
       config.entities.weather.id,
       config.entities.calendarFamily.id,
       config.entities.calendarF1.id,

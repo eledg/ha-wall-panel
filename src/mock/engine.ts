@@ -92,9 +92,7 @@ export const createMockHa = (cfg: typeof config = config) => {
   };
 
   const light = cfg.entities.officeLight.id;
-  const lux = cfg.entities.officeIlluminance.id;
   entities.set(light, make(light, 'off'));
-  entities.set(lux, make(lux, '120', { unit_of_measurement: 'lx' }));
   const weather = cfg.entities.weather.id;
   const scenarios = weatherScenarios();
   let scenario = scenarios[0]!;

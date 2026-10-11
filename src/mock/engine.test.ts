@@ -6,7 +6,6 @@ import { createMockHa, UNRELATED_ID } from './engine.ts';
 import { createHaStore } from '../ha/store.ts';
 
 const LIGHT = config.entities.officeLight.id;
-const LUX = config.entities.officeIlluminance.id;
 const WEATHER = config.entities.weather.id;
 const CALENDARS = [
   config.entities.calendarFamily,
@@ -31,13 +30,7 @@ describe('createMockHa', () => {
     const { latest } = await connect();
 
     expect(Object.keys(latest()).sort()).toEqual(
-      [
-        LIGHT,
-        LUX,
-        WEATHER,
-        ...CALENDARS.map(({ id }) => id),
-        UNRELATED_ID,
-      ].sort(),
+      [LIGHT, WEATHER, ...CALENDARS.map(({ id }) => id), UNRELATED_ID].sort(),
     );
     expect(latest()[LIGHT]?.state).toBe('off');
   });
@@ -61,7 +54,7 @@ describe('createMockHa', () => {
 
     const after = seen.at(-1)!;
     expect(after[LIGHT]).not.toBe(before[LIGHT]);
-    expect(after[LUX]).toBe(before[LUX]);
+    expect(after[WEATHER]).toBe(before[WEATHER]);
   });
 
   it('rejects unknown services and entities', async () => {
@@ -80,10 +73,10 @@ describe('createMockHa', () => {
     mock.controls.setUnavailable(LIGHT);
     expect(latest()[LIGHT]?.state).toBe('unavailable');
 
-    mock.controls.setState(LUX, '55');
-    expect(latest()[LUX]).toMatchObject({
-      state: '55',
-      attributes: { unit_of_measurement: 'lx' },
+    mock.controls.setState(WEATHER, 'rainy', { temperature: 9 });
+    expect(latest()[WEATHER]).toMatchObject({
+      state: 'rainy',
+      attributes: { temperature: 9 },
     });
   });
 
@@ -105,7 +98,6 @@ describe('store against the mock', () => {
       'calendarBirthdays',
       'calendarF1',
       'calendarFamily',
-      'officeIlluminance',
       'officeLight',
       'weather',
     ]);

@@ -14,11 +14,6 @@ export const config = {
   entities: {
     /** Office light, via the display's relay. A plain switch: no dimming. */
     officeLight: spec('switch', 'switch.shellywallx2i_office'),
-    /** The display's own lux sensor. */
-    officeIlluminance: spec(
-      'sensor',
-      'sensor.shellywallx2i_office_illuminance',
-    ),
     /** Met Office, London: current conditions plus hourly forecast. */
     weather: spec('weather', 'weather.met_office_london'),
     /** Shared family calendar. */
