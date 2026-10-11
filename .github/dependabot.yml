@@ -1,0 +1,47 @@
+version: 2
+
+# Every merged PR becomes a release (see CONTRIBUTING.md), so updates are
+# batched monthly and grouped to keep the PR count low.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+      time: '03:00'
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    # Skip versions published in the last week (supply-chain safety).
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    labels:
+      - 'type:chore'
+      - 'domain:platform'
+    groups:
+      # One PR for all minor/patch bumps; majors arrive as separate PRs.
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      time: '03:00'
+      timezone: Europe/London
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+      include: scope
+    labels:
+      - 'type:ci'
+      - 'domain:platform'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
