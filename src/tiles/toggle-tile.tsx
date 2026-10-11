@@ -37,7 +37,7 @@ export const ToggleTile = ({
   area: GridArea;
   store?: HaStore;
 }) => {
-  const state = useSnapshot(store).entities[entity]?.state;
+  const state = useSnapshot(store, (s) => s.entities[entity]?.state);
   const offline = useOffline();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   const [failed, setFailed] = useState(false);

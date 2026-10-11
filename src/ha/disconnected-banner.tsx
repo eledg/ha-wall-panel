@@ -13,7 +13,10 @@ export const DisconnectedBanner = ({
 }: {
   store?: HaStore;
 }) => {
-  const { status, lastUpdate } = useSnapshot(store);
+  const [status, lastUpdate] = useSnapshot(
+    store,
+    (s) => [s.status, s.lastUpdate] as const,
+  );
   if (status !== 'disconnected' && status !== 'error') return null;
   return (
     <div

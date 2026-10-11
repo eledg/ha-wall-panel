@@ -4,6 +4,7 @@ import { loadEnv } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 
 import { buildInfoPlugin, resolveBuildInfo } from './build-info.ts';
+import { bundleBudgetPlugin } from './bundle-budget.ts';
 import { devHaPlugin } from './dev-ha.ts';
 
 // https://vite.dev/config/
@@ -19,6 +20,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       preact(),
       buildInfoPlugin(resolveBuildInfo(env)),
+      bundleBudgetPlugin(),
       devHaPlugin(env),
     ],
     // Fail rather than drift to another port, so `pnpm dev` is never mistaken

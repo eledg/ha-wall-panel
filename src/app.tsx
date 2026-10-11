@@ -3,6 +3,7 @@ import { Diagnostics } from './diagnostics.tsx';
 import { HaConnection } from './ha/connection.tsx';
 import { HaDebug } from './ha/debug.tsx';
 import { DisconnectedBanner } from './ha/disconnected-banner.tsx';
+import { PerfProbe } from './perf/probe.tsx';
 import { Shell } from './shell.tsx';
 import { CalendarTile } from './tiles/calendar-tile.tsx';
 import { ClockTile } from './tiles/clock-tile.tsx';
@@ -23,6 +24,7 @@ export const App = () => (
     <DisconnectedBanner />
     <Diagnostics>
       <HaDebug />
+      <PerfProbe />
     </Diagnostics>
   </>
 );

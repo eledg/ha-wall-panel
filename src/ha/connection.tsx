@@ -19,7 +19,9 @@ export const HaConnection = ({
   store?: HaStore;
   children?: ComponentChildren;
 }) => (
-  <OfflineContext.Provider value={useSnapshot(store).status !== 'connected'}>
+  <OfflineContext.Provider
+    value={useSnapshot(store, (s) => s.status !== 'connected')}
+  >
     {children}
   </OfflineContext.Provider>
 );

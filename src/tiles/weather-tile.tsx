@@ -62,8 +62,16 @@ export const WeatherTile = ({
   store?: HaStore;
   now?: () => Date;
 }) => {
-  const { status, subscribed, entities, forecasts } = useSnapshot(store);
-  const entity = entities.weather;
+  const [status, subscribed, entity, forecast] = useSnapshot(
+    store,
+    (s) =>
+      [
+        s.status,
+        s.subscribed,
+        s.entities.weather,
+        s.forecasts.weather,
+      ] as const,
+  );
   const usable =
     entity !== undefined &&
     entity.state !== 'unavailable' &&
@@ -91,7 +99,7 @@ export const WeatherTile = ({
   }
 
   const [icon, label] = describe(entity.state);
-  const periods = pickForecast(forecasts.weather ?? [], now());
+  const periods = pickForecast(forecast ?? [], now());
   return (
     <Tile area={area} state={state}>
       <div class="flex h-full items-center gap-4">

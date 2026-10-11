@@ -5,8 +5,10 @@ import { App } from './app.tsx';
 import { startAutoReload } from './auto-reload.ts';
 import { connectHa } from './ha/connect.ts';
 import { haAuth, haStore } from './ha/instance.ts';
+import { startPerf } from './perf/counters.ts';
 
 render(<App />, document.getElementById('app')!);
+startPerf(haStore);
 
 void connectHa(haStore, haAuth);
 

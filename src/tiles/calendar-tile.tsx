@@ -1,3 +1,4 @@
+import type { HassEntity } from 'home-assistant-js-websocket';
 import { useCallback, useState } from 'preact/hooks';
 
 import { formatTime } from '../format.ts';
@@ -17,11 +18,13 @@ import type { TileState } from './tile.tsx';
 import { CALENDAR_STALE_MS } from '../ha/calendar.ts';
 import type { CalendarEvent } from '../ha/calendar.ts';
 import { haStore } from '../ha/instance.ts';
-import type { EntityKey, HaStore } from '../ha/store.ts';
+import type { EntityKey, HaSnapshot, HaStore } from '../ha/store.ts';
 import { useSnapshot } from '../ha/use-snapshot.ts';
 import { AlertIcon } from '../icons/alert-icon.tsx';
 
 const MAX_ROWS = 4;
+
+const CALENDAR_KEYS = Object.keys(CALENDARS) as EntityKey[];
 
 /**
  * Splits events into the highlighted "next" one and up to four more rows, as
@@ -56,8 +59,24 @@ export const CalendarTile = ({
   store?: HaStore;
   now?: () => Date;
 }) => {
-  const { status, entities, calendars, calendarUpdated, calendarFailed } =
-    useSnapshot(store);
+  // Only the calendar entities, so a light or weather update does not redraw.
+  const [status, calendars, calendarUpdated, calendarFailed, ...found] =
+    useSnapshot(store, (s) => [
+      s.status,
+      s.calendars,
+      s.calendarUpdated,
+      s.calendarFailed,
+      ...CALENDAR_KEYS.map((key) => s.entities[key]),
+    ]) as [
+      HaSnapshot['status'],
+      HaSnapshot['calendars'],
+      HaSnapshot['calendarUpdated'],
+      boolean,
+      ...(HassEntity | undefined)[],
+    ];
+  const entities = Object.fromEntries(
+    CALENDAR_KEYS.map((key, i) => [key, found[i]]),
+  ) as Partial<Record<EntityKey, HassEntity>>;
   const current = useMinute(now);
   const [open, setOpen] = useState<CalendarEvent>();
   const close = useCallback(() => setOpen(undefined), []);
@@ -66,7 +85,7 @@ export const CalendarTile = ({
   // A missing entity is a config error, so its calendar is left out. An
   // unavailable one is usually transient (HA reloading an integration), so its
   // cached events stay on screen. Either is flagged in the legend.
-  const keys = Object.keys(CALENDARS) as EntityKey[];
+  const keys = CALENDAR_KEYS;
   const present = keys.filter((key) => entities[key] !== undefined);
   const healthy = (key: EntityKey) =>
     present.includes(key) &&
