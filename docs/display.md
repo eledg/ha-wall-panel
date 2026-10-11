@@ -77,3 +77,12 @@ Findings from the first deploy of the app (#57 to #61), measured with a temporar
 
 - Photos of the screen are misleading: the panel and the camera shift colours (black looks navy, the amber tile looks lime), and the firmware's "Please remove the protective film" splash shows through the page. Do not judge colours from photos.
 - Show computed styles (`getComputedStyle`), the user agent, viewport and scroll sizes on screen in a temporary probe in the diagnostics modal, then photograph the text. This found the button cause in one deploy after several rounds of guessing.
+
+## Burn-in
+
+Decision for #31. The panel type is not confirmed, so the app shifts as cheap insurance rather than waiting.
+
+- `src/pixel-shift.ts` moves the tile grid with a CSS `transform`, up to 4 px from centre, one step every 5 minutes, gliding over 60 seconds. A transform never triggers layout, so nothing reflows. The offset comes from the wall clock, so it survives reloads with no stored state.
+- The page edge padding (1.6rem) is not shifted, so tiles stay clear of the system-gesture zone. Overlays (banner, diagnostics) are not shifted.
+- Not in the Lovable prototype; added here.
+- Still to do for #31's acceptance: a multi-hour run on the display.

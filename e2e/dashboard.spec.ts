@@ -6,9 +6,12 @@ const NOW = new Date('2026-03-14T09:41:00Z');
 test.beforeEach(async ({ page }) => {
   await page.clock.install({ time: NOW });
   await page.goto('/local/office-wall-display/');
-  // The mock controls are a dev aid, not part of the display.
+  // The mock controls are a dev aid, not part of the display. The pixel shift
+  // moves the grid by a few px, so hold it still: baselines then never depend
+  // on the shift path or step (it has its own test below).
   await page.addStyleTag({
-    content: '#mock-overlay { display: none !important; }',
+    content:
+      '#mock-overlay { display: none !important; } .dash-grid { transform: none !important; }',
   });
   await page.clock.runFor(1000);
 });
@@ -45,4 +48,14 @@ test('event details: F1 shows the full title', async ({ page }) => {
     'FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race',
   );
   await expect(page).toHaveScreenshot('event-f1.png');
+});
+
+test('pixel shift: the grid moves every five minutes', async ({ page }) => {
+  // The style tag above pins the transform, so read the inline style instead.
+  const shift = () =>
+    page.locator('.dash-grid').evaluate((el) => el.getAttribute('style'));
+  const before = await shift();
+  expect(before).toContain('translate(');
+  await page.clock.runFor(5 * 60_000);
+  expect(await shift()).not.toBe(before);
 });

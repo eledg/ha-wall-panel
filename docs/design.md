@@ -42,3 +42,5 @@ Most of `src/components/ui/` is unused shadcn scaffolding; ignore it.
   back to two columns.
 - **Tile shell** is `src/tiles/tile.tsx`. Tile states are `loading`, `normal`,
   `unavailable` and `stale`.
+
+Pixel shift (a slow few-pixel drift of the tile grid, `src/pixel-shift.ts`) is not in the prototype; it was added for burn-in (#31, `docs/display.md`).

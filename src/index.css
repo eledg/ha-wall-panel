@@ -68,6 +68,8 @@
   grid-template-columns: var(--cols);
   grid-template-rows: var(--rows);
   grid-template-areas: var(--areas);
+  /* Pixel shift (src/pixel-shift.ts): glide so a step is never seen. */
+  transition: transform 60s linear;
   @media (orientation: portrait) {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: none;
