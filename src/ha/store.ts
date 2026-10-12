@@ -26,6 +26,13 @@ type DomainServices = {
   sensor: never;
   weather: never;
   calendar: never;
+  climate:
+    | 'turn_on'
+    | 'turn_off'
+    | 'set_hvac_mode'
+    | 'set_temperature'
+    | 'set_fan_mode'
+    | 'set_swing_mode';
 };
 
 /** `WeatherEntityFeature.FORECAST_HOURLY`: bit 2 of `supported_features`. */

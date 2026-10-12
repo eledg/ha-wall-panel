@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { config, placeholder, validateConfig } from './config.ts';
 
 const withEntities = (
-  entities: Record<string, { domain: 'sensor' | 'switch'; id: string }>,
+  entities: Record<
+    string,
+    { domain: 'climate' | 'sensor' | 'switch'; id: string }
+  >,
 ) => ({
   entities,
 });
@@ -45,5 +48,18 @@ describe('validateConfig', () => {
     );
 
     expect(issues[0]?.message).toMatch(/switch domain/);
+  });
+
+  it('checks the climate domain', () => {
+    expect(
+      validateConfig(
+        withEntities({ ac: { domain: 'climate', id: 'climate.office' } }),
+      ),
+    ).toEqual([]);
+    expect(
+      validateConfig(
+        withEntities({ ac: { domain: 'climate', id: 'switch.office' } }),
+      )[0]?.message,
+    ).toMatch(/climate domain/);
   });
 });

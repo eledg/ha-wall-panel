@@ -1,3 +1,4 @@
+import { acPanel } from './ac.tsx';
 import { calendarPanel } from './calendar.tsx';
 import { connectionPanel } from './connection.tsx';
 import { lightPanel } from './light.tsx';
@@ -10,4 +11,5 @@ export const panels: MockPanel[] = [
   weatherPanel,
   calendarPanel,
   lightPanel,
+  acPanel,
 ];

@@ -94,6 +94,9 @@ describe('production build', () => {
   afterEach(() => rmSync(out, { recursive: true, force: true }));
 
   it('does not contain the dev token', async () => {
+    // Vitest sets NODE_ENV=test, which would build the larger development bundle.
+    const nodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
     process.env.HA_DEV_TOKEN = 'sentinel-token';
     process.env.VITE_HA_TOKEN = 'sentinel-token';
     try {
@@ -102,6 +105,7 @@ describe('production build', () => {
         build: { outDir: out, emptyOutDir: true },
       });
     } finally {
+      process.env.NODE_ENV = nodeEnv;
       delete process.env.HA_DEV_TOKEN;
       delete process.env.VITE_HA_TOKEN;
     }

@@ -2,6 +2,12 @@ import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { config } from '../config.ts';
 import type { HaDeps } from '../ha/store.ts';
+import {
+  AC_DEFAULT_MODE,
+  acAttributes,
+  acOddAttributes,
+  applyClimateService,
+} from './scenarios/ac.ts';
 import { calendarScenarios } from './scenarios/calendar.ts';
 import { forecastFor, weatherScenarios } from './scenarios/weather.ts';
 
@@ -35,9 +41,9 @@ export type MockControls = {
   failForecast: (failing: boolean) => void;
   /** Whether forecast fetches are currently set to fail. */
   isForecastFailing: () => boolean;
-  /** Makes switch service calls (the light toggle) fail, to test rollback. */
+  /** Makes switch and climate service calls (the light, the AC) fail, to test rollback. */
   failServices: (failing: boolean) => void;
-  /** Whether switch service calls are currently set to fail. */
+  /** Whether switch and climate service calls are currently set to fail. */
   isServicesFailing: () => boolean;
   /** Switches the weather entity (state, attributes and forecast) to a scenario. */
   setWeather: (scenarioId: string) => void;
@@ -55,6 +61,10 @@ export type MockControls = {
   isCalendarFailing: () => boolean;
   /** Ids and labels only, as for weather. */
   calendarScenarios: { id: string; label: string }[];
+  /** Gives the AC holes in its data and an option with no label (or restores it). */
+  setAcOdd: (odd: boolean) => void;
+  /** Whether the AC is showing odd data. */
+  isAcOdd: () => boolean;
   /** Calls `listener` after every change the mock makes; returns the unsubscribe. */
   subscribe: (listener: () => void) => () => void;
 };
@@ -107,6 +117,17 @@ export const createMockHa = (cfg: typeof config = config) => {
   for (const key of calendarKeys) {
     entities.set(cfg.entities[key].id, make(cfg.entities[key].id, 'off'));
   }
+  const ac = cfg.entities.acClimate.id;
+  entities.set(ac, make(ac, 'off', acAttributes()));
+  const acSwitches = [
+    cfg.entities.acPowerful.id,
+    cfg.entities.acEconomy.id,
+    cfg.entities.acQuietFan.id,
+  ];
+  for (const id of acSwitches) entities.set(id, make(id, 'off'));
+  // What `climate.turn_on` restores, as the real unit does.
+  let acLastMode = AC_DEFAULT_MODE;
+  let acOdd = false;
   let forecastFails = false;
   let servicesFail = false;
   entities.set(UNRELATED_ID, make(UNRELATED_ID, 'off'));
@@ -153,7 +174,7 @@ export const createMockHa = (cfg: typeof config = config) => {
       }
       return Promise.resolve(calendarScenario.events(new Date())[key] ?? []);
     },
-    callService: (_conn, domain, service, _data, target) => {
+    callService: (_conn, domain, service, data, target) => {
       if (!connected) {
         return Promise.reject(new Error('Mock HA: connection lost'));
       }
@@ -172,6 +193,25 @@ export const createMockHa = (cfg: typeof config = config) => {
       const entity = id ? entities.get(id) : undefined;
       if (!id || !entity) {
         return Promise.reject(new Error(`Mock HA: unknown entity ${id}`));
+      }
+      if (domain === 'climate') {
+        if (servicesFail) {
+          return Promise.reject(new Error('Mock HA: service call failed'));
+        }
+        try {
+          const next = applyClimateService(
+            entity.state,
+            entity.attributes,
+            service,
+            data as Record<string, unknown> | undefined,
+            acLastMode,
+          );
+          if (next.state !== 'off') acLastMode = next.state;
+          setState(id, next.state, next.attributes);
+          return Promise.resolve();
+        } catch (err) {
+          return Promise.reject(err as Error);
+        }
       }
       if (domain !== 'switch' || !SWITCH_SERVICES.includes(service)) {
         return Promise.reject(
@@ -213,6 +253,15 @@ export const createMockHa = (cfg: typeof config = config) => {
       watchers.forEach((watcher) => watcher());
     },
     isServicesFailing: () => servicesFail,
+    setAcOdd: (odd) => {
+      acOdd = odd;
+      setState(
+        ac,
+        entities.get(ac)?.state ?? 'off',
+        odd ? acOddAttributes() : acAttributes(),
+      );
+    },
+    isAcOdd: () => acOdd,
     getWeatherScenario: () => scenario.id,
     setWeather: (id) => {
       scenario = scenarios.find((s) => s.id === id) ?? scenario;

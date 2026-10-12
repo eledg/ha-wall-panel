@@ -7,6 +7,12 @@ import { createHaStore } from '../ha/store.ts';
 
 const LIGHT = config.entities.officeLight.id;
 const WEATHER = config.entities.weather.id;
+const AC = config.entities.acClimate.id;
+const AC_SWITCHES = [
+  config.entities.acPowerful.id,
+  config.entities.acEconomy.id,
+  config.entities.acQuietFan.id,
+];
 const CALENDARS = [
   config.entities.calendarFamily,
   config.entities.calendarF1,
@@ -18,8 +24,13 @@ const connect = async () => {
   const conn = await mock.deps.createConnection({});
   const seen: HassEntities[] = [];
   mock.deps.subscribeEntities(conn, (all) => seen.push(all));
-  const call = (service: string, domain = 'switch', entity = LIGHT) =>
-    mock.deps.callService(conn, domain, service, undefined, {
+  const call = (
+    service: string,
+    domain = 'switch',
+    entity = LIGHT,
+    data?: object,
+  ) =>
+    mock.deps.callService(conn, domain, service, data, {
       entity_id: entity,
     });
   return { mock, seen, call, latest: () => seen.at(-1)! };
@@ -30,7 +41,14 @@ describe('createMockHa', () => {
     const { latest } = await connect();
 
     expect(Object.keys(latest()).sort()).toEqual(
-      [LIGHT, WEATHER, ...CALENDARS.map(({ id }) => id), UNRELATED_ID].sort(),
+      [
+        LIGHT,
+        WEATHER,
+        AC,
+        ...AC_SWITCHES,
+        ...CALENDARS.map(({ id }) => id),
+        UNRELATED_ID,
+      ].sort(),
     );
     expect(latest()[LIGHT]?.state).toBe('off');
   });
@@ -85,6 +103,105 @@ describe('createMockHa', () => {
   });
 });
 
+describe('the mock AC', () => {
+  const ac = (service: string, data?: object) =>
+    connect().then(({ mock, call, latest }) => ({
+      mock,
+      latest,
+      run: (s = service, d = data) => call(s, 'climate', AC, d),
+    }));
+
+  it('starts off with the real entity attributes', async () => {
+    const { latest } = await ac('turn_on');
+
+    expect(latest()[AC]?.state).toBe('off');
+    expect(latest()[AC]?.attributes).toMatchObject({
+      hvac_modes: ['off', 'cool', 'heat', 'fan_only', 'dry', 'auto'],
+      temperature: 24,
+      min_temp: 16,
+      max_temp: 30,
+      target_temp_step: 0.5,
+    });
+  });
+
+  it('turns on to the last mode used, and off again', async () => {
+    const { run, latest } = await ac('turn_on');
+
+    await run('turn_on');
+    expect(latest()[AC]?.state).toBe('cool');
+    await run('set_hvac_mode', { hvac_mode: 'heat' });
+    await run('turn_off');
+    expect(latest()[AC]?.state).toBe('off');
+    await run('turn_on');
+    expect(latest()[AC]?.state).toBe('heat');
+  });
+
+  it('sets the target, fan and swing, keeping the rest', async () => {
+    const { run, latest } = await ac('turn_on');
+
+    await run('set_temperature', { temperature: 21.5 });
+    await run('set_fan_mode', { fan_mode: 'Quiet' });
+    await run('set_swing_mode', { swing_mode: 'Lowest' });
+
+    expect(latest()[AC]?.attributes).toMatchObject({
+      temperature: 21.5,
+      fan_mode: 'Quiet',
+      swing_mode: 'Lowest',
+      hvac_modes: expect.any(Array),
+    });
+  });
+
+  it('rejects values the entity does not offer', async () => {
+    const { run } = await ac('turn_on');
+
+    await expect(run('set_temperature', { temperature: 31 })).rejects.toThrow(
+      'valid target',
+    );
+    await expect(run('set_temperature', { temperature: 21.3 })).rejects.toThrow(
+      'valid target',
+    );
+    await expect(run('set_hvac_mode', { hvac_mode: 'turbo' })).rejects.toThrow(
+      'hvac_mode',
+    );
+    await expect(run('set_fan_mode', { fan_mode: 'gale' })).rejects.toThrow(
+      'fan_mode',
+    );
+    await expect(run('explode')).rejects.toThrow('no service climate.explode');
+  });
+
+  it('fails climate calls when services are set to fail', async () => {
+    const { mock, run, latest } = await ac('turn_on');
+
+    mock.controls.failServices(true);
+
+    await expect(run('turn_on')).rejects.toThrow('service call failed');
+    expect(latest()[AC]?.state).toBe('off');
+  });
+
+  it('toggles the AC switches like any switch', async () => {
+    const { mock } = await ac('turn_on');
+    const conn = await mock.deps.createConnection({});
+    await mock.deps.callService(conn, 'switch', 'toggle', undefined, {
+      entity_id: AC_SWITCHES[0],
+    });
+
+    expect(mock.controls.getState(AC_SWITCHES[0]!)?.state).toBe('on');
+  });
+
+  it('can show odd data and restore it', async () => {
+    const { mock } = await ac('turn_on');
+
+    mock.controls.setAcOdd(true);
+    expect(mock.controls.getState(AC)?.attributes).not.toHaveProperty(
+      'current_temperature',
+    );
+    mock.controls.setAcOdd(false);
+    expect(mock.controls.getState(AC)?.attributes).toHaveProperty(
+      'current_temperature',
+    );
+  });
+});
+
 describe('store against the mock', () => {
   it('tracks only configured entities and follows changes', async () => {
     const mock = createMockHa();
@@ -95,6 +212,10 @@ describe('store against the mock', () => {
     const { status, entities } = store.getSnapshot();
     expect(status).toBe('connected');
     expect(Object.keys(entities).sort()).toEqual([
+      'acClimate',
+      'acEconomy',
+      'acPowerful',
+      'acQuietFan',
       'calendarBirthdays',
       'calendarF1',
       'calendarFamily',

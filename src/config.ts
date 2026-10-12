@@ -3,7 +3,8 @@ export const PLACEHOLDER_PREFIX = 'TODO:';
 
 export const placeholder = (what: string) => `${PLACEHOLDER_PREFIX}${what}`;
 
-export type EntityDomain = 'calendar' | 'sensor' | 'switch' | 'weather';
+export type EntityDomain =
+  'calendar' | 'climate' | 'sensor' | 'switch' | 'weather';
 
 type EntitySpec = { domain: EntityDomain; id: string };
 
@@ -22,6 +23,26 @@ export const config = {
     calendarF1: spec('calendar', 'calendar.f1'),
     /** Birthdays: yearly all-day events. */
     calendarBirthdays: spec('calendar', 'calendar.birthdays'),
+    /** Office air conditioning: mode, target, fan speed and swing. */
+    acClimate: spec(
+      'climate',
+      'climate.office_climate_air_conditioning_office',
+    ),
+    /** AC "Powerful" boost. */
+    acPowerful: spec(
+      'switch',
+      'switch.office_climate_air_conditioning_office_powerful',
+    ),
+    /** AC economy mode. */
+    acEconomy: spec(
+      'switch',
+      'switch.office_climate_air_conditioning_office_economy_mode',
+    ),
+    /** AC quiet fan. */
+    acQuietFan: spec(
+      'switch',
+      'switch.office_climate_air_conditioning_office_quiet_fan',
+    ),
   },
 } as const satisfies { entities: Record<string, EntitySpec> };
 

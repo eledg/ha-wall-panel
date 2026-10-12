@@ -67,6 +67,10 @@ describe('createHaStore', () => {
       config.entities.calendarFamily.id,
       config.entities.calendarF1.id,
       config.entities.calendarBirthdays.id,
+      config.entities.acClimate.id,
+      config.entities.acPowerful.id,
+      config.entities.acEconomy.id,
+      config.entities.acQuietFan.id,
     ]);
   });
 

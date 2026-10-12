@@ -29,6 +29,8 @@ Most of `src/components/ui/` is unused shadcn scaffolding; ignore it.
 - Keep taps out of the `p-edge` zone.
 - Overlays set `data-blocks-reload` so auto-reload waits for them.
 - Keep the self-hosted Open Sans font; the display may be offline.
+- The AC sheet shows Mode, Fan speed and Swing as three summary buttons; each opens
+  a full-sheet picker of the entity's own options (the prototype's `AcPanel`).
 - Real data comes from the HA store (`src/ha/`), not from the prototype's mock.
 
 ## What is shared

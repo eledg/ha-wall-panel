@@ -68,6 +68,7 @@ describe('Overlay', () => {
       'Weather',
       'Calendar',
       'Light',
+      'AC',
     ]);
   });
 

@@ -2,13 +2,17 @@
 
 Entity IDs the dashboard uses, added one milestone at a time.
 
-| Entity ID                        | Domain     | Attributes read                                                                    | Notes                                                   |
-| -------------------------------- | ---------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `switch.shellywallx2i_office`    | `switch`   | `state`                                                                            | Office room light, via the display's relay. No dimming. |
-| `weather.met_office_london` | `weather`  | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts` | Met Office, London. See [Weather](#weather).       |
-| `calendar.family`                | `calendar` | `state`; events via REST                                                           | Shared family calendar. See [Calendars](#calendars).    |
-| `calendar.f1`                    | `calendar` | `state`; events via REST                                                           | Formula 1 race weekends.                                |
-| `calendar.birthdays`             | `calendar` | `state`; events via REST                                                           | Yearly all-day birthdays.                               |
+| Entity ID                                                    | Domain     | Attributes read                                                                                                                         | Notes                                                   |
+| ------------------------------------------------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `switch.shellywallx2i_office`                                | `switch`   | `state`                                                                                                                                 | Office room light, via the display's relay. No dimming. |
+| `weather.met_office_london`                             | `weather`  | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Met Office, London. See [Weather](#weather).       |
+| `calendar.family`                                            | `calendar` | `state`; events via REST                                                                                                                | Shared family calendar. See [Calendars](#calendars).    |
+| `calendar.f1`                                                | `calendar` | `state`; events via REST                                                                                                                | Formula 1 race weekends.                                |
+| `calendar.birthdays`                                         | `calendar` | `state`; events via REST                                                                                                                | Yearly all-day birthdays.                               |
+| `climate.office_climate_air_conditioning_office`             | `climate`  | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | Office AC. See [Air conditioning](#air-conditioning).   |
+| `switch.office_climate_air_conditioning_office_powerful`     | `switch`   | `state`                                                                                                                                 | AC Powerful boost.                                      |
+| `switch.office_climate_air_conditioning_office_economy_mode` | `switch`   | `state`                                                                                                                                 | AC economy mode.                                        |
+| `switch.office_climate_air_conditioning_office_quiet_fan`    | `switch`   | `state`                                                                                                                                 | AC quiet fan.                                           |
 
 ## Calendars
 
@@ -67,3 +71,30 @@ forecasts, and the Met Office entity reports local observations.
   reports 7. The store skips the forecast call when the hourly bit is unset.
 - HA sends no event when a forecast changes, so the store refetches on entity
   changes, on reconnect, and every 30 minutes.
+
+## Air conditioning
+
+The office unit is the only one shown; the master bedroom has its own climate
+entity, which the dashboard ignores. The tile (`tiles/ac/ac-tile.tsx`) opens a control
+sheet (`ac-sheet.tsx`).
+
+- **State** is the HVAC mode: `off`, `cool`, `heat`, `fan_only`, `dry` or `auto`.
+  The sheet's power button uses `climate.turn_on` / `climate.turn_off`; the mode
+  picker lists `hvac_modes` without `off`.
+- **Attributes** read: `temperature` (the target), `current_temperature`,
+  `min_temp` (16), `max_temp` (30), `target_temp_step` (0.5), `fan_mode` /
+  `fan_modes` (`Quiet`, `low`, `medium`, `high`, `auto`) and `swing_mode` /
+  `swing_modes` (`Vertical Swing`, `Highest`, `High`, `Low`, `Lowest`). The
+  limits and step are never shown: they only stop the − / + buttons. The
+  remaining attributes (`indoor_tmp: "7400"`, `set_tmp`, ...) are the unit's
+  raw values in odd units; ignore them.
+- **Services** (`supported_features` 425): `turn_on`, `turn_off`,
+  `set_hvac_mode`, `set_temperature`, `set_fan_mode`, `set_swing_mode`. No
+  presets or humidity. Rapid − / + taps are sent as one `set_temperature`.
+- **Swing** is one setting with two kinds of value: `Vertical Swing` sweeps the
+  flap, the other four hold it at a fixed height. The picker labels the first
+  `Swing`.
+- **Switches** Powerful, Economy and Quiet are separate `switch` entities. HA
+  also has `..._power` (duplicates the climate on/off), `..._energy_saving_fan`,
+  `..._indoor_led` and outdoor / indoor temperature sensors; the dashboard
+  ignores them (the indoor sensor repeats `current_temperature`).

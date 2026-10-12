@@ -31,6 +31,12 @@ each control stays visible. Its panels:
   notes (the F1 ones carry the promotional text the real feed has, which is dropped).
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the
   next toggles, so the tile flips, reverts and flashes in the warning colours.
+- **AC**: sets the mode (or `off`), flips each switch as HA would, makes the AC
+  or the Powerful switch unavailable, shows `Odd data` (no `current_temperature`,
+  a fan mode with no label) and `Make calls fail`, so the sheet's controls revert
+  and flash. The mock validates service values like HA: a target outside 16-30 or
+  off the 0.5 step, or a mode the entity doesn't list, is rejected. `turn_on`
+  brings back the last mode used. Attributes live in `src/mock/scenarios/ac.ts`.
 - **Connection**: Disconnected shows tiles dimmed with a `stale` badge and the
   `Reconnecting… last updated HH:MM` pill at the top. Changes made meanwhile are
   held and service calls fail; Connected replays the latest state, as a real
