@@ -45,8 +45,9 @@ export type ManualUpdate = {
 };
 
 /**
- * The build version, bottom right. Tapping it opens a modal with the build
- * details and whatever debug content is passed as children.
+ * The build version, bottom right in the edge margin under the last grid tile.
+ * Tapping it opens a modal with the build details and whatever debug content
+ * is passed as children.
  */
 export const Diagnostics = ({
   children,
@@ -100,7 +101,7 @@ export const Diagnostics = ({
       <button
         type="button"
         aria-label="Diagnostics"
-        class="fixed right-edge bottom-edge flex min-h-12 min-w-12 items-end justify-end bg-bg font-mono text-[10px] text-fg-faint"
+        class="fixed right-edge bottom-0 flex h-12 min-w-12 items-end justify-end pb-2 font-mono text-[10px] text-fg-faint"
         onClick={() => setOpen(true)}
       >
         {version}
