@@ -4,7 +4,8 @@
 
 /*
  * Design tokens for the wall display (944 x 459 CSS px, landscape, DPR 1.5;
- * see docs/display.md). Dark only: the screen is always on.
+ * see docs/display.md). Always dark: the screen is always on. At night
+ * (src/night.ts) the `[data-night]` block below swaps in a dimmer, warmer set.
  */
 @theme {
   --color-*: initial;
@@ -45,6 +46,22 @@
   --font-mono: ui-monospace, monospace;
 }
 
+/* Night palette, ported from the Lovable design. Overrides the @theme tokens. */
+[data-night='true'] {
+  --color-surface: oklch(0.1 0 0);
+  --color-surface-2: oklch(0.14 0 0);
+  --color-line: oklch(0.18 0 0);
+  --color-fg: oklch(0.6 0.01 60);
+  --color-fg-dim: oklch(0.42 0.006 60);
+  --color-fg-faint: oklch(0.3 0 0);
+  --color-accent: oklch(0.55 0.09 70);
+  --color-accent-fg: oklch(0.12 0.02 70);
+  --color-accent-soft: oklch(0.2 0.03 70);
+  --color-cal-family: oklch(0.55 0.07 100);
+  --color-cal-birthdays: oklch(0.5 0.06 230);
+  --color-cal-f1: oklch(0.52 0.07 140);
+}
+
 @utility tap {
   transition:
     transform 100ms ease-out,
@@ -69,7 +86,9 @@
   grid-template-rows: var(--rows);
   grid-template-areas: var(--areas);
   /* Pixel shift (src/pixel-shift.ts): glide so a step is never seen. */
-  transition: transform 60s linear;
+  transition:
+    transform 60s linear,
+    opacity 150ms;
   @media (orientation: portrait) {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: none;

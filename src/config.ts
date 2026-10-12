@@ -50,13 +50,27 @@ export const config = {
    * `entity` at it, dropping `attribute` (the state is then the reading).
    */
   temperature: { entity: 'acClimate', attribute: 'current_temperature' },
+  /**
+   * Night mode (src/night.ts): from `startHour` until `endHour` local time the
+   * palette turns warm and dim. It may span midnight. A tap wakes the display
+   * for `wakeMs`.
+   */
+  night: { startHour: 21, endHour: 7, wakeMs: 15_000 },
 } as const satisfies {
   entities: Record<string, EntitySpec>;
   temperature: { entity: string; attribute?: string };
+  night: NightConfig;
+};
+
+export type NightConfig = {
+  startHour: number;
+  endHour: number;
+  wakeMs: number;
 };
 
 export type Config = {
   entities: Record<string, EntitySpec>;
+  night?: NightConfig;
 };
 
 export type ConfigIssue = { key: string; message: string };
@@ -64,7 +78,24 @@ export type ConfigIssue = { key: string; message: string };
 const ENTITY_ID = /^([a-z_]+)\.([a-z0-9_]+)$/;
 
 /** Returns one issue per missing, placeholder or malformed entity. */
-export const validateConfig = (cfg: Config = config): ConfigIssue[] =>
+export const validateConfig = (cfg: Config = config): ConfigIssue[] => [
+  ...validateEntities(cfg),
+  ...validateNight(cfg.night),
+];
+
+const validateNight = (night?: NightConfig): ConfigIssue[] => {
+  if (!night) return [];
+  const hour = (h: number) => Number.isInteger(h) && h >= 0 && h <= 23;
+  if (!hour(night.startHour) || !hour(night.endHour))
+    return [{ key: 'night', message: 'hours must be whole numbers, 0 to 23' }];
+  if (night.startHour === night.endHour)
+    return [{ key: 'night', message: 'start and end hours must differ' }];
+  if (!(night.wakeMs > 0))
+    return [{ key: 'night', message: 'wakeMs must be positive' }];
+  return [];
+};
+
+const validateEntities = (cfg: Config): ConfigIssue[] =>
   Object.entries(cfg.entities).flatMap(
     ([key, { domain, id }]): ConfigIssue[] => {
       if (id.trim() === '') return [{ key, message: 'entity ID is missing' }];

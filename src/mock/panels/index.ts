@@ -2,6 +2,7 @@ import { acPanel } from './ac.tsx';
 import { calendarPanel } from './calendar.tsx';
 import { connectionPanel } from './connection.tsx';
 import { lightPanel } from './light.tsx';
+import { nightPanel } from './night.tsx';
 import type { MockPanel } from './types.ts';
 import { weatherPanel } from './weather.tsx';
 
@@ -12,4 +13,5 @@ export const panels: MockPanel[] = [
   calendarPanel,
   lightPanel,
   acPanel,
+  nightPanel,
 ];

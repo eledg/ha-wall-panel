@@ -86,3 +86,12 @@ Decision for #31. The panel type is not confirmed, so the app shifts as cheap in
 - The page edge padding (1.6rem) is not shifted, so tiles stay clear of the system-gesture zone. Overlays (banner, diagnostics) are not shifted.
 - Not in the Lovable prototype; added here.
 - Still to do for #31's acceptance: a multi-hour run on the display.
+
+## Night mode
+
+From 21:00 to 07:00 local time (`config.night` in `src/config.ts`) the app swaps
+to a dimmer, warmer palette (`[data-night]` in `src/index.css`) and fades the grid
+to 60% opacity. A tap anywhere wakes it for 15 seconds; that first tap is
+swallowed, so a stray touch changes nothing. This is purely the app's own theme:
+it does not touch the device's brightness or screen-off settings. In
+`pnpm dev:mock`, the "Night mode" panel forces night or day.

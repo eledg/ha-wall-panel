@@ -69,6 +69,7 @@ describe('Overlay', () => {
       'Calendar',
       'Light',
       'AC',
+      'Night mode',
     ]);
   });
 
