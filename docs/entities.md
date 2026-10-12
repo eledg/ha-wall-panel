@@ -98,3 +98,12 @@ sheet (`ac-sheet.tsx`).
   also has `..._power` (duplicates the climate on/off), `..._energy_saving_fan`,
   `..._indoor_led` and outdoor / indoor temperature sensors; the dashboard
   ignores them (the indoor sensor repeats `current_temperature`).
+
+## Office temperature
+
+The temperature tile (`tiles/temp/temp-tile.tsx`) has no entity of its own yet:
+it shows the AC's `current_temperature`. `config.temperature` names the source
+(`entity` is a key of `config.entities`, `attribute` the attribute to read). To
+use a separate sensor, add a `sensor` entity to `config.entities`, point
+`temperature.entity` at it and remove `attribute`; the tile then reads its state.
+A missing, `unavailable` or non-numeric reading shows "— n/a".

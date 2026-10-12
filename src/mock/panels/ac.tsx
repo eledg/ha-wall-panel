@@ -36,6 +36,22 @@ export const acPanel: MockPanel = {
             </Chip>
           ))}
         </Group>
+        <Group label="Room temperature">
+          {[18, 21.4, 26].map((temp) => (
+            <Chip
+              key={temp}
+              active={attrs.current_temperature === temp}
+              onClick={() =>
+                mock.setState(ac, state?.state ?? 'off', {
+                  ...attrs,
+                  current_temperature: temp,
+                })
+              }
+            >
+              {`${temp}°`}
+            </Chip>
+          ))}
+        </Group>
         <Group label="HA sets a switch">
           {switches.map(([label, id]) => (
             <Chip

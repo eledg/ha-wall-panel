@@ -44,7 +44,16 @@ export const config = {
       'switch.office_climate_air_conditioning_office_quiet_fan',
     ),
   },
-} as const satisfies { entities: Record<string, EntitySpec> };
+  /**
+   * Where the Office temperature tile reads from. Today that is the AC's own
+   * sensor. To use a separate one, add a `sensor` entity above and point
+   * `entity` at it, dropping `attribute` (the state is then the reading).
+   */
+  temperature: { entity: 'acClimate', attribute: 'current_temperature' },
+} as const satisfies {
+  entities: Record<string, EntitySpec>;
+  temperature: { entity: string; attribute?: string };
+};
 
 export type Config = {
   entities: Record<string, EntitySpec>;
