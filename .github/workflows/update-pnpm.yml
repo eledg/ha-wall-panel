@@ -1,0 +1,23 @@
+name: Update pnpm
+
+# Monthly, matching the dependabot cadence. Releases are versioned from every
+# commit on main (see CONTRIBUTING.md), so keep the bumps infrequent.
+on:
+  schedule:
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-pnpm:
+    runs-on: ubuntu-latest
+    name: Update pnpm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: eledg/github-actions/update-pnpm@v1
+        with:
+          github-token: ${{ secrets.PR_PAT_TOKEN }}
+          assignees: eledg
