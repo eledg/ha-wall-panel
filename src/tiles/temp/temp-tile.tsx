@@ -37,7 +37,9 @@ export const TempTile = ({
         ) : (
           <div class="tnum text-4xl font-semibold">
             {formatTemp(value)}
-            <span class="text-xl text-fg-dim">°</span>
+            <span class="relative -top-[11.5px] ml-[2px] text-xl text-fg-dim">
+              °
+            </span>
           </div>
         )}
       </div>
