@@ -33,9 +33,9 @@ type Picker = 'mode' | 'fan' | 'swing';
  * Powerful / Economy / Quiet switches, and the target temperature.
  *
  * Every control updates at once (optimistic). If its service call fails it
- * reverts to HA's state and flashes in the warning colours. Closes with the
- * button, Escape, or after `idleMs` without a touch, and holds back
- * auto-reload while open.
+ * reverts to HA's state and flashes in the warning colours. Closes when the AC
+ * is turned off, with the button, on Escape, or after `idleMs` without a
+ * touch, and holds back auto-reload while open.
  */
 export const AcSheet = ({
   onClose,
@@ -76,9 +76,14 @@ export const AcSheet = ({
   }, [flash]);
 
   const fail = (key: string) => setFlash(key);
-  const send = (key: string, call: Promise<unknown>, rollback: () => void) => {
+  const send = (
+    key: string,
+    call: Promise<unknown>,
+    rollback: () => void,
+    onSuccess?: () => void,
+  ) => {
     setFlash(undefined);
-    call.catch((err: unknown) => {
+    call.then(onSuccess, (err: unknown) => {
       console.error(`AC ${key} failed`, err);
       rollback();
       fail(key);
@@ -92,6 +97,8 @@ export const AcSheet = ({
       'power',
       store.callService('acClimate', next ? 'turn_on' : 'turn_off'),
       power.clear,
+      // Only close once HA confirms, so a failure still shows on this screen.
+      next ? undefined : onClose,
     );
   };
   const pick = (which: Picker, value: string) => {

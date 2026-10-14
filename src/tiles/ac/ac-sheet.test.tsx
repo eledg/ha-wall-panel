@@ -61,15 +61,25 @@ describe('AcSheet', () => {
     }
   });
 
-  it('turns the AC off and on', async () => {
-    const { spy, press } = await setup();
+  it('turns the AC off and closes the sheet once it succeeds', async () => {
+    const { spy, press, onClose } = await setup();
+    let resolve!: () => void;
+    spy.mockReturnValueOnce(new Promise<void>((r) => (resolve = r)));
 
     await press('On');
     expect(spy).toHaveBeenLastCalledWith('acClimate', 'turn_off');
-    expect(document.body.textContent).toContain('Off');
+    expect(onClose).not.toHaveBeenCalled();
+
+    await act(async () => resolve());
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('turns the AC on without closing the sheet', async () => {
+    const { spy, press, onClose } = await setup({ on: false });
 
     await press('Off');
     expect(spy).toHaveBeenLastCalledWith('acClimate', 'turn_on');
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('disables the other controls while off', async () => {
@@ -246,13 +256,14 @@ describe('AcSheet', () => {
 
     it('reverts the power button', async () => {
       vi.useFakeTimers();
-      const { press, button } = await failing();
+      const { press, button, onClose } = await failing();
 
       await press('On');
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
       });
 
+      expect(onClose).not.toHaveBeenCalled();
       expect(button('On').textContent).toContain('On');
       expect(button('On').className).toContain('bg-warn-soft');
     });
