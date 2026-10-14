@@ -65,7 +65,7 @@ forecasts, and the Met Office entity reports local observations.
   pressure. There is **no `forecast` attribute**: HA removed it.
 - **Forecast** comes from the `weather.get_forecasts` service with
   `{ type: 'hourly' }`, called with `return_response`. The response is
-  `{ [entity_id]: { forecast: [{ datetime, condition, temperature, ... }] } }`,
+  `{ [entity_id]: { forecast: [{ datetime, condition, temperature, precipitation_probability, ... }] } }`,
   one item per hour, starting from the current hour, with UTC `datetime`s.
 - **`supported_features`** is a bitmask: 1 daily, 2 hourly, 4 twice-daily. Met Office
   reports 7. The store skips the forecast call when the hourly bit is unset.

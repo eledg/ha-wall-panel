@@ -4,6 +4,7 @@ import type { TileState } from './tile.tsx';
 import { haStore } from '../ha/instance.ts';
 import type { ForecastItem, HaStore } from '../ha/store.ts';
 import { useSnapshot } from '../ha/use-snapshot.ts';
+import { DropletIcon } from '../icons/droplet-icon.tsx';
 import { WeatherIcon } from '../icons/weather-icon.tsx';
 import type { IconCondition } from '../icons/weather-icon.tsx';
 
@@ -45,6 +46,15 @@ export const pickForecast = (items: ForecastItem[], now: Date) => {
 
 const degrees = (value: unknown) =>
   typeof value === 'number' ? `${Math.round(value)}°` : '–';
+
+const percent = (value: unknown) =>
+  typeof value === 'number' ? `${Math.round(value)}%` : '–';
+
+/** The hourly item for the current hour: HA's list starts there. */
+export const currentPeriod = (items: ForecastItem[], now: Date) =>
+  items
+    .filter((item) => new Date(item.datetime).getTime() <= now.getTime())
+    .at(-1) ?? items[0];
 
 const hour = (datetime: string) =>
   new Date(datetime).getHours().toString().padStart(2, '0');
@@ -99,7 +109,9 @@ export const WeatherTile = ({
   }
 
   const [icon, label] = describe(entity.state);
-  const periods = pickForecast(forecast ?? [], now());
+  const at = now();
+  const periods = pickForecast(forecast ?? [], at);
+  const rainNow = currentPeriod(forecast ?? [], at)?.precipitation_probability;
   return (
     <Tile area={area} state={state}>
       <div class="flex h-full items-center gap-4">
@@ -110,22 +122,47 @@ export const WeatherTile = ({
               {degrees(entity.attributes.temperature)}
             </div>
             <div class="mt-1 w-28 truncate text-sm text-fg-dim">{label}</div>
+            <div class="mt-1 flex items-center gap-1 text-sm text-fg-dim">
+              <DropletIcon class="size-3.5" />
+              <span class="tnum">{percent(rainNow)}</span>
+            </div>
           </div>
         </div>
-        <div class="grid min-w-0 flex-1 grid-cols-5 gap-1 border-l border-line pl-3">
+        <div class="grid min-w-0 flex-1 grid-cols-[auto_repeat(5,minmax(0,1fr))] items-center gap-x-1.5 gap-y-1 border-l border-line pl-3">
+          <span aria-hidden="true" />
           {periods.map((period) => (
-            <div key={period.datetime} class="flex flex-col items-center gap-1">
-              <span class="tnum text-xs text-fg-dim">
-                {hour(period.datetime)}
-              </span>
-              <WeatherIcon
-                condition={describe(period.condition)[0]}
-                class="size-6 text-fg-dim"
-              />
-              <span class="tnum text-base font-medium">
-                {degrees(period.temperature)}
-              </span>
-            </div>
+            <span
+              key={period.datetime}
+              class="tnum text-center text-xs text-fg-dim"
+            >
+              {hour(period.datetime)}
+            </span>
+          ))}
+          <span aria-hidden="true" />
+          {periods.map((period) => (
+            <WeatherIcon
+              key={period.datetime}
+              condition={describe(period.condition)[0]}
+              class="mx-auto size-6 text-fg-dim"
+            />
+          ))}
+          <span aria-hidden="true" />
+          {periods.map((period) => (
+            <span
+              key={period.datetime}
+              class="tnum text-center text-base font-medium"
+            >
+              {degrees(period.temperature)}
+            </span>
+          ))}
+          <DropletIcon class="size-3 text-fg-dim" />
+          {periods.map((period) => (
+            <span
+              key={period.datetime}
+              class="tnum text-center text-xs text-fg-dim"
+            >
+              {percent(period.precipitation_probability)}
+            </span>
           ))}
         </div>
       </div>

@@ -47,7 +47,7 @@ describe('WeatherTile', () => {
 
     expect(text()).toContain('11°');
     expect(text()).toContain('Sunny');
-    expect(document.querySelectorAll('.grid-cols-5 > div')).toHaveLength(5);
+    expect(text()).toMatch(/\d+%/);
   });
 
   it('follows the entity', async () => {

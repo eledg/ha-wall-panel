@@ -137,9 +137,21 @@ export const weatherScenarios = (): WeatherScenario[] => [
         datetime: new Date(start + (hour + 1) * HOUR).toISOString(),
         condition: hour < 4 ? 'rainy' : 'cloudy',
         temperature: 12 - hour,
+        precipitation_probability: hour < 4 ? 85 : 20,
       })),
   }),
 ];
+
+/** Plausible rain chance: wet conditions high, dry ones low. */
+const rainChance = (condition: string | undefined) => {
+  if (condition === 'rainy' || condition === 'pouring') return 85;
+  if (condition === 'lightning' || condition === 'lightning-rainy') return 90;
+  if (condition === 'snowy') return 80;
+  if (condition === 'fog') return 30;
+  if (condition === 'cloudy') return 20;
+  if (condition === 'partlycloudy') return 10;
+  return 0;
+};
 
 /** 24 hourly items; hour `h` ahead belongs to forecast column `h / 3`. */
 export const forecastFor = (
@@ -154,6 +166,7 @@ export const forecastFor = (
       datetime: new Date(start + (hour + 1) * HOUR).toISOString(),
       condition,
       temperature,
+      precipitation_probability: rainChance(condition),
     };
   });
 };

@@ -53,6 +53,8 @@ export type ForecastItem = {
   datetime: string;
   condition?: string;
   temperature?: number;
+  /** Chance of rain, 0 to 100. */
+  precipitation_probability?: number;
 };
 
 export type ServiceName<K extends EntityKey> =
