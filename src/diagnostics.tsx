@@ -101,7 +101,7 @@ export const Diagnostics = ({
       <button
         type="button"
         aria-label="Diagnostics"
-        class="fixed right-edge bottom-0 flex h-12 min-w-12 items-end justify-end pb-2 font-mono text-[10px] text-fg-faint"
+        class="fixed right-edge bottom-0 flex h-12 min-w-12 items-end justify-end bg-bg pb-2 font-mono text-[10px] text-fg-faint"
         onClick={() => setOpen(true)}
       >
         {version}
