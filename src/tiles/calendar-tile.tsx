@@ -173,10 +173,14 @@ export const CalendarTile = ({
           {next ? (
             <button
               type="button"
-              class="tap flex w-full gap-3 rounded-xl bg-surface-2 p-3 text-left"
+              class="tap relative block w-full rounded-xl bg-surface-2 py-3 pr-3 pl-[1.875rem] text-left"
               onClick={() => setOpen(next)}
             >
-              <span class={`w-1.5 shrink-0 rounded-full ${nextMeta.bar}`} />
+              {/* Absolutely placed: the display left an empty stretched flex item in a
+                  button at zero height (see docs/display.md). */}
+              <span
+                class={`absolute inset-y-3 left-3 w-1.5 rounded-full ${nextMeta.bar}`}
+              />
               <div class="min-w-0">
                 <div class="tnum text-xl font-semibold text-fg">
                   {next.allDay ? 'All day' : formatTime(new Date(next.start))}

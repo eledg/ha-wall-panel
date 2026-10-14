@@ -69,6 +69,11 @@ Findings from the first deploy of the app (#57 to #61), measured with a temporar
 - `appearance: none` on buttons made no visible difference.
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
+### Empty flex items in buttons collapse
+
+- The calendar tile's coloured stripe was an empty `<span class="w-1.5 shrink-0">` inside a `<button class="flex">`, relying on `align-items: stretch` for its height. It rendered fine in dev but was missing on the display (the cause is inferred, not measured on the device).
+- It is now absolutely positioned (`inset-y-3 left-3`) in a `relative` button. Prefer that over stretch for decorative bars inside buttons.
+
 ### Unexplained
 
 - The diagnostics dialog showed a square bottom-right corner on the display despite a 20px radius. It was fixed along with the button backgrounds, but the cause was never confirmed. Hiding the scrollbars and moving the scroll into an inner element did nothing on their own.
