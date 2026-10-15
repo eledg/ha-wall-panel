@@ -37,12 +37,11 @@ describe('AcTile', () => {
     expect(tile()?.querySelector('.bg-surface-2')).not.toBeNull();
   });
 
-  it('shows Off with a hint while the AC is off', async () => {
+  it('shows Off while the AC is off', async () => {
     const { tile } = await setup();
 
     expect(tile()?.textContent).toContain('AC');
     expect(tile()?.textContent).toContain('Off');
-    expect(tile()?.textContent).toContain('Tap to control');
     expect(tile()?.className).not.toContain('border-accent');
   });
 
@@ -51,7 +50,7 @@ describe('AcTile', () => {
 
     await act(() => mock.controls.setState(AC, 'heat'));
 
-    expect(tile()?.textContent).toContain('24°');
+    expect(tile()?.textContent).toContain('24.0°');
     expect(tile()?.textContent).toContain('Heat');
     expect(tile()?.className).toContain('border-accent');
   });

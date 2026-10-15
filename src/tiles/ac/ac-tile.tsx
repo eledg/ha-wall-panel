@@ -8,6 +8,7 @@ import { haStore } from '../../ha/instance.ts';
 import type { HaStore } from '../../ha/store.ts';
 import { useSnapshot } from '../../ha/use-snapshot.ts';
 import { SnowflakeIcon } from '../../icons/snowflake-icon.tsx';
+import { formatTemp } from '../temp/temp-model.ts';
 import { Tile, Unavailable } from '../tile.tsx';
 
 /**
@@ -34,7 +35,7 @@ export const AcTile = ({
         area={area}
         state={entity === undefined ? 'loading' : offline ? 'stale' : 'normal'}
         onTap={unavailable ? undefined : () => setOpen(true)}
-        class={lit ? 'border-accent!' : ''}
+        class={lit ? 'border-accent! bg-accent-soft!' : ''}
       >
         <div class="flex h-full flex-col justify-between">
           <div
@@ -42,21 +43,30 @@ export const AcTile = ({
           >
             <SnowflakeIcon class="size-4" />
             AC
+            {view.on && view.mode && (
+              <span class="ml-auto min-w-0 truncate text-fg-dim">
+                {modeLabel(view.mode)}
+              </span>
+            )}
           </div>
           {unavailable ? (
             <Unavailable />
           ) : (
-            <div>
-              <div class="tnum text-3xl font-semibold">
-                {view.on && view.target !== undefined
-                  ? `${view.target}°`
-                  : view.on
-                    ? 'On'
-                    : 'Off'}
-              </div>
-              <div class="h-5 text-sm text-fg-dim">
-                {view.on ? view.mode && modeLabel(view.mode) : 'Tap to control'}
-              </div>
+            <div
+              class={`tnum text-4xl font-semibold ${view.on ? 'text-accent' : 'text-fg'}`}
+            >
+              {view.on && view.target !== undefined ? (
+                <>
+                  {formatTemp(view.target)}
+                  <span class="relative -top-[11.5px] ml-[2px] text-xl text-fg-dim">
+                    °
+                  </span>
+                </>
+              ) : view.on ? (
+                'On'
+              ) : (
+                'Off'
+              )}
             </div>
           )}
         </div>
