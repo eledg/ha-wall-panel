@@ -70,6 +70,9 @@ describe('createHaStore', () => {
       config.entities.acClimate.id,
       config.entities.acPowerful.id,
       config.entities.acEconomy.id,
+      config.entities.officeTemperature.id,
+      config.entities.officeHumidity.id,
+      config.entities.officeBattery.id,
       config.entities.acQuietFan.id,
     ]);
   });

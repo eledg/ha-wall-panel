@@ -46,6 +46,9 @@ describe('createMockHa', () => {
         WEATHER,
         AC,
         ...AC_SWITCHES,
+        config.entities.officeTemperature.id,
+        config.entities.officeHumidity.id,
+        config.entities.officeBattery.id,
         ...CALENDARS.map(({ id }) => id),
         UNRELATED_ID,
       ].sort(),
@@ -219,7 +222,10 @@ describe('store against the mock', () => {
       'calendarBirthdays',
       'calendarF1',
       'calendarFamily',
+      'officeBattery',
+      'officeHumidity',
       'officeLight',
+      'officeTemperature',
       'weather',
     ]);
 

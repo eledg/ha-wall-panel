@@ -13,6 +13,9 @@ Entity IDs the dashboard uses, added one milestone at a time.
 | `switch.office_climate_air_conditioning_office_powerful`     | `switch`   | `state`                                                                                                                                 | AC Powerful boost.                                      |
 | `switch.office_climate_air_conditioning_office_economy_mode` | `switch`   | `state`                                                                                                                                 | AC economy mode.                                        |
 | `switch.office_climate_air_conditioning_office_quiet_fan`    | `switch`   | `state`                                                                                                                                 | AC quiet fan.                                           |
+| `sensor.blu_ht_office_temperature`                           | `sensor`   | `state`                                                                                                                                 | Office temperature. See [Office](#office-temperature).  |
+| `sensor.blu_ht_office_humidity`                              | `sensor`   | `state`                                                                                                                                 | Office humidity.                                        |
+| `sensor.blu_ht_office_battery`                               | `sensor`   | `state`                                                                                                                                 | Office sensor battery; diagnostics only.                |
 
 ## Calendars
 
@@ -101,9 +104,10 @@ sheet (`ac-sheet.tsx`).
 
 ## Office temperature
 
-The temperature tile (`tiles/temp/temp-tile.tsx`) has no entity of its own yet:
-it shows the AC's `current_temperature`. `config.temperature` names the source
-(`entity` is a key of `config.entities`, `attribute` the attribute to read). To
-use a separate sensor, add a `sensor` entity to `config.entities`, point
-`temperature.entity` at it and remove `attribute`; the tile then reads its state.
-A missing, `unavailable` or non-numeric reading shows "— n/a".
+The Office tile (`tiles/temp/temp-tile.tsx`) reads a Shelly BLU H&T sensor:
+`sensor.blu_ht_office_temperature` (shown to one decimal) and
+`sensor.blu_ht_office_humidity` (whole percent, with a droplet, above the
+temperature). A missing, `unavailable` or non-numeric
+temperature shows "— n/a"; an unusable humidity shows "—" and leaves the
+temperature alone. `sensor.blu_ht_office_battery` is subscribed too, but only so the diagnostics
+screen lists it (`100 %`); no tile shows it.

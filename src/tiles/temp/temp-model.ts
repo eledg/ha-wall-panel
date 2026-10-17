@@ -29,3 +29,6 @@ export const readTemp = (
 
 /** One decimal, as the design shows it (`21.4`). */
 export const formatTemp = (value: number) => value.toFixed(1);
+
+/** Whole percent, as the design shows it (`51%`). */
+export const formatHumidity = (value: number) => `${Math.round(value)}%`;

@@ -38,18 +38,18 @@ export const config = {
       'switch',
       'switch.office_climate_air_conditioning_office_economy_mode',
     ),
+    /** Office room temperature: Shelly BLU H&T sensor. */
+    officeTemperature: spec('sensor', 'sensor.blu_ht_office_temperature'),
+    /** Office humidity: the same Shelly BLU H&T sensor. */
+    officeHumidity: spec('sensor', 'sensor.blu_ht_office_humidity'),
+    /** Battery of the office sensor; shown in the diagnostics screen only. */
+    officeBattery: spec('sensor', 'sensor.blu_ht_office_battery'),
     /** AC quiet fan. */
     acQuietFan: spec(
       'switch',
       'switch.office_climate_air_conditioning_office_quiet_fan',
     ),
   },
-  /**
-   * Where the Office temperature tile reads from. Today that is the AC's own
-   * sensor. To use a separate one, add a `sensor` entity above and point
-   * `entity` at it, dropping `attribute` (the state is then the reading).
-   */
-  temperature: { entity: 'acClimate', attribute: 'current_temperature' },
   /**
    * Night mode (src/night.ts): from `startHour` until `endHour` local time the
    * palette turns warm and dim. It may span midnight. A tap wakes the display
@@ -58,7 +58,6 @@ export const config = {
   night: { startHour: 21, endHour: 7, wakeMs: 15_000 },
 } as const satisfies {
   entities: Record<string, EntitySpec>;
-  temperature: { entity: string; attribute?: string };
   night: NightConfig;
 };
 

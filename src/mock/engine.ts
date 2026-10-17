@@ -119,6 +119,18 @@ export const createMockHa = (cfg: typeof config = config) => {
   }
   const ac = cfg.entities.acClimate.id;
   entities.set(ac, make(ac, 'off', acAttributes()));
+  const roomTemp = cfg.entities.officeTemperature.id;
+  entities.set(roomTemp, make(roomTemp, '22.2', { unit_of_measurement: '°C' }));
+  const roomHumidity = cfg.entities.officeHumidity.id;
+  entities.set(
+    roomHumidity,
+    make(roomHumidity, '50.9', { unit_of_measurement: '%' }),
+  );
+  const roomBattery = cfg.entities.officeBattery.id;
+  entities.set(
+    roomBattery,
+    make(roomBattery, '100', { unit_of_measurement: '%' }),
+  );
   const acSwitches = [
     cfg.entities.acPowerful.id,
     cfg.entities.acEconomy.id,

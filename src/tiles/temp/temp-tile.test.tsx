@@ -8,9 +8,9 @@ import { config } from '../../config.ts';
 import { HaConnection } from '../../ha/connection.tsx';
 import { createHaStore } from '../../ha/store.ts';
 import { createMockHa } from '../../mock/engine.ts';
-import { acAttributes } from '../../mock/scenarios/ac.ts';
 
-const AC = config.entities.acClimate.id;
+const TEMP = config.entities.officeTemperature.id;
+const HUMIDITY = config.entities.officeHumidity.id;
 
 const setup = async (connect = true) => {
   const mock = createMockHa();
@@ -41,38 +41,44 @@ describe('TempTile', () => {
     await setup();
 
     expect(document.body.textContent).toContain('Office');
-    expect(document.body.textContent).toContain('24.0°');
+    expect(document.body.textContent).toContain('22.2°');
+  });
+
+  it('shows the humidity as a whole percent', async () => {
+    await setup();
+
+    expect(document.body.textContent).toContain('51%');
   });
 
   it('follows changes', async () => {
     const { mock } = await setup();
 
-    await act(() =>
-      mock.controls.setState(AC, 'off', {
-        ...acAttributes(),
-        current_temperature: 21.4,
-      }),
-    );
+    await act(() => {
+      mock.controls.setState(TEMP, '21.4');
+      mock.controls.setState(HUMIDITY, '47.2');
+    });
 
     expect(document.body.textContent).toContain('21.4°');
+    expect(document.body.textContent).toContain('47%');
   });
 
-  it('shows n/a when the entity is unavailable', async () => {
+  it('shows n/a when the temperature is unavailable', async () => {
     const { mock } = await setup();
 
-    await act(() => mock.controls.setUnavailable(AC));
+    await act(() => mock.controls.setUnavailable(TEMP));
 
     expect(document.body.textContent).toContain('n/a');
     expect(document.body.textContent).not.toContain('°');
   });
 
-  it('shows n/a when the reading is missing', async () => {
+  it('keeps the temperature when only the humidity is unavailable', async () => {
     const { mock } = await setup();
-    const { current_temperature: _drop, ...rest } = acAttributes();
 
-    await act(() => mock.controls.setState(AC, 'off', rest));
+    await act(() => mock.controls.setUnavailable(HUMIDITY));
 
-    expect(document.body.textContent).toContain('n/a');
+    expect(document.body.textContent).toContain('22.2°');
+    expect(document.body.textContent).not.toContain('%');
+    expect(document.body.textContent).not.toContain('n/a');
   });
 
   it('goes stale while disconnected', async () => {

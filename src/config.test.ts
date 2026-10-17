@@ -16,10 +16,6 @@ describe('validateConfig', () => {
     expect(validateConfig(config)).toEqual([]);
   });
 
-  it('points the temperature tile at a configured entity', () => {
-    expect(Object.keys(config.entities)).toContain(config.temperature.entity);
-  });
-
   it('flags a placeholder entity', () => {
     const issues = validateConfig(
       withEntities({ light: { domain: 'switch', id: placeholder('light') } }),
