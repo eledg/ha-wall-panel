@@ -48,4 +48,26 @@ describe('HaDebug', () => {
     expect(text).toContain('No event now');
     expect(text).toContain(`${Object.keys(config.entities).length} entities`);
   });
+
+  it('lists entities alphabetically by ID', async () => {
+    const deps = {
+      createConnection: vi
+        .fn()
+        .mockResolvedValue({ addEventListener: vi.fn(), close: vi.fn() }),
+      subscribeEntities: vi.fn(() => vi.fn()),
+      callService: vi.fn().mockResolvedValue({ response: {} }),
+      fetchCalendarEvents: vi.fn().mockResolvedValue([]),
+    };
+    const store = createHaStore(deps as unknown as HaDeps);
+    await act(() => {
+      render(<HaDebug store={store} />, document.body);
+    });
+
+    const ids = [...document.querySelectorAll('dt')].map(
+      (dt) => dt.textContent,
+    );
+
+    expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)));
+    expect(ids.length).toBe(Object.keys(config.entities).length);
+  });
 });

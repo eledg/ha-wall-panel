@@ -12,7 +12,10 @@ const CALENDAR_STATE: Record<string, string> = {
 /** Live state for each configured entity, plus what the store subscribes to. */
 export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
   const { status, error, entities } = useSnapshot(store);
-  const keys = Object.keys(config.entities) as EntityKey[];
+  // Alphabetical by the entity ID shown, not by config order.
+  const keys = (Object.keys(config.entities) as EntityKey[]).sort((a, b) =>
+    config.entities[a].id.localeCompare(config.entities[b].id),
+  );
 
   return (
     <section class="pt-5">
