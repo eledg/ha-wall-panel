@@ -14,6 +14,18 @@ describe('Temperature', () => {
 
     expect(document.body.textContent).toBe('21.4°');
   });
+
+  it('dims the degree symbol unless told to match the digits', () => {
+    mount(<Temperature value="21.4" />);
+    expect(document.querySelector('span span')?.className).toContain(
+      'text-fg-dim',
+    );
+
+    mount(<Temperature value="21.4" matchDegree />);
+    expect(document.querySelector('span span')?.className).not.toContain(
+      'text-fg-dim',
+    );
+  });
 });
 
 describe('DeviceTile', () => {

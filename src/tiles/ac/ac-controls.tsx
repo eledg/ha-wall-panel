@@ -1,14 +1,13 @@
 import type { ComponentChildren } from 'preact';
-import { useRef } from 'preact/hooks';
 
-import type { EntityKey, HaStore } from '../../ha/store.ts';
-import { useSnapshot } from '../../ha/use-snapshot.ts';
+import type { EntityKey } from '../../ha/store.ts';
 import { FanIcon } from '../../icons/fan-icon.tsx';
+import { PowerIcon } from '../../icons/power-icon.tsx';
 import { SnowflakeIcon } from '../../icons/snowflake-icon.tsx';
 import { ThermoIcon } from '../../icons/thermo-icon.tsx';
-import { useOptimistic } from '../use-optimistic.ts';
+import { ClimateButton } from '../climate-controls.tsx';
 
-/** How long a control flashes after a rolled-back call (the design's 900 ms). */
+/** How long a control flashes after a failed call (the design's 900 ms). */
 export const FLASH_MS = 900;
 
 export type SwitchKey = Extract<
@@ -23,29 +22,44 @@ export const SWITCHES: { key: SwitchKey; label: string }[] = [
 ];
 
 export const NORMAL = 'border-line bg-surface-2 text-fg-dim';
-export const ACTIVE = 'border-accent bg-accent-soft text-accent';
-export const WARN = 'border-warn bg-warn-soft text-warn';
+export const ACTIVE = 'border-accent! bg-accent-soft! text-accent';
+export const WARN = 'border-warn! bg-warn-soft! text-warn';
 
-const stateClass = (flashing: boolean, active: boolean) =>
+export const stateClass = (flashing: boolean, active: boolean) =>
   flashing ? WARN : active ? ACTIVE : NORMAL;
 
-export const ModeIcon = ({ mode }: { mode: string | undefined }) => {
+/** A command waiting for HA: keep the last value, dimmed, with a pulsing border. */
+export const pulseClass = (pending: boolean) =>
+  pending ? 'pending-pulse opacity-60' : '';
+
+/** The mode's glyph: 20px in the picker and summary, 16px in the tile header. */
+export const ModeIcon = ({
+  mode,
+  small = false,
+}: {
+  mode: string | undefined;
+  small?: boolean;
+}) => {
+  const box = small ? 'size-4' : 'size-5';
+  const letter = small ? 'text-xs' : 'text-sm';
   switch (mode) {
+    case 'off':
+      return <PowerIcon class={box} />;
     case 'cool':
-      return <SnowflakeIcon />;
+      return <SnowflakeIcon class={box} />;
     case 'heat':
-      return <ThermoIcon />;
+      return <ThermoIcon class={box} />;
     case 'fan_only':
-      return <FanIcon />;
+      return <FanIcon class={box} />;
     case 'dry':
       return (
-        <span aria-hidden="true" class="text-sm font-bold">
+        <span aria-hidden="true" class={`${letter} font-bold`}>
           D
         </span>
       );
     case 'auto':
       return (
-        <span aria-hidden="true" class="text-sm font-bold">
+        <span aria-hidden="true" class={`${letter} font-bold`}>
           A
         </span>
       );
@@ -54,65 +68,46 @@ export const ModeIcon = ({ mode }: { mode: string | undefined }) => {
   }
 };
 
-/** One on/off switch entity (Powerful, Economy, Quiet), with its own optimistic state. */
+/** One on/off switch entity (Powerful, Economy, Quiet). */
 export const SwitchButton = ({
-  store,
-  entity,
   label,
+  on,
+  usable,
   disabled,
+  pending,
   flashing,
-  onFail,
+  onToggle,
 }: {
-  store: HaStore;
-  entity: SwitchKey;
   label: string;
+  on: boolean;
+  usable: boolean;
   disabled: boolean;
+  pending: boolean;
   flashing: boolean;
-  onFail: (key: string) => void;
-}) => {
-  const state = useSnapshot(store, (s) => s.entities[entity]?.state);
-  const usable = state === 'on' || state === 'off';
-  const on = useOptimistic(state === 'on');
-  const pendingRef = useRef(false);
+  onToggle: () => void;
+}) => (
+  <ClimateButton
+    disabled={disabled || !usable}
+    aria-pressed={on}
+    aria-busy={pending}
+    class={`flex items-center justify-center gap-2 text-base font-medium ${stateClass(flashing, on)} ${pulseClass(pending)}`}
+    onClick={onToggle}
+  >
+    <span
+      class={`size-2 shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-fg-faint'}`}
+    />
+    {label}
+    {!usable && <span class="text-xs text-warn">n/a</span>}
+  </ClimateButton>
+);
 
-  const toggle = () => {
-    if (pendingRef.current) return;
-    pendingRef.current = true;
-    on.guess(!on.value);
-    store
-      .callService(entity, 'toggle')
-      .catch((err: unknown) => {
-        console.error(`Toggle AC ${label} failed`, err);
-        on.clear();
-        onFail(entity);
-      })
-      .finally(() => {
-        pendingRef.current = false;
-      });
-  };
-
-  return (
-    <button
-      type="button"
-      disabled={disabled || !usable}
-      aria-pressed={on.value}
-      class={`tap flex h-14 items-center justify-center gap-2 rounded-xl border text-base font-medium ${stateClass(flashing, on.value)}`}
-      onClick={toggle}
-    >
-      <span
-        class={`size-2 rounded-full ${on.value ? 'bg-accent' : 'bg-fg-faint'}`}
-      />
-      {label}
-      {!usable && <span class="text-xs text-warn">n/a</span>}
-    </button>
-  );
-};
-
+/** A setting (mode, fan speed, swing) with its current value; opens its picker. */
 export const SummaryButton = ({
   label,
   value,
   icon,
   disabled,
+  pending,
   flashing,
   onClick,
 }: {
@@ -120,23 +115,21 @@ export const SummaryButton = ({
   value: string;
   icon: ComponentChildren;
   disabled: boolean;
+  pending: boolean;
   flashing: boolean;
   onClick: () => void;
 }) => (
-  <button
-    type="button"
+  <ClimateButton
     disabled={disabled}
-    class={`tap flex h-14 items-center gap-3 rounded-xl border px-3 text-left ${stateClass(flashing, false)}`}
+    aria-label={label}
+    aria-busy={pending}
+    class={`flex items-center gap-3 px-3 text-left ${stateClass(flashing, false)} ${pulseClass(pending)}`}
     onClick={onClick}
   >
-    <span class="grid size-5 shrink-0 place-items-center text-fg-dim">
-      {icon}
-    </span>
+    <span class="grid size-5 shrink-0 place-items-center">{icon}</span>
     <span class="min-w-0">
-      <span class="block text-[11px] tracking-wider text-fg-faint uppercase">
-        {label}
-      </span>
+      <span class="block text-xs text-fg-dim">{label}</span>
       <span class="block truncate text-base font-medium text-fg">{value}</span>
     </span>
-  </button>
+  </ClimateButton>
 );

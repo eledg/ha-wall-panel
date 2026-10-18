@@ -4,11 +4,23 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   FLASH_MS,
   ModeIcon,
+  pulseClass,
   SummaryButton,
   SwitchButton,
   SWITCHES,
+  type SwitchKey,
   WARN,
 } from './ac-controls.tsx';
+import {
+  acStatus,
+  type AcView,
+  modeLabel,
+  optionLabel,
+  readAc,
+  stepTarget,
+} from './ac-model.ts';
+import { AcPicker } from './ac-picker.tsx';
+import { AcTarget } from './ac-target.tsx';
 import { IDLE_CLOSE_MS } from '../../diagnostics.tsx';
 import { useOffline } from '../../ha/connection.tsx';
 import { haStore } from '../../ha/instance.ts';
@@ -16,26 +28,35 @@ import type { HaStore } from '../../ha/store.ts';
 import { useSnapshot } from '../../ha/use-snapshot.ts';
 import { FanIcon } from '../../icons/fan-icon.tsx';
 import { PowerIcon } from '../../icons/power-icon.tsx';
-import { XIcon } from '../../icons/x-icon.tsx';
-import { useOptimistic } from '../use-optimistic.ts';
-import { modeLabel, optionLabel, readAc, stepTarget } from './ac-model.ts';
-import { AcPicker } from './ac-picker.tsx';
-import { AcTarget } from './ac-target.tsx';
+import { ClimateButton, ClimateSheet } from '../climate-controls.tsx';
 
 /** Rapid − / + taps are sent as one `set_temperature` once they pause. */
 export const TARGET_DEBOUNCE_MS = 400;
 
+/** Safety net: stop waiting if HA never reports the change. */
+export const SETTLE_MS = 5000;
+
 type Picker = 'mode' | 'fan' | 'swing';
+type SwitchStates = Record<SwitchKey, string | undefined>;
+
+/** A command HA has not confirmed yet; `done` says when its state has arrived. */
+type Pending = {
+  key: string;
+  done: (view: AcView, switches: SwitchStates) => boolean;
+  /** Power only: the state that was asked for. */
+  power?: boolean;
+};
 
 /**
- * Full-screen controls for the office AC, as in the design: power, then mode,
- * fan speed and swing (each opens a picker of the entity's own options), the
- * Powerful / Economy / Quiet switches, and the target temperature.
+ * Full-screen controls for the office AC, as in the design: power, the room
+ * and target temperature, then mode, fan speed and swing (each opens a picker
+ * of the entity's own options) and the Powerful / Economy / Quiet switches.
  *
- * Every control updates at once (optimistic). If its service call fails it
- * reverts to HA's state and flashes in the warning colours. Closes when the AC
- * is turned off, with the button, on Escape, or after `idleMs` without a
- * touch, and holds back auto-reload while open.
+ * A control never shows a guess. While a command waits for HA it keeps the
+ * last confirmed value, dimmed, with a pulsing border, and every other control
+ * is locked; turning the AC on shows placeholders until its settings arrive. If
+ * the call fails the control flashes in the warning colours. Closes when the AC
+ * is turned off, with the button, on Escape, or after `idleMs` without a touch.
  */
 export const AcSheet = ({
   onClose,
@@ -47,17 +68,28 @@ export const AcSheet = ({
   idleMs?: number;
 }) => {
   const entity = useSnapshot(store, (s) => s.entities.acClimate);
+  const office = useSnapshot(store, (s) => s.entities.officeTemperature);
+  const switchStates = useSnapshot(store, (s) =>
+    SWITCHES.map(({ key }) => s.entities[key]?.state ?? '').join(','),
+  );
   const offline = useOffline();
   const view = readAc(entity);
+  const switches = Object.fromEntries(
+    SWITCHES.map(({ key }, i) => [
+      key,
+      switchStates.split(',')[i] || undefined,
+    ]),
+  ) as SwitchStates;
+  const officeTemp = Number.parseFloat(office?.state ?? '');
   const [picker, setPicker] = useState<Picker>();
   const [flash, setFlash] = useState<string>();
+  const [issued, setPending] = useState<Pending>();
+  // A command is over as soon as HA reports its result.
+  const confirmed = issued?.done(view, switches) ?? false;
+  const pending = confirmed ? undefined : issued;
+  const [targetGuess, setTargetGuess] = useState<number>();
   // Bumped by every touch inside the sheet to restart the idle timer.
   const [activity, setActivity] = useState(0);
-  const power = useOptimistic(view.on);
-  const mode = useOptimistic(view.mode);
-  const fan = useOptimistic(view.fan);
-  const swing = useOptimistic(view.swing);
-  const target = useOptimistic(view.target);
   const targetTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -74,80 +106,102 @@ export const AcSheet = ({
     const timer = setTimeout(() => setFlash(undefined), FLASH_MS);
     return () => clearTimeout(timer);
   }, [flash]);
+  // A command ends when HA reports its result, or when we give up waiting.
+  useEffect(() => {
+    if (confirmed) setPending(undefined);
+  }, [confirmed]);
+  useEffect(() => {
+    if (!pending) return;
+    const timer = setTimeout(() => setPending(undefined), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [pending]);
+  useEffect(() => () => clearTimeout(targetTimerRef.current), []);
 
-  const fail = (key: string) => setFlash(key);
   const send = (
-    key: string,
+    command: Pending,
     call: Promise<unknown>,
-    rollback: () => void,
     onSuccess?: () => void,
   ) => {
     setFlash(undefined);
+    setPending(command);
     call.then(onSuccess, (err: unknown) => {
-      console.error(`AC ${key} failed`, err);
-      rollback();
-      fail(key);
+      console.error(`AC ${command.key} failed`, err);
+      setPending((p) => (p === command ? undefined : p));
+      setFlash(command.key);
     });
   };
 
   const togglePower = () => {
-    const next = !power.value;
-    power.guess(next);
+    const next = !view.on;
     send(
-      'power',
+      { key: 'power', power: next, done: (v) => v.on === next },
       store.callService('acClimate', next ? 'turn_on' : 'turn_off'),
-      power.clear,
-      // Only close once HA confirms, so a failure still shows on this screen.
+      // Only close once HA accepts it, so a failure still shows on this screen.
       next ? undefined : onClose,
     );
   };
   const pick = (which: Picker, value: string) => {
     setPicker(undefined);
+    const current = { mode: view.mode, fan: view.fan, swing: view.swing };
+    if (value === current[which]) return;
     if (which === 'mode') {
-      mode.guess(value);
       send(
-        'mode',
+        { key: 'mode', done: (v) => v.mode === value },
         store.callService('acClimate', 'set_hvac_mode', { hvac_mode: value }),
-        mode.clear,
       );
     } else if (which === 'fan') {
-      fan.guess(value);
       send(
-        'fan',
+        { key: 'fan', done: (v) => v.fan === value },
         store.callService('acClimate', 'set_fan_mode', { fan_mode: value }),
-        fan.clear,
       );
     } else {
-      swing.guess(value);
       send(
-        'swing',
+        { key: 'swing', done: (v) => v.swing === value },
         store.callService('acClimate', 'set_swing_mode', {
           swing_mode: value,
         }),
-        swing.clear,
       );
     }
   };
-  const step = (direction: 1 | -1) => {
-    if (target.value === undefined) return;
-    const next = stepTarget(target.value, direction, view);
-    target.guess(next);
-    clearTimeout(targetTimerRef.current);
-    targetTimerRef.current = setTimeout(
-      () =>
-        send(
-          'target',
-          store.callService('acClimate', 'set_temperature', {
-            temperature: next,
-          }),
-          target.clear,
-        ),
-      TARGET_DEBOUNCE_MS,
+  const toggleSwitch = (key: SwitchKey) => {
+    const next = switches[key] !== 'on';
+    send(
+      { key, done: (_v, sw) => sw[key] === (next ? 'on' : 'off') },
+      store.callService(key, 'toggle'),
     );
   };
+  const step = (direction: 1 | -1) => {
+    const from = targetGuess ?? view.target;
+    if (from === undefined || view.target === undefined) return;
+    const next = stepTarget(from, direction, view);
+    clearTimeout(targetTimerRef.current);
+    if (next === view.target) {
+      // Back where HA already is: nothing to send.
+      setTargetGuess(undefined);
+      setPending(undefined);
+      return;
+    }
+    setTargetGuess(next);
+    setFlash(undefined);
+    const command: Pending = { key: 'target', done: (v) => v.target === next };
+    setPending(command);
+    targetTimerRef.current = setTimeout(() => {
+      store
+        .callService('acClimate', 'set_temperature', { temperature: next })
+        .catch((err: unknown) => {
+          console.error('AC target failed', err);
+          setPending((p) => (p === command ? undefined : p));
+          setTargetGuess(undefined);
+          setFlash('target');
+        });
+    }, TARGET_DEBOUNCE_MS);
+  };
 
-  const on = view.usable && power.value;
-  const locked = offline || !on;
+  const poweringOn = pending?.power === true && !view.on;
+  const locked = offline || !view.usable || !view.on;
+  // Anything but the target stepper is locked while a command is in flight.
+  const busy = pending !== undefined;
+  const target = pending?.key === 'target' ? targetGuess : view.target;
   const settings: {
     id: Picker;
     label: string;
@@ -159,15 +213,15 @@ export const AcSheet = ({
     {
       id: 'mode',
       label: 'Mode',
-      value: mode.value,
+      value: view.mode,
       options: view.modes,
       text: modeLabel,
-      icon: <ModeIcon mode={mode.value} />,
+      icon: <ModeIcon mode={view.mode} />,
     },
     {
       id: 'fan',
       label: 'Fan speed',
-      value: fan.value,
+      value: view.fan,
       options: view.fanModes,
       text: optionLabel,
       icon: <FanIcon />,
@@ -175,7 +229,7 @@ export const AcSheet = ({
     {
       id: 'swing',
       label: 'Swing',
-      value: swing.value,
+      value: view.swing,
       options: view.swingModes,
       text: optionLabel,
       icon: <span class="text-base font-bold">⇅</span>,
@@ -183,105 +237,123 @@ export const AcSheet = ({
   ];
   const open = settings.find((s) => s.id === picker);
 
+  if (open) {
+    return (
+      <ClimateSheet
+        title={open.label}
+        titleId="ac-picker-title"
+        status="Office AC"
+        onClose={onClose}
+        onActivity={() => setActivity((n) => n + 1)}
+      >
+        <AcPicker
+          options={open.options}
+          value={open.value}
+          text={open.text}
+          withModeIcons={open.id === 'mode'}
+          disabled={busy}
+          onPick={(option) => pick(open.id, option)}
+          onBack={() => setPicker(undefined)}
+        />
+      </ClimateSheet>
+    );
+  }
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Office air conditioning"
-      data-blocks-reload
-      class="fixed inset-0 z-20 bg-bg/90 p-6"
-      onPointerDown={() => setActivity((n) => n + 1)}
+    <ClimateSheet
+      title="Office AC"
+      titleId="ac-title"
+      status={acStatus(view, pending?.power)}
+      warning={!view.usable}
+      onClose={onClose}
+      onActivity={() => setActivity((n) => n + 1)}
     >
-      <div class="flex h-full flex-col rounded-tile border border-line bg-surface p-5">
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <h2 class="min-w-0 text-2xl leading-snug font-semibold">
-            {open ? open.label : 'Office air conditioning'}
-          </h2>
-          <button
-            type="button"
-            aria-label="Close"
-            class="tap grid size-14 shrink-0 place-items-center rounded-full bg-surface-2"
-            onClick={onClose}
-          >
-            <XIcon class="size-7" />
-          </button>
-        </div>
-        {open ? (
-          <AcPicker
-            options={open.options}
-            value={open.value}
-            text={open.text}
-            withModeIcons={open.id === 'mode'}
-            onPick={(option) => pick(open.id, option)}
-            onBack={() => setPicker(undefined)}
-          />
-        ) : (
-          <div class="grid min-h-0 flex-1 grid-cols-[auto_1fr] gap-4">
-            <button
-              type="button"
-              disabled={offline || !view.usable}
-              aria-pressed={on}
-              class={`tap flex w-32 flex-col items-center justify-center gap-2 rounded-2xl border text-xl font-semibold ${
-                flash === 'power'
-                  ? WARN
-                  : on
-                    ? 'border-accent bg-accent text-accent-fg'
-                    : 'border-line bg-surface-2'
-              }`}
-              onClick={togglePower}
-            >
-              <PowerIcon class="size-10" />
-              {on ? 'On' : 'Off'}
-            </button>
-            <div
-              class={`flex min-h-0 flex-col gap-3 ${on ? '' : 'opacity-50'}`}
-            >
-              <div class="grid grid-cols-3 gap-2">
-                {settings.map((s) => (
-                  <SummaryButton
-                    key={s.id}
-                    label={s.label}
-                    value={
-                      s.options.length === 0 || s.value === undefined
-                        ? 'Unavailable'
-                        : s.text(s.value)
-                    }
-                    icon={s.icon}
-                    disabled={
-                      locked || s.options.length === 0 || s.value === undefined
-                    }
-                    flashing={flash === s.id}
-                    onClick={() => setPicker(s.id)}
-                  />
-                ))}
-              </div>
-              <div class="grid grid-cols-3 gap-2">
-                {SWITCHES.map(({ key, label }) => (
-                  <SwitchButton
-                    key={key}
-                    store={store}
-                    entity={key}
-                    label={label}
-                    disabled={locked}
-                    flashing={flash === key}
-                    onFail={fail}
-                  />
-                ))}
-              </div>
-              <AcTarget
-                current={view.current}
-                target={target.value}
-                min={view.min}
-                max={view.max}
-                step={view.step}
-                locked={locked}
-                flashing={flash === 'target'}
-                onStep={step}
-              />
-            </div>
-          </div>
-        )}
+      <div class="grid min-h-28 shrink-0 grid-cols-1 gap-4 min-[600px]:grid-cols-[112px_1fr]">
+        <ClimateButton
+          aria-label="AC power"
+          aria-pressed={view.on}
+          aria-busy={pending?.key === 'power'}
+          disabled={offline || !view.usable || busy}
+          class={`flex flex-col items-center justify-center gap-2 text-xl font-semibold ${pulseClass(pending?.key === 'power')} ${
+            flash === 'power'
+              ? WARN
+              : view.on
+                ? 'border-accent! bg-accent! text-accent-fg'
+                : 'text-fg-dim'
+          }`}
+          onClick={togglePower}
+        >
+          <PowerIcon class="size-8" />
+          {view.on ? 'On' : 'Off'}
+        </ClimateButton>
+        <AcTarget
+          office={Number.isFinite(officeTemp) ? officeTemp : undefined}
+          target={target}
+          min={view.min}
+          max={view.max}
+          step={view.step}
+          locked={locked && !poweringOn}
+          busy={pending !== undefined && pending.key !== 'target'}
+          pending={pending?.key === 'target'}
+          skeleton={poweringOn}
+          flashing={flash === 'target'}
+          onStep={step}
+        />
       </div>
-    </div>
+      {poweringOn ? (
+        <div
+          class="grid grid-cols-1 gap-3 min-[600px]:grid-cols-3"
+          aria-label="Loading AC settings"
+          aria-busy="true"
+        >
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              class="h-14 rounded-lg border border-line bg-surface-2"
+            />
+          ))}
+        </div>
+      ) : (
+        <div class={`flex flex-col gap-3 ${view.on ? '' : 'opacity-50'}`}>
+          <div class="grid grid-cols-1 gap-3 min-[600px]:grid-cols-3">
+            {settings.map((s) => (
+              <SummaryButton
+                key={s.id}
+                label={s.label}
+                value={
+                  s.options.length === 0 || s.value === undefined
+                    ? 'Unavailable'
+                    : s.text(s.value)
+                }
+                icon={s.icon}
+                disabled={
+                  locked ||
+                  busy ||
+                  s.options.length === 0 ||
+                  s.value === undefined
+                }
+                pending={pending?.key === s.id}
+                flashing={flash === s.id}
+                onClick={() => setPicker(s.id)}
+              />
+            ))}
+          </div>
+          <div class="grid grid-cols-1 gap-3 min-[600px]:grid-cols-3">
+            {SWITCHES.map(({ key, label }) => (
+              <SwitchButton
+                key={key}
+                label={label}
+                on={switches[key] === 'on'}
+                usable={switches[key] === 'on' || switches[key] === 'off'}
+                disabled={locked || busy}
+                pending={pending?.key === key}
+                flashing={flash === key}
+                onToggle={() => toggleSwitch(key)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </ClimateSheet>
   );
 };

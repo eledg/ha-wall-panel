@@ -2,6 +2,7 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 
 import {
+  acStatus,
   formatTemp,
   modeLabel,
   optionLabel,
@@ -106,9 +107,9 @@ describe('stepTarget', () => {
 
 describe('labels', () => {
   it('formats temperatures to the step', () => {
-    expect(formatTemp(24, 0.5)).toBe('24.0°');
-    expect(formatTemp(24.5, 0.5)).toBe('24.5°');
-    expect(formatTemp(24, 1)).toBe('24°');
+    expect(formatTemp(24, 0.5)).toBe('24.0');
+    expect(formatTemp(24.5, 0.5)).toBe('24.5');
+    expect(formatTemp(24, 1)).toBe('24');
   });
 
   it('labels modes and options', () => {
@@ -117,5 +118,40 @@ describe('labels', () => {
     expect(optionLabel('low')).toBe('Low');
     expect(optionLabel('Vertical Swing')).toBe('Swing');
     expect(optionLabel('Highest')).toBe('Highest');
+  });
+});
+
+describe('acStatus', () => {
+  const on = {
+    usable: true,
+    on: true,
+    mode: 'cool',
+    fan: 'auto',
+    fanModes: ['low', 'auto'],
+  };
+  const off = { ...on, on: false };
+
+  it('describes what the AC is doing', () => {
+    expect(acStatus(on)).toBe('Cooling · Fan Auto');
+    expect(acStatus({ ...on, mode: 'fan_only' })).toBe('Fan only · Fan Auto');
+    expect(acStatus({ ...on, mode: 'turbo' })).toBe('On · Fan Auto');
+    expect(acStatus(off)).toBe('AC off');
+  });
+
+  it('says when the fan has no options', () => {
+    expect(acStatus({ ...on, fanModes: [] })).toBe('Cooling · Fan unavailable');
+    expect(acStatus({ ...on, fan: undefined })).toBe(
+      'Cooling · Fan unavailable',
+    );
+  });
+
+  it('reports a power change that HA has not confirmed', () => {
+    expect(acStatus(off, true)).toBe('Turning on…');
+    expect(acStatus(on, false)).toBe('Turning off…');
+    expect(acStatus(on, true)).toBe('Cooling · Fan Auto');
+  });
+
+  it('warns when the entity is unavailable', () => {
+    expect(acStatus({ ...on, usable: false })).toBe('AC unavailable');
   });
 });

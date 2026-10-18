@@ -78,6 +78,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A command awaiting HA's confirmation: the border pulses. */
+@keyframes border-pulse {
+  0%,
+  100% {
+    border-color: var(--color-accent);
+  }
+  50% {
+    border-color: color-mix(
+      in oklch,
+      var(--color-accent) 25%,
+      var(--color-line)
+    );
+  }
+}
+@utility pending-pulse {
+  animation: border-pulse 1.2s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    border-color: var(--color-accent);
+  }
+}
+
 /* Tile grid; areas come from src/grid.ts through --cols, --rows and --areas. */
 @utility dash-grid {
   display: grid;

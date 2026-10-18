@@ -3,16 +3,16 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AcSheet, TARGET_DEBOUNCE_MS } from './ac-sheet.tsx';
+import { AcSheet, SETTLE_MS, TARGET_DEBOUNCE_MS } from './ac-sheet.tsx';
 import { config } from '../../config.ts';
 import { HaConnection } from '../../ha/connection.tsx';
 import { createHaStore } from '../../ha/store.ts';
 import { createMockHa } from '../../mock/engine.ts';
 import { acAttributes } from '../../mock/scenarios/ac.ts';
-import { SETTLE_MS } from '../use-optimistic.ts';
 
 const AC = config.entities.acClimate.id;
 const POWERFUL = config.entities.acPowerful.id;
+const OFFICE = config.entities.officeTemperature.id;
 
 const setup = async ({
   on = true,
@@ -51,7 +51,8 @@ describe('AcSheet', () => {
     await setup();
     const text = document.body.textContent;
 
-    expect(text).toContain('Office air conditioning');
+    expect(text).toContain('Office AC');
+    expect(text).toContain('Heating · Fan Auto');
     expect(text).toContain('Heat');
     expect(text).toContain('Auto'); // fan speed
     expect(text).toContain('Swing'); // "Vertical Swing"
@@ -59,6 +60,15 @@ describe('AcSheet', () => {
     for (const label of ['Powerful', 'Economy', 'Quiet']) {
       expect(text).toContain(label);
     }
+  });
+
+  it('shows the office sensor as the current temperature', async () => {
+    const { mock } = await setup();
+    await act(() => mock.controls.setState(OFFICE, '22.2', {}));
+
+    expect(document.body.textContent).toContain('Office now');
+    expect(document.body.textContent).toContain('22.2°');
+    expect(document.body.textContent).not.toContain('24.0° ');
   });
 
   it('turns the AC off and closes the sheet once it succeeds', async () => {
@@ -104,7 +114,7 @@ describe('AcSheet', () => {
     expect(spy).toHaveBeenLastCalledWith('acClimate', 'set_hvac_mode', {
       hvac_mode: 'cool',
     });
-    expect(document.body.textContent).toContain('Office air conditioning');
+    expect(document.body.textContent).toContain('Office AC');
   });
 
   it('picks a fan speed', async () => {
@@ -136,7 +146,7 @@ describe('AcSheet', () => {
     await press('Back');
 
     expect(spy).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain('Office air conditioning');
+    expect(document.body.textContent).toContain('Office AC');
   });
 
   it('toggles a switch', async () => {
@@ -295,19 +305,63 @@ describe('AcSheet', () => {
     });
   });
 
-  it('drops a guess HA never confirms', async () => {
-    vi.useFakeTimers();
-    const { mock, press } = await setup();
-    // The service call succeeds but HA reports nothing new.
-    vi.spyOn(mock.deps, 'callService').mockResolvedValue(undefined);
+  describe('while HA has not confirmed', () => {
+    const unconfirmed = async () => {
+      vi.useFakeTimers();
+      const ctx = await setup();
+      // The call succeeds but HA reports nothing new.
+      vi.spyOn(ctx.mock.deps, 'callService').mockResolvedValue(undefined);
+      return ctx;
+    };
 
-    await press('Powerful');
-    expect(document.querySelector('[aria-pressed="true"]')).not.toBeNull();
-    await act(() => {
-      vi.advanceTimersByTime(SETTLE_MS);
+    it('keeps the last value, marks the control busy and locks the rest', async () => {
+      const { press, button } = await unconfirmed();
+
+      await press('Powerful');
+
+      expect(button('Powerful').getAttribute('aria-busy')).toBe('true');
+      expect(button('Powerful').className).toContain('pending-pulse');
+      expect(button('Powerful').getAttribute('aria-pressed')).toBe('false');
+      for (const name of ['AC power', 'Mode', 'Economy', 'Raise']) {
+        expect((button(name) as HTMLButtonElement).disabled, name).toBe(true);
+      }
     });
 
-    expect(document.body.textContent).toContain('Powerful');
+    it('stops waiting after a while', async () => {
+      const { press, button } = await unconfirmed();
+
+      await press('Powerful');
+      await act(() => {
+        vi.advanceTimersByTime(SETTLE_MS);
+      });
+
+      expect(button('Powerful').getAttribute('aria-busy')).toBe('false');
+      expect((button('Mode') as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('shows placeholders while the AC powers on', async () => {
+      vi.useFakeTimers();
+      const { mock, press } = await setup({ on: false });
+      vi.spyOn(mock.deps, 'callService').mockResolvedValue(undefined);
+
+      await press('Off');
+
+      expect(document.body.textContent).toContain('Turning on…');
+      expect(
+        document.querySelector('[aria-label="Loading AC settings"]'),
+      ).not.toBeNull();
+      expect(
+        document.querySelector('[aria-label="AC target"]')?.textContent,
+      ).not.toContain('°');
+    });
+
+    it('says the AC is switching off', async () => {
+      const { press } = await unconfirmed();
+
+      await press('On');
+
+      expect(document.body.textContent).toContain('Turning off…');
+    });
   });
 
   it('disables controls while HA is disconnected', async () => {

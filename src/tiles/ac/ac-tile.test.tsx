@@ -51,7 +51,9 @@ describe('AcTile', () => {
     await act(() => mock.controls.setState(AC, 'heat'));
 
     expect(tile()?.textContent).toContain('24.0°');
-    expect(tile()?.textContent).toContain('Heat');
+    expect(
+      tile()?.querySelector('[role="img"]')?.getAttribute('aria-label'),
+    ).toBe('Heat');
     expect(tile()?.className).toContain('border-accent');
   });
 
@@ -69,7 +71,7 @@ describe('AcTile', () => {
 
     await act(() => tile()!.click());
     const dialog = document.querySelector('[role="dialog"]');
-    expect(dialog?.getAttribute('aria-label')).toBe('Office air conditioning');
+    expect(dialog?.textContent).toContain('Office AC');
 
     await act(() =>
       (document.querySelector('[aria-label="Close"]') as HTMLElement).click(),

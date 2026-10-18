@@ -94,6 +94,34 @@ export const stepTarget = (
     Math.max(min, Math.round((target + direction * step) * 100) / 100),
   );
 
-/** `24.5°`, with as many decimals as the step has (`24.0°` for a 0.5 step). */
+/** `24.5`, with as many decimals as the step has (`24.0` for a 0.5 step). */
 export const formatTemp = (value: number, step: number) =>
-  `${value.toFixed(String(step).split('.')[1]?.length ?? 0)}°`;
+  value.toFixed(String(step).split('.')[1]?.length ?? 0);
+
+const ACTIVITY: Record<string, string> = {
+  cool: 'Cooling',
+  heat: 'Heating',
+  dry: 'Dry mode',
+  fan_only: 'Fan only',
+  auto: 'Auto mode',
+};
+
+/**
+ * The line under the sheet's title. `pendingPower` is the power state a tap
+ * asked for and HA has not yet confirmed.
+ */
+export const acStatus = (
+  view: Pick<AcView, 'usable' | 'on' | 'mode' | 'fan' | 'fanModes'>,
+  pendingPower?: boolean,
+) => {
+  if (!view.usable) return 'AC unavailable';
+  if (pendingPower === true && !view.on) return 'Turning on…';
+  if (pendingPower === false && view.on) return 'Turning off…';
+  if (!view.on) return 'AC off';
+  const activity = (view.mode && ACTIVITY[view.mode]) ?? 'On';
+  const fan =
+    view.fan === undefined || view.fanModes.length === 0
+      ? 'unavailable'
+      : optionLabel(view.fan);
+  return `${activity} · Fan ${fan}`;
+};

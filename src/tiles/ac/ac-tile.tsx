@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 
+import { ModeIcon } from './ac-controls.tsx';
 import { modeLabel, readAc } from './ac-model.ts';
 import { AcSheet } from './ac-sheet.tsx';
 import type { GridArea } from '../../grid.ts';
@@ -43,12 +44,19 @@ export const AcTile = ({
         label="AC"
         right={
           view.on && view.mode ? (
-            <span class="text-fg-dim">{modeLabel(view.mode)}</span>
+            <span
+              role="img"
+              aria-label={modeLabel(view.mode)}
+              title={modeLabel(view.mode)}
+              class="inline-grid place-items-center"
+            >
+              <ModeIcon mode={view.mode} small />
+            </span>
           ) : undefined
         }
         value={
           view.on && view.target !== undefined ? (
-            <Temperature value={formatTemp(view.target)} />
+            <Temperature value={formatTemp(view.target)} matchDegree />
           ) : (
             <div class="tnum text-4xl font-semibold">
               {view.on ? 'On' : 'Off'}

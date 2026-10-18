@@ -1,4 +1,5 @@
 import { ACTIVE, ModeIcon, NORMAL } from './ac-controls.tsx';
+import { ClimateButton } from '../climate-controls.tsx';
 
 /** Full-sheet grid of one setting's options, with a Back button. */
 export const AcPicker = ({
@@ -6,6 +7,7 @@ export const AcPicker = ({
   value,
   text,
   withModeIcons = false,
+  disabled = false,
   onPick,
   onBack,
 }: {
@@ -13,37 +15,34 @@ export const AcPicker = ({
   value: string | undefined;
   text: (option: string) => string;
   withModeIcons?: boolean;
+  disabled?: boolean;
   onPick: (option: string) => void;
   onBack: () => void;
 }) => (
   <>
     <div
-      class="grid min-h-0 flex-1 gap-3"
+      class="grid min-h-36 flex-1 grid-cols-2 gap-3 landscape:grid-cols-(--option-grid)"
       style={{
-        gridTemplateColumns: `repeat(${Math.max(options.length, 1)}, minmax(0, 1fr))`,
+        '--option-grid': `repeat(${Math.max(options.length, 1)}, minmax(0, 1fr))`,
       }}
     >
       {options.map((option) => (
-        <button
+        <ClimateButton
           key={option}
-          type="button"
+          disabled={disabled}
           aria-pressed={option === value}
-          class={`tap flex flex-col items-center justify-center gap-2 rounded-2xl border text-lg font-medium ${
+          class={`flex flex-col items-center justify-center gap-2 text-lg font-medium ${
             option === value ? ACTIVE : NORMAL
           }`}
           onClick={() => onPick(option)}
         >
           {withModeIcons && <ModeIcon mode={option} />}
           {text(option)}
-        </button>
+        </ClimateButton>
       ))}
     </div>
-    <button
-      type="button"
-      class="tap mt-3 h-14 rounded-xl border border-line bg-surface-2 text-fg-dim"
-      onClick={onBack}
-    >
+    <ClimateButton class="shrink-0 text-fg-dim" onClick={onBack}>
       Back
-    </button>
+    </ClimateButton>
   </>
 );

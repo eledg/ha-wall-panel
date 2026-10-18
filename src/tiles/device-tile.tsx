@@ -7,13 +7,25 @@ import { useOffline } from '../ha/connection.tsx';
 /** `22.2°`: the design's big reading, with the degree symbol raised. */
 export const Temperature = ({
   value,
+  muted = false,
+  matchDegree = false,
 }: {
   /** Already formatted, e.g. by `formatTemp`. */
   value: string;
+  /** Dimmed, for a reading that is context rather than the thing in focus. */
+  muted?: boolean;
+  /** Colour the degree symbol like the digits, not dimmed (e.g. on a lit tile). */
+  matchDegree?: boolean;
 }) => (
-  <span class="tnum whitespace-nowrap text-4xl font-semibold">
+  <span
+    class={`tnum whitespace-nowrap text-4xl font-semibold ${muted ? 'text-fg-dim' : ''}`}
+  >
     {value}
-    <span class="relative -top-[11.5px] ml-[2px] text-xl text-fg-dim">°</span>
+    <span
+      class={`relative -top-[11.5px] ml-[2px] text-xl ${matchDegree ? '' : 'text-fg-dim'}`}
+    >
+      °
+    </span>
   </span>
 );
 
