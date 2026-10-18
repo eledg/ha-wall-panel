@@ -39,7 +39,7 @@ shows the worst of them. Green (OK) meets the budget; amber (Slow) is up to 50%
 over it (frame rate down to 20 fps); red (Over) is beyond that; grey (n/a) is not
 measured yet, for example no taps in the last minute or the frames still being
 sampled. JS heap is shown without a light: there is no budget for it until the 48-hour soak (#32) shows what normal growth looks like. The tap row rates the slowest tap in the last 60 seconds. The limits are
-in `src/perf/status.ts`, so keep that and the table above in step.
+in `src/lib/perf/status.ts`, so keep that and the table above in step.
 
 The runtime targets are proposals until measured below. Adjust them to what the
 display shows is comfortable, then keep them.

@@ -61,7 +61,7 @@ the build. The display signs in to Home Assistant through the
 
 `pnpm dev` connects to your HA with `HA_DEV_URL` and `HA_DEV_TOKEN` from
 `.env.local`. `pnpm dev:mock` needs neither: it runs the app against a fake HA
-(`src/mock/`) with a single Mock overlay for the light and weather
+(`src/dev/mock/`) with a single Mock overlay for the light and weather
 (see [docs/mock.md](docs/mock.md)). Neither is ever part of a build.
 
 ## CI and releases
@@ -88,3 +88,4 @@ convention in [CONTRIBUTING.md](CONTRIBUTING.md).
 - [docs/display.md](docs/display.md): findings from testing on the display
 - [docs/design.md](docs/design.md): the Lovable design reference and port status
 - [docs/mock.md](docs/mock.md): the mock HA and its overlay
+- [docs/structure.md](docs/structure.md): how `src/` is organised and the import rules

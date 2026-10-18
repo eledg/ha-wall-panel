@@ -1,17 +1,17 @@
-import { ConfigWarning } from './config-warning.tsx';
-import { Diagnostics } from './diagnostics.tsx';
-import { HaConnection } from './ha/connection.tsx';
-import { HaDebug } from './ha/debug.tsx';
-import { DisconnectedBanner } from './ha/disconnected-banner.tsx';
-import { PerfProbe } from './perf/probe.tsx';
-import { Shell } from './shell.tsx';
-import { AcTile } from './tiles/ac/ac-tile.tsx';
-import { CalendarTile } from './tiles/calendar-tile.tsx';
-import { ClockTile } from './tiles/clock-tile.tsx';
-import { HeatingTile } from './tiles/heating/heating-tile.tsx';
-import { TempTile } from './tiles/temp/temp-tile.tsx';
-import { ToggleTile } from './tiles/toggle-tile.tsx';
-import { WeatherTile } from './tiles/weather-tile.tsx';
+import { Diagnostics } from '@/components/diagnostics/diagnostics.tsx';
+import { HaDebug } from '@/components/diagnostics/ha-debug.tsx';
+import { PerfProbe } from '@/components/diagnostics/perf-probe.tsx';
+import { ConfigWarning } from '@/components/layout/config-warning.tsx';
+import { DisconnectedBanner } from '@/components/layout/disconnected-banner.tsx';
+import { HaConnection } from '@/components/layout/ha-connection.tsx';
+import { Shell } from '@/components/layout/shell.tsx';
+import { AcTile } from '@/components/tiles/ac-tile.tsx';
+import { CalendarTile } from '@/components/tiles/calendar-tile.tsx';
+import { ClockTile } from '@/components/tiles/clock-tile.tsx';
+import { HeatingTile } from '@/components/tiles/heating-tile.tsx';
+import { TemperatureTile } from '@/components/tiles/temperature-tile.tsx';
+import { ToggleTile } from '@/components/tiles/toggle-tile.tsx';
+import { WeatherTile } from '@/components/tiles/weather-tile.tsx';
 
 export const App = () => (
   <>
@@ -21,7 +21,7 @@ export const App = () => (
         <WeatherTile area="weather" />
         <CalendarTile area="cal" />
         <ToggleTile entity="officeLight" label="Office light" area="light" />
-        <TempTile area="temp" />
+        <TemperatureTile area="temp" />
         <HeatingTile area="heat" />
         <AcTile area="ac" />
       </HaConnection>

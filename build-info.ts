@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import type { Plugin } from 'vite';
 
-const recoverPath = new URL('./src/recover.js', import.meta.url);
+const recoverPath = new URL('./src/lib/recover.js', import.meta.url);
 
 export type BuildInfo = {
   version: string;
@@ -35,7 +35,7 @@ export const resolveBuildInfo = (env: Record<string, string>): BuildInfo => ({
 export const buildInfoPlugin = (info: BuildInfo): Plugin => ({
   name: 'build-info',
   config: () => ({ define: { __BUILD_INFO__: JSON.stringify(info) } }),
-  // Inlines src/recover.js into index.html, with the running build's identity.
+  // Inlines src/lib/recover.js into index.html, with the running build's identity.
   transformIndexHtml: (html) =>
     html.replace(
       '<!-- inline:recover -->',

@@ -8,6 +8,46 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const layerZones = [
+  {
+    target: './src/config',
+    from: ['lib', 'services', 'hooks', 'components', 'dev'].map(
+      (dir) => `./src/${dir}`,
+    ),
+    message: 'config/ is a leaf: it cannot import from other layers.',
+  },
+  {
+    target: './src/services',
+    from: ['lib', 'hooks', 'components', 'dev'].map((dir) => `./src/${dir}`),
+    message:
+      'services/ is the data layer: it may only import config/ (and other services).',
+  },
+  {
+    target: './src/lib',
+    from: ['hooks', 'components', 'dev'].map((dir) => `./src/${dir}`),
+    message:
+      'lib/ is plain logic: it cannot import hooks, components or dev code.',
+  },
+  {
+    target: './src/hooks',
+    from: ['./src/components', './src/dev'],
+    message: 'hooks/ cannot import components.',
+  },
+  {
+    target: './src/dev',
+    from: './src/components',
+    message: 'dev/ cannot import components.',
+  },
+];
+
+const devZones = [
+  {
+    target: './src',
+    from: './src/dev',
+    message: 'dev/ is mock tooling and must stay out of the production graph.',
+  },
+];
+
 export default defineConfig([
   globalIgnores([
     'dist',
@@ -71,6 +111,50 @@ export default defineConfig([
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/consistent-type-imports': 'error',
+    },
+  },
+  // Source layout (docs/structure.md): imports only flow down the list
+  // config -> services -> lib -> hooks -> components, and cross-folder imports
+  // use the `@/` alias. Tests may cross layers.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*'],
+              message: "Import across folders with '@/…' instead of '../'.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/**/*.test.{ts,tsx}', 'src/tests/**'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'error',
+        { basePath: import.meta.dirname, zones: layerZones },
+      ],
+    },
+  },
+  // Production code must not reach into dev tooling. The one seam is the
+  // gated dynamic import in services/ha/instance.ts.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/dev/**', 'src/**/*.test.{ts,tsx}', 'src/tests/**'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          basePath: import.meta.dirname,
+          zones: [...layerZones, ...devZones],
+        },
+      ],
     },
   },
   {

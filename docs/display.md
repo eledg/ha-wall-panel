@@ -87,14 +87,14 @@ Findings from the first deploy of the app (#57 to #61), measured with a temporar
 
 Decision for #31. The panel type is not confirmed, so the app shifts as cheap insurance rather than waiting.
 
-- `src/pixel-shift.ts` moves the tile grid with a CSS `transform`, up to 4 px from centre, one step every 5 minutes, gliding over 60 seconds. A transform never triggers layout, so nothing reflows. The offset comes from the wall clock, so it survives reloads with no stored state.
+- `src/hooks/use-pixel-shift.ts` moves the tile grid with a CSS `transform`, up to 4 px from centre, one step every 5 minutes, gliding over 60 seconds. A transform never triggers layout, so nothing reflows. The offset comes from the wall clock, so it survives reloads with no stored state.
 - The page edge padding (1.6rem) is not shifted, so tiles stay clear of the system-gesture zone. Overlays (banner, diagnostics) are not shifted.
 - Not in the Lovable prototype; added here.
 - Still to do for #31's acceptance: a multi-hour run on the display.
 
 ## Night mode
 
-From 21:00 to 07:00 local time (`config.night` in `src/config.ts`) the app swaps
+From 21:00 to 07:00 local time (`config.night` in `src/config/config.ts`) the app swaps
 to a dimmer, warmer palette (`[data-night]` in `src/index.css`) and fades the grid
 to 60% opacity. A tap anywhere wakes it for 15 seconds; that first tap is
 swallowed, so a stray touch changes nothing. This is purely the app's own theme:

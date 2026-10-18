@@ -7,7 +7,7 @@ import type { ConfigEnv, UserConfig } from 'vite';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { devHaPlugin } from './dev-ha.ts';
-import { MOCK_MARKER } from './src/mock/engine.ts';
+import { MOCK_MARKER } from './src/dev/mock/engine.ts';
 
 const env = { HA_DEV_URL: 'http://ha:8123', HA_DEV_TOKEN: 'sentinel-token' };
 

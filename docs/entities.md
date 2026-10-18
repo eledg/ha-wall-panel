@@ -84,7 +84,7 @@ forecasts, and the Met Office entity reports local observations.
 ## Air conditioning
 
 The office unit is the only one shown; the master bedroom has its own climate
-entity, which the dashboard ignores. The tile (`tiles/ac/ac-tile.tsx`) opens a control
+entity, which the dashboard ignores. The tile (`components/tiles/ac-tile.tsx`) opens a control
 sheet (`ac-sheet.tsx`).
 
 - **State** is the HVAC mode: `off`, `cool`, `heat`, `fan_only`, `dry` or `auto`.
@@ -110,7 +110,7 @@ sheet (`ac-sheet.tsx`).
 
 ## Office temperature
 
-The Office tile (`tiles/temp/temp-tile.tsx`) reads a Shelly BLU H&T sensor:
+The Office tile (`components/tiles/temperature-tile.tsx`) reads a Shelly BLU H&T sensor:
 `sensor.blu_ht_office_temperature` (shown to one decimal) and
 `sensor.blu_ht_office_humidity` (whole percent, with a droplet, above the
 temperature). A missing, `unavailable` or non-numeric
@@ -120,7 +120,7 @@ screen lists it (`100 %`); no tile shows it.
 
 ## Heating
 
-The Heating tile (`tiles/heating/heating-tile.tsx`) and its sheet
+The Heating tile (`components/tiles/heating-tile.tsx`) and its sheet
 (`heating-sheet.tsx`) show the **whole-house** Tado heating. The tile shows the
 target (or "Off"), with no humidity, as in the design; the sheet shows the living
 room Tado sensor's temperature, the room the heating controls.
@@ -156,7 +156,7 @@ Two signals, kept separate (`heating-model.ts`):
   returns to the schedule is **untested** (`docs/Next steps.md`, open question 1).
   Boost is enabled whenever heating is on.
 - **Demand history** is read from `/api/history/period` when the sheet opens and
-  every minute while it is open (`ha/history.ts`). An empty or failed first read
+  every minute while it is open (`services/ha/history.ts`). An empty or failed first read
   shows "No demand history available"; a failed refresh keeps the last bars.
 - The controls come from the **Tado Hijack** custom integration (the core Tado
   integration doesn't support Tado X). Tado's cloud API allows 20,000 calls a day, so

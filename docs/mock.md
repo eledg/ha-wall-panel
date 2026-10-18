@@ -1,15 +1,15 @@
 # Mock HA
 
 `pnpm dev:mock` runs the app against a fake Home Assistant, so tiles can be checked
-by eye with no token and no real HA. All of it lives in `src/mock/`. It is never
+by eye with no token and no real HA. All of it lives in `src/dev/mock/`. It is never
 part of a build, and `pnpm dev` does not load it (a build test checks).
 
 ## How it is wired
 
-- `src/mock/engine.ts` implements the store's `HaDeps` over in-memory entities, so
+- `src/dev/mock/engine.ts` implements the store's `HaDeps` over in-memory entities, so
   the store and tiles run unmodified.
 - `__HA_MOCK__` (a Vite `define`, true only for `vite --mode mock`) gates one
-  dynamic import in `src/ha/instance.ts`. That is the app's only link to the mock.
+  dynamic import in `src/services/ha/instance.ts`. That is the app's only link to the mock.
 - The overlay renders on its own Preact root (`#mock-overlay`), not inside `App`.
 
 ## The overlay
@@ -36,27 +36,27 @@ each control stays visible. Its panels:
   a fan mode with no label) and `Make calls fail`, so the sheet's controls revert
   and flash. The mock validates service values like HA: a target outside 16-30 or
   off the 0.5 step, or a mode the entity doesn't list, is rejected. `turn_on`
-  brings back the last mode used. Attributes live in `src/mock/scenarios/ac.ts`.
+  brings back the last mode used. Attributes live in `src/dev/mock/scenarios/ac.ts`.
 - **Heating**: puts the heating in Schedule, Manual, Off or Paused (power ×
   control, as HA reports them) and flips boiler demand on its own. Also makes the
   climate unavailable, drops the Tado cloud connection, makes the demand history
   fetch fail, and `Make calls fail`. The mock validates the target like HA (5-30,
   0.5 steps), a manual target ends the schedule, switching off by hand sets control to
   off and clears demand, and Resume / Boost leave their buttons `unknown`. Six hours
-  of demand history (four heating periods) are in `src/mock/scenarios/heating.ts`.
+  of demand history (four heating periods) are in `src/dev/mock/scenarios/heating.ts`.
 - **Connection**: Disconnected shows tiles dimmed with a `stale` badge and the
   `Reconnecting… last updated HH:MM` pill at the top. Changes made meanwhile are
   held and service calls fail; Connected replays the latest state, as a real
   reconnect does.
 
-Weather scenarios live in `src/mock/scenarios/weather.ts`, calendar ones in
-`src/mock/scenarios/calendar.ts`.
+Weather scenarios live in `src/dev/mock/scenarios/weather.ts`, calendar ones in
+`src/dev/mock/scenarios/calendar.ts`.
 
 ## Mocking a new tile
 
-1. Extend `MockControls` in `src/mock/engine.ts` if the tile needs new behaviour.
-2. Add `src/mock/panels/<tile>.tsx` exporting a `MockPanel` (see `light.tsx`).
-3. List it in `src/mock/panels/index.ts`.
+1. Extend `MockControls` in `src/dev/mock/engine.ts` if the tile needs new behaviour.
+2. Add `src/dev/mock/panels/<tile>.tsx` exporting a `MockPanel` (see `light.tsx`).
+3. List it in `src/dev/mock/panels/index.ts`.
 
-Keep scenario data inside `src/mock/`, and pass only ids and labels to the UI where
+Keep scenario data inside `src/dev/mock/`, and pass only ids and labels to the UI where
 you can, so nothing leaks into the production bundle.

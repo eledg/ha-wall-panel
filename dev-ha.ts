@@ -14,7 +14,7 @@ export const devHaPlugin = (env: Record<string, string>): Plugin => ({
         __HA_DEV__: dev
           ? JSON.stringify({ url: env.HA_DEV_URL, token: env.HA_DEV_TOKEN })
           : 'undefined',
-        // `vite --mode mock` runs the app against the fake HA in src/ha/mock.ts.
+        // `vite --mode mock` runs the app against the fake HA in src/dev/mock/.
         __HA_MOCK__: String(command === 'serve' && mode === 'mock'),
       },
       // The websocket reaches HA directly, but HA's REST API (the calendar)

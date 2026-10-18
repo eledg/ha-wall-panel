@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import preact from '@preact/preset-vite';
 import tailwindcss from '@tailwindcss/vite';
 import { loadEnv } from 'vite';
@@ -16,6 +18,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
+    resolve: {
+      alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    },
     plugins: [
       tailwindcss(),
       preact(),

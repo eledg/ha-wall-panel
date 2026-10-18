@@ -1,11 +1,12 @@
 import { render } from 'preact';
 
 import './index.css';
+import { startAutoReload } from '@/lib/auto-reload.ts';
+import { connectHa } from '@/services/ha/connect.ts';
+import { haAuth, haStore } from '@/services/ha/instance.ts';
+import { startPerf } from '@/services/perf/counters.ts';
+
 import { App } from './app.tsx';
-import { startAutoReload } from './auto-reload.ts';
-import { connectHa } from './ha/connect.ts';
-import { haAuth, haStore } from './ha/instance.ts';
-import { startPerf } from './perf/counters.ts';
 
 render(<App />, document.getElementById('app')!);
 startPerf(haStore);

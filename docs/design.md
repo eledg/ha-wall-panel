@@ -32,7 +32,7 @@ Most of `src/components/ui/` is unused shadcn scaffolding; ignore it.
 - Keep the self-hosted Open Sans font; the display may be offline.
 - The AC sheet shows Mode, Fan speed and Swing as three summary buttons; each opens
   a full-sheet picker of the entity's own options (the prototype's `AcPanel`).
-- Real data comes from the HA store (`src/ha/`), not from the prototype's mock.
+- Real data comes from the HA store (`src/services/ha/`), not from the prototype's mock.
 
 ## What is shared
 
@@ -40,10 +40,10 @@ Most of `src/components/ui/` is unused shadcn scaffolding; ignore it.
   with the same names (`bg`, `surface`, `surface-2`, `line`, `fg`, `fg-dim`,
   `fg-faint`, `accent`, `accent-fg`, `accent-soft`, `warn`, `warn-soft`,
   `cal-*`). Colours are oklch, which needs Chromium 111 or newer.
-- **Grid** is in `src/grid.ts`: 6 columns by 3 rows of named areas. A tile
+- **Grid** is in `src/lib/grid.ts`: 6 columns by 3 rows of named areas. A tile
   places itself with its `area`; areas without a tile stay empty. Portrait falls
   back to two columns.
-- **Tile shell** is `src/tiles/tile.tsx`. Tile states are `loading`, `normal`,
+- **Tile shell** is `src/components/tiles/base/tile.tsx`. Tile states are `loading`, `normal`,
   `unavailable` and `stale`.
 
-Pixel shift (a slow few-pixel drift of the tile grid, `src/pixel-shift.ts`) is not in the prototype; it was added for burn-in (#31, `docs/display.md`).
+Pixel shift (a slow few-pixel drift of the tile grid, `src/hooks/use-pixel-shift.ts`) is not in the prototype; it was added for burn-in (#31, `docs/display.md`).

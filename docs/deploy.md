@@ -123,7 +123,7 @@ back into `www/office-wall-display` over SSH.
 ## Reloading the display
 
 Nothing reloads the page on wake (see `docs/display.md`), so the page reloads
-itself. `src/auto-reload.ts` fetches `version.json` every 5 minutes and on
+itself. `src/lib/auto-reload.ts` fetches `version.json` every 5 minutes and on
 `focus`, with a unique query string and `cache: 'no-store'`. If its version and
 commit differ from the running build (a difference, not "newer", so rollbacks
 apply), it reloads to `index.html?v=<version>@<commit>` once there has been no
@@ -134,7 +134,7 @@ Overlays such as the doorbell must set that attribute while open.
   30 minutes, so a stale cache cannot cause a loop. If `localStorage` is
   unavailable, no reload happens.
 - A failed or malformed `version.json` is ignored.
-- `src/recover.js` is a small copy of the same check. The build inlines it into
+- `src/lib/recover.js` is a small copy of the same check. The build inlines it into
   `index.html`, outside the bundle, so a broken bundle still recovers and the
   script is never cached separately. Keep the two in step.
 - The first build with this check needs one manual cache reset on the display.
