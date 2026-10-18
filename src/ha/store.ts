@@ -16,6 +16,8 @@ import {
 } from './calendar.ts';
 import type { CalendarEvent, RawCalendarEvent } from './calendar.ts';
 import { cancellableDelay } from './delay.ts';
+import { fetchHistory } from './history.ts';
+import type { RawHistoryState } from './history.ts';
 
 type Entities = typeof config.entities;
 export type EntityKey = keyof Entities;
@@ -23,6 +25,8 @@ export type EntityKey = keyof Entities;
 /** The services each domain accepts through `callService`. */
 type DomainServices = {
   switch: 'turn_on' | 'turn_off' | 'toggle';
+  button: 'press';
+  binary_sensor: never;
   sensor: never;
   weather: never;
   calendar: never;
@@ -95,6 +99,13 @@ export type HaDeps = {
     start: Date,
     end: Date,
   ) => Promise<RawCalendarEvent[]>;
+  /** The recorded states of one entity between two instants, oldest first. */
+  fetchHistory: (
+    auth: Auth,
+    entityId: string,
+    start: Date,
+    end: Date,
+  ) => Promise<RawHistoryState[]>;
 };
 
 const realDeps: HaDeps = {
@@ -102,6 +113,7 @@ const realDeps: HaDeps = {
   subscribeEntities,
   callService: haCallService,
   fetchCalendarEvents,
+  fetchHistory,
 };
 
 const describeError = (err: unknown) => {
@@ -341,6 +353,18 @@ export const createHaStore = (
     }
   };
 
+  /**
+   * Recorded states of a configured entity over a window. Rejects while HA is
+   * not connected, so a sheet can show its empty state.
+   */
+  const history = (key: EntityKey, start: Date, end: Date) => {
+    const auth = calendarAuth;
+    if (!auth || invalid.has(key)) {
+      return Promise.reject(new Error(`Cannot read history of ${key}`));
+    }
+    return deps.fetchHistory(auth, cfg.entities[key].id, start, end);
+  };
+
   const callService = <K extends EntityKey>(
     key: K,
     service: ServiceName<K>,
@@ -364,6 +388,7 @@ export const createHaStore = (
     start,
     stop,
     callService,
+    history,
   };
 };
 

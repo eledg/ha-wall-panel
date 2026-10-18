@@ -4,7 +4,13 @@ export const PLACEHOLDER_PREFIX = 'TODO:';
 export const placeholder = (what: string) => `${PLACEHOLDER_PREFIX}${what}`;
 
 export type EntityDomain =
-  'calendar' | 'climate' | 'sensor' | 'switch' | 'weather';
+  | 'binary_sensor'
+  | 'button'
+  | 'calendar'
+  | 'climate'
+  | 'sensor'
+  | 'switch'
+  | 'weather';
 
 type EntitySpec = { domain: EntityDomain; id: string };
 
@@ -49,6 +55,24 @@ export const config = {
       'switch',
       'switch.office_climate_air_conditioning_office_quiet_fan',
     ),
+    /** Central heating (Tado): power (`heat` / `off`), target and room temperature. */
+    heatingClimate: spec('climate', 'climate.wireless_temperature_sensor_x'),
+    /** Heating control: on follows the schedule, off is manual (or switched off). */
+    heatingSchedule: spec('switch', 'switch.living_room_schedule'),
+    /** Whether Tado is asking the boiler for heat, for the whole house. */
+    heatingDemand: spec(
+      'binary_sensor',
+      'binary_sensor.tado_home_heating_demand',
+    ),
+    /** Tado cloud connection: heating data goes stale silently when it drops. */
+    heatingCloud: spec(
+      'binary_sensor',
+      'binary_sensor.tado_temperature_sensor_x_000000_cloud_connection',
+    ),
+    /** Returns the heating to its schedule. Press-only: the state is never read. */
+    heatingResume: spec('button', 'button.living_room_resume_schedule'),
+    /** Boosts heating. Press-only: the state is never read. */
+    heatingBoost: spec('button', 'button.tado_home_boost_all_zones'),
   },
   /**
    * Night mode (src/night.ts): from `startHour` until `endHour` local time the

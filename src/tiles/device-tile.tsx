@@ -29,13 +29,20 @@ export const Temperature = ({
   </span>
 );
 
-export type DeviceTone = 'accent' | 'neutral';
+/** The big value of a tile whose reading is missing: `— n/a`. */
+export const MissingValue = () => (
+  <div class="tnum text-4xl font-semibold text-fg-faint">
+    —<span class="ml-1 text-sm text-warn">n/a</span>
+  </div>
+);
+
+export type DeviceTone = 'accent' | 'manual' | 'neutral';
 
 /**
  * Shell for the single-width device tiles from the design: an icon and label
  * header with an optional state icon on the right, an optional status line
  * directly above the value, and the value anchored at the bottom. An `accent`
- * tone lights the tile unless HA is disconnected.
+ * (or red `manual`) tone lights the tile unless HA is disconnected.
  */
 export const DeviceTile = ({
   area,
@@ -65,8 +72,10 @@ export const DeviceTile = ({
   centerValue?: boolean;
 }) => {
   const offline = useOffline();
-  const accent = tone === 'accent';
+  const manual = tone === 'manual';
+  const accent = tone === 'accent' || manual;
   const lit = accent && !offline;
+  const colour = manual ? 'text-heating-manual' : 'text-accent';
 
   return (
     <Tile
@@ -74,11 +83,17 @@ export const DeviceTile = ({
       state={state}
       onTap={onTap}
       flash={flash}
-      class={lit ? 'border-accent! bg-accent-soft!' : ''}
+      class={
+        lit
+          ? manual
+            ? 'border-heating-manual! bg-heating-manual-soft!'
+            : 'border-accent! bg-accent-soft!'
+          : ''
+      }
     >
       <div class="flex h-full flex-col justify-between">
         <div
-          class={`flex items-center gap-1.5 text-sm ${accent ? 'text-accent' : 'text-fg-dim'}`}
+          class={`flex items-center gap-1.5 text-sm ${accent ? colour : 'text-fg-dim'}`}
         >
           {icon}
           {label}
@@ -88,7 +103,7 @@ export const DeviceTile = ({
           <Unavailable />
         ) : (
           <div
-            class={`flex flex-col gap-1 ${centerValue ? 'min-h-0 flex-1 items-center justify-center' : 'items-start'} ${accent ? 'text-accent' : 'text-fg'}`}
+            class={`flex flex-col gap-1 ${centerValue ? 'min-h-0 flex-1 items-center justify-center' : 'items-start'} ${accent ? colour : 'text-fg'}`}
           >
             {status}
             {value}

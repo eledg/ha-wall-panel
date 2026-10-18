@@ -1,4 +1,5 @@
-import { DeviceTile, Temperature } from '../device-tile.tsx';
+import { DeviceTile, MissingValue, Temperature } from '../device-tile.tsx';
+import { tileState } from '../tile.tsx';
 import { formatHumidity, formatTemp, readTemp } from './temp-model.ts';
 import type { GridArea } from '../../grid.ts';
 import { haStore } from '../../ha/instance.ts';
@@ -23,7 +24,7 @@ export const TempTile = ({
   return (
     <DeviceTile
       area={area}
-      state={tempEntity === undefined ? 'loading' : 'normal'}
+      state={tileState([tempEntity])}
       icon={<ThermoIcon class="size-4" />}
       label="Office"
       status={
@@ -37,9 +38,7 @@ export const TempTile = ({
       }
       value={
         value === undefined ? (
-          <div class="tnum text-4xl font-semibold text-fg-faint">
-            —<span class="ml-1 text-sm text-warn">n/a</span>
-          </div>
+          <MissingValue />
         ) : (
           <Temperature value={formatTemp(value)} />
         )

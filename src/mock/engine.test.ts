@@ -49,6 +49,12 @@ describe('createMockHa', () => {
         config.entities.officeTemperature.id,
         config.entities.officeHumidity.id,
         config.entities.officeBattery.id,
+        config.entities.heatingClimate.id,
+        config.entities.heatingSchedule.id,
+        config.entities.heatingDemand.id,
+        config.entities.heatingCloud.id,
+        config.entities.heatingResume.id,
+        config.entities.heatingBoost.id,
         ...CALENDARS.map(({ id }) => id),
         UNRELATED_ID,
       ].sort(),
@@ -222,6 +228,12 @@ describe('store against the mock', () => {
       'calendarBirthdays',
       'calendarF1',
       'calendarFamily',
+      'heatingBoost',
+      'heatingClimate',
+      'heatingCloud',
+      'heatingDemand',
+      'heatingResume',
+      'heatingSchedule',
       'officeBattery',
       'officeHumidity',
       'officeLight',
@@ -348,5 +360,114 @@ describe('mock weather controls', () => {
     expect(seen).toHaveLength(before);
     mock.controls.setConnected(true);
     expect(latest()[LIGHT]?.state).toBe('on');
+  });
+});
+
+describe('mock heating', () => {
+  const climate = config.entities.heatingClimate.id;
+  const schedule = config.entities.heatingSchedule.id;
+  const demand = config.entities.heatingDemand.id;
+  const call = (
+    mock: ReturnType<typeof createMockHa>,
+    domain: string,
+    service: string,
+    id: string,
+    data?: object,
+  ) =>
+    mock.deps.callService({} as never, domain, service, data, {
+      entity_id: id,
+    });
+
+  it('starts in Schedule with demand on', () => {
+    const mock = createMockHa();
+
+    expect(mock.controls.getHeating()).toBe('schedule');
+    expect(mock.controls.getState(demand)?.state).toBe('on');
+  });
+
+  it('sets each display state as power × control', () => {
+    const mock = createMockHa();
+
+    for (const [state, power, control] of [
+      ['manual', 'heat', 'off'],
+      ['off', 'off', 'off'],
+      ['paused', 'off', 'on'],
+      ['schedule', 'heat', 'on'],
+    ] as const) {
+      mock.controls.setHeating(state);
+      expect(mock.controls.getState(climate)?.state).toBe(power);
+      expect(mock.controls.getState(schedule)?.state).toBe(control);
+      expect(mock.controls.getHeating()).toBe(state);
+    }
+  });
+
+  it('switching off by hand sets control to off and clears demand', async () => {
+    const mock = createMockHa();
+
+    await call(mock, 'climate', 'set_hvac_mode', climate, { hvac_mode: 'off' });
+
+    expect(mock.controls.getHeating()).toBe('off');
+    expect(mock.controls.getState(demand)?.state).toBe('off');
+  });
+
+  it('a manual target ends the schedule', async () => {
+    const mock = createMockHa();
+
+    await call(mock, 'climate', 'set_temperature', climate, {
+      temperature: 21.5,
+    });
+
+    expect(mock.controls.getHeating()).toBe('manual');
+    expect(mock.controls.getState(climate)?.attributes.temperature).toBe(21.5);
+  });
+
+  it.each([4.5, 30.5, 20.25, '21'])(
+    'rejects the target %s',
+    async (temperature) => {
+      const mock = createMockHa();
+
+      await expect(
+        call(mock, 'climate', 'set_temperature', climate, { temperature }),
+      ).rejects.toThrow('not a valid target');
+    },
+  );
+
+  it('Resume returns to the schedule from Manual and Off; Boost sets 30', async () => {
+    const mock = createMockHa();
+    const resume = config.entities.heatingResume.id;
+    const boost = config.entities.heatingBoost.id;
+
+    mock.controls.setHeating('off');
+    await call(mock, 'button', 'press', resume);
+    expect(mock.controls.getHeating()).toBe('schedule');
+
+    await call(mock, 'button', 'press', boost);
+    expect(mock.controls.getState(climate)?.attributes.temperature).toBe(30);
+    // Presses never change a button's state, as in HA.
+    expect(mock.controls.getState(boost)?.state).toBe('unknown');
+  });
+
+  it('fails calls on request and rejects unknown services', async () => {
+    const mock = createMockHa();
+
+    await expect(
+      call(mock, 'climate', 'set_fan_mode', climate),
+    ).rejects.toThrow('no service');
+    mock.controls.failServices(true);
+    await expect(
+      call(mock, 'climate', 'set_hvac_mode', climate, { hvac_mode: 'off' }),
+    ).rejects.toThrow('service call failed');
+  });
+
+  it('serves six hours of demand history, and can fail', async () => {
+    const mock = createMockHa();
+    const fetch = () =>
+      mock.deps.fetchHistory({} as never, demand, new Date(), new Date());
+
+    const rows = await fetch();
+    expect(rows.filter((r) => r.state === 'on')).toHaveLength(4);
+
+    mock.controls.failHistory(true);
+    await expect(fetch()).rejects.toThrow('history failed');
   });
 });

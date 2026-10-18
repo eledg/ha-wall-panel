@@ -6,6 +6,20 @@ import { AlertIcon } from '../icons/alert-icon.tsx';
 
 export type TileState = 'loading' | 'normal' | 'unavailable' | 'stale';
 
+/**
+ * The state of a tile that reads `entities`: `loading` until HA has reported
+ * every one, `unavailable` when they are there but not `usable`, else normal.
+ */
+export const tileState = (
+  entities: unknown[],
+  usable = true,
+): TileState | undefined =>
+  entities.some((entity) => entity === undefined)
+    ? 'loading'
+    : usable
+      ? undefined
+      : 'unavailable';
+
 /** Shown inside a tile whose entity is unavailable. */
 export const Unavailable = ({ label = 'Unavailable' }: { label?: string }) => (
   <div class="flex items-center gap-2 text-warn">

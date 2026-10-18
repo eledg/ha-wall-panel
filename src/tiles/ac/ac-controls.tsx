@@ -5,10 +5,7 @@ import { FanIcon } from '../../icons/fan-icon.tsx';
 import { PowerIcon } from '../../icons/power-icon.tsx';
 import { SnowflakeIcon } from '../../icons/snowflake-icon.tsx';
 import { ThermoIcon } from '../../icons/thermo-icon.tsx';
-import { ClimateButton } from '../climate-controls.tsx';
-
-/** How long a control flashes after a failed call (the design's 900 ms). */
-export const FLASH_MS = 900;
+import { ClimateButton, pulseClass, WARN } from '../climate-controls.tsx';
 
 export type SwitchKey = Extract<
   EntityKey,
@@ -23,14 +20,9 @@ export const SWITCHES: { key: SwitchKey; label: string }[] = [
 
 export const NORMAL = 'border-line bg-surface-2 text-fg-dim';
 export const ACTIVE = 'border-accent! bg-accent-soft! text-accent';
-export const WARN = 'border-warn! bg-warn-soft! text-warn';
 
 export const stateClass = (flashing: boolean, active: boolean) =>
   flashing ? WARN : active ? ACTIVE : NORMAL;
-
-/** A command waiting for HA: keep the last value, dimmed, with a pulsing border. */
-export const pulseClass = (pending: boolean) =>
-  pending ? 'pending-pulse opacity-60' : '';
 
 /** The mode's glyph: 20px in the picker and summary, 16px in the tile header. */
 export const ModeIcon = ({

@@ -9,6 +9,16 @@ import {
   applyClimateService,
 } from './scenarios/ac.ts';
 import { calendarScenarios } from './scenarios/calendar.ts';
+import {
+  applyHeatingService,
+  BOOST_TARGET,
+  demandHistory,
+  heatingAttributes,
+  heatingFixture,
+  heatingStateOf,
+  type MockHeatingState,
+  SCHEDULED_TARGET,
+} from './scenarios/heating.ts';
 import { forecastFor, weatherScenarios } from './scenarios/weather.ts';
 
 /** Present only in mock code; a build test looks for it in `dist/`. */
@@ -65,6 +75,16 @@ export type MockControls = {
   setAcOdd: (odd: boolean) => void;
   /** Whether the AC is showing odd data. */
   isAcOdd: () => boolean;
+  /** Puts the heating in one of its four display states (power × control). */
+  setHeating: (state: MockHeatingState) => void;
+  /** The heating's current display state. */
+  getHeating: () => MockHeatingState;
+  /** Whether the boiler is called for heat (home-wide). */
+  setHeatingDemand: (demand: boolean) => void;
+  /** Makes the demand history fetch fail. */
+  failHistory: (failing: boolean) => void;
+  /** Whether the demand history fetch is set to fail. */
+  isHistoryFailing: () => boolean;
   /** Calls `listener` after every change the mock makes; returns the unsubscribe. */
   subscribe: (listener: () => void) => () => void;
 };
@@ -137,6 +157,23 @@ export const createMockHa = (cfg: typeof config = config) => {
     cfg.entities.acQuietFan.id,
   ];
   for (const id of acSwitches) entities.set(id, make(id, 'off'));
+  const heating = cfg.entities.heatingClimate.id;
+  const heatingSchedule = cfg.entities.heatingSchedule.id;
+  const heatingDemand = cfg.entities.heatingDemand.id;
+  const fixture = heatingFixture('schedule');
+  entities.set(heating, make(heating, fixture.power, heatingAttributes()));
+  entities.set(heatingSchedule, make(heatingSchedule, fixture.schedule));
+  entities.set(heatingDemand, make(heatingDemand, 'on'));
+  const heatingCloud = cfg.entities.heatingCloud.id;
+  entities.set(heatingCloud, make(heatingCloud, 'on'));
+  // Presses never change a button's state, as in HA.
+  for (const id of [
+    cfg.entities.heatingResume.id,
+    cfg.entities.heatingBoost.id,
+  ]) {
+    entities.set(id, make(id, 'unknown'));
+  }
+  let historyFails = false;
   // What `climate.turn_on` restores, as the real unit does.
   let acLastMode = AC_DEFAULT_MODE;
   let acOdd = false;
@@ -151,6 +188,28 @@ export const createMockHa = (cfg: typeof config = config) => {
       id,
       make(id, state, attributes ?? entities.get(id)?.attributes),
     );
+    publish();
+  };
+
+  /** Changes the heating's power, control and target together, with one update. */
+  const setHeatingParts = (
+    power: string,
+    scheduleOn: boolean,
+    target: unknown,
+    demand?: boolean,
+  ) => {
+    const climate = entities.get(heating);
+    entities.set(
+      heating,
+      make(heating, power, { ...climate?.attributes, temperature: target }),
+    );
+    entities.set(
+      heatingSchedule,
+      make(heatingSchedule, scheduleOn ? 'on' : 'off'),
+    );
+    if (demand !== undefined) {
+      entities.set(heatingDemand, make(heatingDemand, demand ? 'on' : 'off'));
+    }
     publish();
   };
 
@@ -186,6 +245,17 @@ export const createMockHa = (cfg: typeof config = config) => {
       }
       return Promise.resolve(calendarScenario.events(new Date())[key] ?? []);
     },
+    fetchHistory: (_auth, entityId) => {
+      if (!connected) {
+        return Promise.reject(new Error('Mock HA: connection lost'));
+      }
+      if (historyFails) {
+        return Promise.reject(new Error('Mock HA: history failed'));
+      }
+      return Promise.resolve(
+        entityId === heatingDemand ? demandHistory(Date.now()) : [],
+      );
+    },
     callService: (_conn, domain, service, data, target) => {
       if (!connected) {
         return Promise.reject(new Error('Mock HA: connection lost'));
@@ -205,6 +275,44 @@ export const createMockHa = (cfg: typeof config = config) => {
       const entity = id ? entities.get(id) : undefined;
       if (!id || !entity) {
         return Promise.reject(new Error(`Mock HA: unknown entity ${id}`));
+      }
+      if (domain === 'button' && service === 'press') {
+        if (servicesFail) {
+          return Promise.reject(new Error('Mock HA: service call failed'));
+        }
+        if (id === cfg.entities.heatingResume.id) {
+          setHeatingParts('heat', true, SCHEDULED_TARGET);
+        } else if (id === cfg.entities.heatingBoost.id) {
+          setHeatingParts('heat', false, BOOST_TARGET, true);
+        }
+        return Promise.resolve();
+      }
+      if (domain === 'climate' && id === heating) {
+        if (servicesFail) {
+          return Promise.reject(new Error('Mock HA: service call failed'));
+        }
+        if (entity.state === 'unavailable') {
+          return Promise.reject(new Error('Mock HA: heating unavailable'));
+        }
+        try {
+          const next = applyHeatingService(
+            entity.state,
+            entity.attributes,
+            entities.get(heatingSchedule)?.state === 'on',
+            service,
+            data as Record<string, unknown> | undefined,
+          );
+          // With no heating, nothing is calling for heat.
+          setHeatingParts(
+            next.power,
+            next.scheduleOn,
+            next.target,
+            next.power === 'off' ? false : undefined,
+          );
+          return Promise.resolve();
+        } catch (err) {
+          return Promise.reject(err as Error);
+        }
       }
       if (domain === 'climate') {
         if (servicesFail) {
@@ -274,6 +382,27 @@ export const createMockHa = (cfg: typeof config = config) => {
       );
     },
     isAcOdd: () => acOdd,
+    setHeating: (state) => {
+      const { power, schedule, target } = heatingFixture(state);
+      setHeatingParts(
+        power,
+        schedule === 'on',
+        target,
+        power === 'off' ? false : undefined,
+      );
+    },
+    getHeating: () =>
+      heatingStateOf(
+        entities.get(heating)?.state,
+        entities.get(heatingSchedule)?.state,
+      ),
+    setHeatingDemand: (demand) =>
+      setState(heatingDemand, demand ? 'on' : 'off'),
+    failHistory: (failing) => {
+      historyFails = failing;
+      watchers.forEach((watcher) => watcher());
+    },
+    isHistoryFailing: () => historyFails,
     getWeatherScenario: () => scenario.id,
     setWeather: (id) => {
       scenario = scenarios.find((s) => s.id === id) ?? scenario;

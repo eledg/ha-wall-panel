@@ -50,6 +50,16 @@ test('event details: F1 shows the full title', async ({ page }) => {
   await expect(page).toHaveScreenshot('event-f1.png');
 });
 
+test('heating: the sheet', async ({ page }) => {
+  await page.getByRole('button', { name: /^Heating/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  // Let the demand history load.
+  await expect(
+    page.getByRole('img', { name: /heating periods/ }),
+  ).toBeVisible();
+  await expect(page).toHaveScreenshot('heating-sheet.png');
+});
+
 test('pixel shift: the grid moves every five minutes', async ({ page }) => {
   // The style tag above pins the transform, so read the inline style instead.
   const shift = () =>

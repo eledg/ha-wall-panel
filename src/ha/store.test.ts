@@ -74,6 +74,12 @@ describe('createHaStore', () => {
       config.entities.officeHumidity.id,
       config.entities.officeBattery.id,
       config.entities.acQuietFan.id,
+      config.entities.heatingClimate.id,
+      config.entities.heatingSchedule.id,
+      config.entities.heatingDemand.id,
+      config.entities.heatingCloud.id,
+      config.entities.heatingResume.id,
+      config.entities.heatingBoost.id,
     ]);
   });
 

@@ -7,10 +7,10 @@ export const GRID = {
   cols: 'repeat(6, minmax(0, 1fr))',
   rows: 'repeat(3, minmax(0, 1fr))',
   areas:
-    '"clock clock clock cal cal cal" "weather weather weather cal cal cal" "light light temp ac door door"',
+    '"clock clock clock cal cal cal" "weather weather weather cal cal cal" "light light temp heat ac door"',
   areasNarrow:
-    '"clock clock" "weather weather" "cal cal" "light temp" "ac door"',
+    '"clock clock" "weather weather" "cal cal" "light light" "temp heat" "ac door"',
 } as const;
 
 export type GridArea =
-  'clock' | 'weather' | 'cal' | 'light' | 'temp' | 'ac' | 'door';
+  'clock' | 'weather' | 'cal' | 'light' | 'temp' | 'heat' | 'ac' | 'door';

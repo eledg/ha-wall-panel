@@ -1,13 +1,14 @@
-import { pulseClass, WARN } from './ac-controls.tsx';
-import { formatTemp } from './ac-model.ts';
-import { MinusIcon } from '../../icons/minus-icon.tsx';
-import { PlusIcon } from '../../icons/plus-icon.tsx';
-import { ClimateButton } from '../climate-controls.tsx';
-import { Temperature } from '../device-tile.tsx';
+import { ClimateButton, pulseClass, WARN } from './climate-controls.tsx';
+import { Temperature } from './device-tile.tsx';
+import { formatTarget } from './target.ts';
+import { MinusIcon } from '../icons/minus-icon.tsx';
+import { PlusIcon } from '../icons/plus-icon.tsx';
 
-/** The office room temperature, and the target with − / + buttons. */
-export const AcTarget = ({
-  office,
+/** A room temperature, and the target with − / + buttons. */
+export const TargetStepper = ({
+  currentLabel,
+  targetLabel,
+  current,
   target,
   min,
   max,
@@ -19,8 +20,12 @@ export const AcTarget = ({
   flashing,
   onStep,
 }: {
-  /** The office sensor, not the AC's own intake reading. */
-  office: number | undefined;
+  /** Caption above the room temperature, e.g. `Office now`. */
+  currentLabel: string;
+  /** Accessible name of the target readout, e.g. `AC target`. */
+  targetLabel: string;
+  /** The room temperature to show next to the target. */
+  current: number | undefined;
   target: number | undefined;
   min: number;
   max: number;
@@ -40,11 +45,11 @@ export const AcTarget = ({
   return (
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="text-fg-dim">
-        <div class="mb-1 text-sm">Office now</div>
-        {office === undefined ? (
+        <div class="mb-1 text-sm">{currentLabel}</div>
+        {current === undefined ? (
           <span class="tnum text-4xl font-semibold">—</span>
         ) : (
-          <Temperature value={formatTemp(office, step)} muted />
+          <Temperature value={formatTarget(current, step)} muted />
         )}
       </div>
       <div
@@ -59,7 +64,7 @@ export const AcTarget = ({
           <MinusIcon class="size-7" />
         </ClimateButton>
         <div
-          aria-label="AC target"
+          aria-label={targetLabel}
           aria-busy={pending || skeleton}
           class={`w-28 rounded-lg border py-2 text-center ${
             flashing ? WARN : 'border-line'
@@ -74,7 +79,7 @@ export const AcTarget = ({
           ) : target === undefined ? (
             <span class="tnum text-4xl font-semibold">—</span>
           ) : (
-            <Temperature value={formatTemp(target, step)} />
+            <Temperature value={formatTarget(target, step)} />
           )}
         </div>
         <ClimateButton

@@ -15,7 +15,8 @@ bun), so nothing maps one to one. Port the design by hand, one tile at a time.
 | `src/components/wall/WallDisplay.tsx` | Every tile, the shared `Tile` shell, the AC sheet, the doorbell overlay, `GRID_CONFIG` |
 | `src/components/wall/icons.tsx`       | Inline SVG icons                                                                       |
 | `src/styles.css`                      | Design tokens (one `@theme` block), `tap`, `tnum`, `dash-grid`                         |
-| `src/lib/mock.ts`                     | Home Assistant shaped fixtures (weather, calendar, climate, camera)                    |
+| `src/components/wall/Heating.tsx`     | The Heating tile, sheet and `DeviceTile`; `src/lib/heating.ts` holds its rules         |
+| `src/lib/mock.ts`                     | Home Assistant shaped fixtures (weather, calendar, climate, camera, heating)           |
 | `src/routes/index.tsx`                | Device frame and the dev controls (night mode, stale, offline, ...)                    |
 
 Most of `src/components/ui/` is unused shadcn scaffolding; ignore it.

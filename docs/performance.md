@@ -8,7 +8,7 @@ are enforced by the build; the rest are read on the display from the
 
 | Measure                | Budget                               | Enforced by                |
 | ---------------------- | ------------------------------------ | -------------------------- |
-| JS, as served          | 80 KB                                | build (`bundle-budget.ts`) |
+| JS, as served          | 150 KB                               | build (`bundle-budget.ts`) |
 | JS, gzipped            | 30 KB                                | build                      |
 | CSS, gzipped           | 12 KB                                | build                      |
 | First render           | 2 s from navigation start            | read on the display        |
@@ -20,6 +20,11 @@ are enforced by the build; the rest are read on the display from the
 The bundle limits sit about 50% above the size when the budget was set. If a
 change breaks one, first look for what grew; raise the limit only on purpose,
 with the reason in the commit.
+
+The JS limit was raised from 80 KB to 150 KB for the heating tile and sheet
+(the AC sheet had already taken the bundle to 75.8 KB, and heating added about
+10 KB, with its demand history bar and the history fetch), leaving room for
+the tiles still to come. Gzipped JS stays at its 30 KB limit.
 
 The store-updates limit was raised from 10 to 20 per minute after the display
 idled at 10 to 15. A store update only costs a snapshot copy and a selector

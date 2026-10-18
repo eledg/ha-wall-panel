@@ -1,5 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 
+import { isUsable, num } from '../../ha/entity.ts';
+
 export const HVAC_LABEL: Record<string, string> = {
   off: 'Off',
   cool: 'Cool',
@@ -22,15 +24,6 @@ export const optionLabel = (value: string) =>
 
 export const modeLabel = (mode: string) =>
   HVAC_LABEL[mode] ?? optionLabel(mode);
-
-/** True when the entity exists and HA can act on it. */
-export const isUsable = (entity: HassEntity | undefined) =>
-  entity !== undefined &&
-  entity.state !== 'unavailable' &&
-  entity.state !== 'unknown';
-
-const num = (value: unknown) =>
-  typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
 const strings = (value: unknown) =>
   Array.isArray(value)
@@ -82,21 +75,6 @@ export const readAc = (entity: HassEntity | undefined): AcView => {
     step: step && step > 0 ? step : DEFAULT_STEP,
   };
 };
-
-/** The target one step up (`1`) or down (`-1`), kept within the limits. */
-export const stepTarget = (
-  target: number,
-  direction: 1 | -1,
-  { min, max, step }: Pick<AcView, 'min' | 'max' | 'step'>,
-) =>
-  Math.min(
-    max,
-    Math.max(min, Math.round((target + direction * step) * 100) / 100),
-  );
-
-/** `24.5`, with as many decimals as the step has (`24.0` for a 0.5 step). */
-export const formatTemp = (value: number, step: number) =>
-  value.toFixed(String(step).split('.')[1]?.length ?? 0);
 
 const ACTIVITY: Record<string, string> = {
   cool: 'Cooling',

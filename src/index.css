@@ -25,6 +25,8 @@
   --color-cal-family: oklch(0.9 0.15 104);
   --color-cal-birthdays: oklch(0.74 0.12 230);
   --color-cal-f1: oklch(0.8 0.15 140);
+  --color-heating-manual: oklch(0.8 0.13 22);
+  --color-heating-manual-soft: oklch(0.3 0.09 22);
   --color-ok: oklch(0.8 0.15 140);
   --color-ok-soft: oklch(0.28 0.06 140);
 
@@ -57,6 +59,8 @@
   --color-accent: oklch(0.55 0.09 70);
   --color-accent-fg: oklch(0.12 0.02 70);
   --color-accent-soft: oklch(0.2 0.03 70);
+  --color-heating-manual: oklch(0.62 0.1 22);
+  --color-heating-manual-soft: oklch(0.2 0.06 22);
   --color-cal-family: oklch(0.64 0.12 104);
   --color-cal-birthdays: oklch(0.5 0.06 230);
   --color-cal-f1: oklch(0.52 0.07 140);

@@ -1,6 +1,17 @@
 import type { ButtonHTMLAttributes, ComponentChildren } from 'preact';
 
+import { PowerIcon } from '../icons/power-icon.tsx';
 import { XIcon } from '../icons/x-icon.tsx';
+
+/** How long a control flashes after a failed call (the design's 900 ms). */
+export const FLASH_MS = 900;
+
+/** A control whose call failed: the warning colours. */
+export const WARN = 'border-warn! bg-warn-soft! text-warn';
+
+/** A command waiting for HA: keep the last value, dimmed, with a pulsing border. */
+export const pulseClass = (pending: boolean) =>
+  pending ? 'pending-pulse opacity-60' : '';
 
 /**
  * A control inside a climate sheet. The background is opaque, as the display
@@ -16,6 +27,41 @@ export const ClimateButton = ({
     type={type}
     class={`tap min-h-14 rounded-lg border border-line bg-surface-2 disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 ${String(className)}`}
   />
+);
+
+/** The sheet's big On / Off button: lit when on, dimmed while its call is pending. */
+export const PowerButton = ({
+  label,
+  on,
+  disabled,
+  pending,
+  flashing,
+  onClick,
+}: {
+  label: string;
+  on: boolean;
+  disabled: boolean;
+  pending: boolean;
+  flashing: boolean;
+  onClick: () => void;
+}) => (
+  <ClimateButton
+    aria-label={label}
+    aria-pressed={on}
+    aria-busy={pending}
+    disabled={disabled}
+    class={`flex flex-col items-center justify-center gap-2 text-xl font-semibold ${pulseClass(pending)} ${
+      flashing
+        ? WARN
+        : on
+          ? 'border-accent! bg-accent! text-accent-fg'
+          : 'text-fg-dim'
+    }`}
+    onClick={onClick}
+  >
+    <PowerIcon class="size-8" />
+    {on ? 'On' : 'Off'}
+  </ClimateButton>
 );
 
 /**

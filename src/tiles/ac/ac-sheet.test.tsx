@@ -3,12 +3,13 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { AcSheet, SETTLE_MS, TARGET_DEBOUNCE_MS } from './ac-sheet.tsx';
+import { AcSheet } from './ac-sheet.tsx';
 import { config } from '../../config.ts';
 import { HaConnection } from '../../ha/connection.tsx';
 import { createHaStore } from '../../ha/store.ts';
 import { createMockHa } from '../../mock/engine.ts';
 import { acAttributes } from '../../mock/scenarios/ac.ts';
+import { SETTLE_MS, TARGET_DEBOUNCE_MS } from '../use-climate-commands.ts';
 
 const AC = config.entities.acClimate.id;
 const POWERFUL = config.entities.acPowerful.id;

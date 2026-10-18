@@ -37,6 +37,13 @@ each control stays visible. Its panels:
   and flash. The mock validates service values like HA: a target outside 16-30 or
   off the 0.5 step, or a mode the entity doesn't list, is rejected. `turn_on`
   brings back the last mode used. Attributes live in `src/mock/scenarios/ac.ts`.
+- **Heating**: puts the heating in Schedule, Manual, Off or Paused (power ×
+  control, as HA reports them) and flips boiler demand on its own. Also makes the
+  climate unavailable, drops the Tado cloud connection, makes the demand history
+  fetch fail, and `Make calls fail`. The mock validates the target like HA (5-30,
+  0.5 steps), a manual target ends the schedule, switching off by hand sets control to
+  off and clears demand, and Resume / Boost leave their buttons `unknown`. Six hours
+  of demand history (four heating periods) are in `src/mock/scenarios/heating.ts`.
 - **Connection**: Disconnected shows tiles dimmed with a `stale` badge and the
   `Reconnecting… last updated HH:MM` pill at the top. Changes made meanwhile are
   held and service calls fail; Connected replays the latest state, as a real

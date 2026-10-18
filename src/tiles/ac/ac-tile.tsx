@@ -10,6 +10,7 @@ import { useSnapshot } from '../../ha/use-snapshot.ts';
 import { SnowflakeIcon } from '../../icons/snowflake-icon.tsx';
 import { DeviceTile, Temperature } from '../device-tile.tsx';
 import { formatTemp } from '../temp/temp-model.ts';
+import { tileState } from '../tile.tsx';
 
 /**
  * The office AC: the target temperature and mode when on, "Off" when not.
@@ -25,20 +26,14 @@ export const AcTile = ({
   const entity = useSnapshot(store, (s) => s.entities.acClimate);
   const [open, setOpen] = useState(false);
   const view = readAc(entity);
-  const unavailable = entity !== undefined && !view.usable;
+  const state = tileState([entity], view.usable);
 
   return (
     <>
       <DeviceTile
         area={area}
-        state={
-          entity === undefined
-            ? 'loading'
-            : unavailable
-              ? 'unavailable'
-              : undefined
-        }
-        onTap={unavailable ? undefined : () => setOpen(true)}
+        state={state}
+        onTap={state === 'unavailable' ? undefined : () => setOpen(true)}
         tone={view.on ? 'accent' : 'neutral'}
         icon={<SnowflakeIcon class="size-4" />}
         label="AC"
