@@ -136,24 +136,6 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    changed, so every few minutes is fine too (unauthenticated GitHub requests are
    limited to 60 an hour per address; a token raises that).
 
-### Script options
-
-```
-deploy_wall_panel.py <target> [--repo OWNER/REPO] [--token-secret KEY] [--tag vX.Y.Z] [--allow-major] [--fail-swap]
-```
-
-| Option               | Meaning                                                                                                                    |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `<target>`           | Folder name under `/config/www/` to deploy into (lowercase letters, digits, `-`, `_`)                                      |
-| `--repo OWNER/REPO`  | GitHub repository to read releases from (default `eledg/ha-wall-panel`)                                                    |
-| `--token-secret KEY` | Key in `secrets.yaml` holding a GitHub token; only for a private fork                                                      |
-| `--tag vX.Y.Z`       | Deploy exactly this release, including a new major or an older one (see [rolling back](#running-by-hand-and-rolling-back)) |
-| `--allow-major`      | Always follow the latest release, including new major versions                                                             |
-| `--fail-swap`        | Force the final rename to fail, to test that the previous folder is restored                                               |
-
-`--config-dir` and `--api-url` exist for testing the script away from Home
-Assistant and are not needed in normal use.
-
 ### Upgrading to a new major version
 
 A new major version (v2 to v3, say) can change what you need to provide, such as
