@@ -48,7 +48,32 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: eledg/github-actions/setup-pnpm@v1
-      - run: pnpm test
+      - run: pnpm coverage
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          if-no-files-found: error
+          path: coverage/lcov.info
+
+  sonar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    name: sonar
+    needs: [test]
+    # Secrets are not available to PRs from forks, so the scan cannot run there.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage
+          path: coverage
+      - uses: ./.github/actions/sonar-scan
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          wait-for-quality-gate: ${{ github.event_name == 'push' }}
 
   e2e:
     runs-on: ubuntu-latest

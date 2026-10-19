@@ -1,0 +1,60 @@
+name: SonarQube Scan
+description: >-
+  SonarCloud scan — downloads sonar-scanner-cli directly from
+  binaries.sonarsource.com (bypasses the npm bootstrapper and its sonarcloud.io
+  JRE-provisioning call).
+
+inputs:
+  sonar-token:
+    required: true
+  wait-for-quality-gate:
+    description: Wait for quality gate result before completing
+    required: false
+    default: 'false'
+  scanner-version:
+    description: >-
+      sonar-scanner-cli version (no-JRE build). Check
+      github.com/SonarSource/sonar-scanner-cli/releases for latest.
+    required: false
+    default: '8.1.0.6389'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Java
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache sonar-scanner
+      id: sonar-cache
+      uses: actions/cache@v5
+      with:
+        path: ~/.sonar/scanner
+        key: ${{ runner.os }}-sonar-scanner-${{ inputs.scanner-version }}
+        restore-keys: ${{ runner.os }}-sonar-scanner-
+
+    - name: Download sonar-scanner
+      if: steps.sonar-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p "$HOME/.sonar/scanner"
+        url="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${{ inputs.scanner-version }}.zip"
+        curl --proto '=https' --tlsv1.2 -fsSLo /tmp/sonar-scanner.zip "$url"
+        unzip -q /tmp/sonar-scanner.zip -d /tmp/sonar-extract
+        mv /tmp/sonar-extract/sonar-scanner-*/* "$HOME/.sonar/scanner/"
+        chmod +x "$HOME/.sonar/scanner/bin/sonar-scanner"
+
+    - name: SonarCloud scan
+      shell: bash
+      run: |
+        args=()
+        if [ "${{ inputs.wait-for-quality-gate }}" = "true" ]; then
+          args+=("-Dsonar.qualitygate.wait=true")
+        fi
+
+        "$HOME/.sonar/scanner/bin/sonar-scanner" "${args[@]}"
+      env:
+        SONAR_TOKEN: ${{ inputs.sonar-token }}
+        JAVA_HOME: ${{ env.JAVA_HOME }}
