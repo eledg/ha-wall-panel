@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze
+    name: analyze
     # Code scanning on a private repository needs GitHub Advanced Security, but not for a public repository.
     if: ${{ github.event.repository.private != true }}
     runs-on: ubuntu-latest
