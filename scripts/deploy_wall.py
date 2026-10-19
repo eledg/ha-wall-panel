@@ -6,9 +6,13 @@ library only, plus PyYAML (already present in HA Core) when a token is used.
 See docs/deploy.md.
 
     deploy_wall.py <target> [--repo OWNER/REPO] [--token-secret KEY]
-                   [--tag vX.Y.Z] [--fail-swap]
+                   [--tag vX.Y.Z] [--allow-major] [--fail-swap]
 
-With no --tag the latest release is deployed. A public repository needs no
+With no --tag, the newest release with the same major version as the deployed
+one is deployed. A newer major version is reported but never deployed by
+itself, since it can need changes on your side (read its release notes, then
+deploy it with --tag, or pass --allow-major to always follow the latest). A
+first install takes the latest release. A public repository needs no
 token; for a private one, --token-secret names the key in /config/secrets.yaml
 that holds a GitHub token with read access to the repository's contents.
 --fail-swap forces the final rename to fail, to test that the previous folder is
@@ -95,6 +99,48 @@ def get_release(api, repo, tag, auth):
     return json.loads(body)
 
 
+def parse_version(tag):
+    """'v1.2.3' -> (1, 2, 3); anything else -> None."""
+    match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", tag or "")
+    return tuple(int(part) for part in match.groups()) if match else None
+
+
+def list_releases(api, repo, auth):
+    status, _, body = fetch(
+        f"{api}/repos/{repo}/releases?per_page=100",
+        {**auth, "Accept": "application/vnd.github+json"},
+        4 * 1024 * 1024,
+    )
+    if status != 200:
+        raise DeployError(f"release list failed: HTTP {status}")
+    return [r for r in json.loads(body) if not r.get("draft") and not r.get("prerelease")]
+
+
+def pick_release(api, repo, auth, args, current):
+    """Choose the release to deploy, or None when there is nothing to do."""
+    if args.tag:
+        return get_release(api, repo, args.tag, auth)
+    have = parse_version(current)
+    if args.allow_major or have is None:
+        return get_release(api, repo, None, auth)
+
+    versioned = [(parse_version(r["tag_name"]), r) for r in list_releases(api, repo, auth)]
+    versioned = [(v, r) for v, r in versioned if v is not None]
+    if not versioned:
+        raise DeployError(f"no releases found in {repo}")
+    newest_version, newest = max(versioned, key=lambda item: item[0])
+    if newest_version[0] > have[0]:
+        log(
+            f"{newest['tag_name']} is a major release and is not deployed automatically: "
+            f"read its release notes, then deploy it with --tag {newest['tag_name']}"
+        )
+    same_major = [(v, r) for v, r in versioned if v[0] == have[0]]
+    if not same_major:
+        return None
+    best_version, best = max(same_major, key=lambda item: item[0])
+    return best if best_version > have else None
+
+
 def download_asset(release, name, auth):
     asset = next((a for a in release["assets"] if a["name"] == name), None)
     if asset is None:
@@ -176,12 +222,12 @@ def deploy(args):
         if args.token_secret:
             secrets_file = os.path.join(args.config_dir, "secrets.yaml")
             auth["Authorization"] = f"Bearer {read_token(secrets_file, args.token_secret)}"
-        release = get_release(args.api_url, args.repo, args.tag, auth)
-        release_tag = release["tag_name"]
         current = deployed_version(www)
-        if current == release_tag:
-            log(f"{args.target} is already at {release_tag}")
+        release = pick_release(args.api_url, args.repo, auth, args, current)
+        if release is None or release["tag_name"] == current:
+            log(f"{args.target} is up to date at {current}")
             return
+        release_tag = release["tag_name"]
         log(f"deploying {release_tag} from {args.repo} (currently {current or 'nothing'})")
 
         archive_name = f"{ASSET_PREFIX}-{release_tag}.tar.gz"
@@ -213,6 +259,7 @@ def parse_args(argv):
     parser.add_argument("--repo", default=DEFAULT_REPO, help=f"GitHub OWNER/REPO to read releases from (default {DEFAULT_REPO})")
     parser.add_argument("--token-secret", help="key in secrets.yaml holding a GitHub token (private repositories only)")
     parser.add_argument("--tag", help="deploy this release tag instead of the latest")
+    parser.add_argument("--allow-major", action="store_true", help="also follow a new major version (default: only within the deployed major)")
     parser.add_argument("--fail-swap", action="store_true", help="force the swap to fail (testing)")
     parser.add_argument("--config-dir", default="/config", help="Home Assistant config directory (testing)")
     parser.add_argument("--api-url", default=DEFAULT_API, help="GitHub API base URL (testing)")

@@ -35,12 +35,17 @@ into `/config/www/<folder>/` and swaps it in safely. Run it on a schedule and th
 display stays on the latest release with nothing copied by hand. It is a Python 3
 script using only the standard library (plus PyYAML, which Home Assistant Core
 already has, and only when you use a token), run through a `shell_command`.
+By default it only follows releases within the major version you have deployed:
+a new major version is reported but never installed by itself, because it can
+need changes on your side (see [Upgrading to a new major version](#upgrading-to-a-new-major-version)).
 
 ### How it works
 
 1. A scheduled automation calls `shell_command.deploy_office_wall`.
-2. The script asks GitHub for the latest release and compares its tag with
-   `version` in the deployed `version.json`. If they match it stops.
+2. The script asks GitHub for the releases and picks the newest one with the
+   same major version as the deployed `version.json` (a first install takes the
+   latest). If that is already deployed it stops. If a newer **major** version
+   exists, it prints a notice and leaves the display alone.
 3. Otherwise it downloads `wall-panel-<tag>.tar.gz` and its `.sha256`, verifies
    the checksum, and extracts into `/config/.deploy/office-wall-display/staging`.
    It rejects absolute paths, `..`, symlinks and device files, and requires
@@ -66,16 +71,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    Read it first, since it runs inside Home Assistant. It is kept on the HA box
    and covered by the HA backup. To update it, download it again.
 
-2. **Only for a private repository** (for example a private fork): create a
-   fine-grained personal access token on GitHub. Resource owner is the account
-   that owns the repo, repository access is only that repository, permission is
-   **Contents: Read-only**. Set an expiry and note the date; the pull fails with
-   HTTP 401 once it lapses. Add it to Home Assistant's `secrets.yaml` as, say,
-   `github_ha_wall_display_pat`. That file is outside `www`, so it is not served,
-   and the script reads it directly, so the token never appears in traces or
-   process arguments. A public repository needs no token and you skip this step.
-
-3. Add the command to `configuration.yaml` and restart Home Assistant:
+2. Add the command to `configuration.yaml` and restart Home Assistant:
 
    ```yaml
    shell_command:
@@ -83,12 +79,12 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    ```
 
    This pulls releases from this repository. To pull from a fork, add
-   `--repo <owner>/<repo>`, and for a private one add
-   `--token-secret github_ha_wall_display_pat` (the key you chose in step 2).
+   `--repo <owner>/<repo>` (see [Private forks](#private-forks)).
 
-4. Create the automation. This example runs at 04:00 every day, runs the script,
-   raises a persistent notification with the script's error output if it fails, and
-   clears the notification when it succeeds:
+3. Create the automation. This example runs at 04:00 every day and runs the
+   script. If it fails, it raises a persistent notification with the script's
+   error output (cleared when it succeeds). If a new major version is available,
+   it raises a second, separate notification:
 
    ```yaml
    automation:
@@ -115,6 +111,19 @@ is left as it was. Everything except `www/office-wall-display/` lives under
              - action: persistent_notification.dismiss
                data:
                  notification_id: office_wall_display_deploy
+         - if:
+             - condition: template
+               value_template: "{{ deploy is defined and 'major release' in deploy.stdout }}"
+           then:
+             - action: persistent_notification.create
+               data:
+                 notification_id: office_wall_display_major
+                 title: New major version of the wall panel
+                 message: '{{ deploy.stdout }}'
+           else:
+             - action: persistent_notification.dismiss
+               data:
+                 notification_id: office_wall_display_major
    ```
 
    The schedule is yours to choose. Each run is one small request when nothing has
@@ -124,19 +133,48 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 ### Script options
 
 ```
-deploy_wall.py <target> [--repo OWNER/REPO] [--token-secret KEY] [--tag vX.Y.Z] [--fail-swap]
+deploy_wall.py <target> [--repo OWNER/REPO] [--token-secret KEY] [--tag vX.Y.Z] [--allow-major] [--fail-swap]
 ```
 
-| Option               | Meaning                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| `<target>`           | Folder name under `/config/www/` to deploy into (lowercase letters, digits, `-`, `_`)             |
-| `--repo OWNER/REPO`  | GitHub repository to read releases from (default `eledg/ha-wall-panel`)                           |
-| `--token-secret KEY` | Key in `secrets.yaml` holding a GitHub token; leave out for a public repository                   |
-| `--tag vX.Y.Z`       | Deploy this release instead of the latest (see [rolling back](#running-by-hand-and-rolling-back)) |
-| `--fail-swap`        | Force the final rename to fail, to test that the previous folder is restored                      |
+| Option               | Meaning                                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `<target>`           | Folder name under `/config/www/` to deploy into (lowercase letters, digits, `-`, `_`)                                      |
+| `--repo OWNER/REPO`  | GitHub repository to read releases from (default `eledg/ha-wall-panel`)                                                    |
+| `--token-secret KEY` | Key in `secrets.yaml` holding a GitHub token; only for a private fork                                                      |
+| `--tag vX.Y.Z`       | Deploy exactly this release, including a new major or an older one (see [rolling back](#running-by-hand-and-rolling-back)) |
+| `--allow-major`      | Always follow the latest release, including new major versions                                                             |
+| `--fail-swap`        | Force the final rename to fail, to test that the previous folder is restored                                               |
 
 `--config-dir` and `--api-url` exist for testing the script away from Home
 Assistant and are not needed in normal use.
+
+### Private forks
+
+The releases of this repository are public, so no token is needed. Only if you
+pull from a **private** fork: create a fine-grained personal access token on
+GitHub with the fork as its only repository and **Contents: Read-only**
+permission. Set an expiry and note the date; the pull fails with HTTP 401 once it
+lapses. Add it to Home Assistant's `secrets.yaml` (for example as
+`github_ha_wall_display_pat`; that file is outside `www`, so it is not served) and
+add `--repo <owner>/<repo> --token-secret github_ha_wall_display_pat` to the
+shell command. The script reads the file directly, so the token never appears
+in traces or process arguments.
+
+### Upgrading to a new major version
+
+A new major version (v2 to v3, say) can change what you need to provide, such as
+the shape of `config.json`, so the script does not install it on its own. When
+the major notification appears:
+
+1. Read the release notes of the new version, in particular any **BREAKING
+   CHANGE** entry, and make the changes it asks for (usually in your
+   `<folder>.config.json`, [configuration.md](configuration.md)).
+2. Deploy it on purpose: run the command with `args: '--tag v3.0.0'` (see
+   [Running by hand](#running-by-hand-and-rolling-back)). From then on, scheduled
+   runs follow the 3.x releases.
+
+If you would rather always follow the latest, add `--allow-major` to the shell
+command and accept that a breaking release can reach the display unannounced.
 
 ## The config file
 
@@ -217,7 +255,8 @@ data:
   args: '--tag v1.1.0'
 ```
 
-The next scheduled run goes back to the latest release. To go back to the folder
+The next scheduled run moves forward again to the newest release in the
+major version you are on (a pinned major stays pinned until you change it). To go back to the folder
 that was live before the last deploy, swap `.deploy/office-wall-display/previous`
 back into `www/office-wall-display` over SSH.
 
