@@ -1,7 +1,11 @@
 # Home Assistant Wall Panel
 
 [![CI](https://github.com/eledg/ha-wall-panel/actions/workflows/ci.yml/badge.svg)](https://github.com/eledg/ha-wall-panel/actions/workflows/ci.yml)
-[![Release](https://github.com/eledg/ha-wall-panel/actions/workflows/release.yml/badge.svg)](https://github.com/eledg/ha-wall-panel/actions/workflows/release.yml)
+[![Version](https://img.shields.io/github/v/release/eledg/ha-wall-panel)](https://github.com/eledg/ha-wall-panel/releases/latest)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eledg_ha-wall-panel&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eledg_ha-wall-panel)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=eledg_ha-wall-panel&metric=sqale_rating)](https://sonarcloud.io/summary/overall?id=eledg_ha-wall-panel)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=eledg_ha-wall-panel&metric=reliability_rating)](https://sonarcloud.io/summary/overall?id=eledg_ha-wall-panel)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=eledg_ha-wall-panel&metric=security_rating)](https://sonarcloud.io/summary/overall?id=eledg_ha-wall-panel)
 
 A touch-friendly, dark-themed [Home Assistant](https://www.home-assistant.io)
 dashboard for Android wall displays. It is a static web app that Home Assistant
