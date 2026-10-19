@@ -14,8 +14,7 @@ permissions:
 jobs:
   analyze:
     name: Analyze
-    # Code scanning on a private repository needs GitHub Advanced Security, so
-    # this only runs once the repository is public.
+    # Code scanning on a private repository needs GitHub Advanced Security, but not for a public repository.
     if: ${{ github.event.repository.private != true }}
     runs-on: ubuntu-latest
     timeout-minutes: 20

@@ -2,7 +2,11 @@
 
 ## Supported versions
 
-Only the latest release is supported. Fixes ship as a new release.
+Only the latest release is supported. A fix ships as a new release on top of the
+latest version and is not backported, so earlier releases, including earlier major
+versions, do not receive security fixes. Upgrade to the latest release (see
+[docs/deploy.md](docs/deploy.md#upgrading-to-a-new-major-version) for moving to a
+new major version).
 
 ## Reporting a vulnerability
 

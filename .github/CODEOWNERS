@@ -2,4 +2,3 @@
 # (branch protection does not require code owner review), so the maintainer can
 # still merge their own PRs.
 * @eledg
-/.github/ @eledg
