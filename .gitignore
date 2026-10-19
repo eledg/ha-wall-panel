@@ -42,3 +42,7 @@ test-results
 
 # Your own runtime config for `pnpm dev` (see config.example.json)
 /config.json
+
+# Python bytecode (scripts/)
+__pycache__/
+*.pyc

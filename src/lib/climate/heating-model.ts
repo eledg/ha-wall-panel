@@ -70,7 +70,7 @@ export const readHeating = (
 /**
  * Resume returns to the schedule: pressable whenever control isn't already
  * the schedule (Manual and Off). Whether Resume from Off works on the real
- * system is untested (docs/Next steps.md, open question 1).
+ * system is untested.
  */
 export const canResume = (view: Pick<HeatingView, 'usable' | 'state'>) =>
   view.usable && (view.state === 'manual' || view.state === 'off');

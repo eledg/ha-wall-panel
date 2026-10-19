@@ -1,7 +1,8 @@
 # ha-wall-panel
 
-See `docs/` for background. UI design reference: `docs/design.md` (the prototype is
-in the git-ignored `.lovable-design/`, which may be absent in a fresh clone). Run `pnpm validate` before committing.
+See `docs/` for background. UI rules: `docs/design.md`. A local copy of the original
+Lovable design may sit in the git-ignored `.lovable-design/` (absent in a fresh clone;
+never commit it). Run `pnpm validate` before committing.
 
 After any visible UI change, regenerate the e2e screenshot baselines in Docker
 (macOS renders differ from CI's Linux) and commit them with the change; the

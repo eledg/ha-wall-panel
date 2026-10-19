@@ -1,19 +1,55 @@
 # Deploying to Home Assistant
 
-A daily automation pulls the latest GitHub Release into
-`/config/www/office-wall-display/`. Nothing is copied by hand.
+This guide is for running the panel: getting a release onto Home Assistant and
+keeping it up to date. There are two ways, by hand or with the included pull
+script.
 
-## How it works
+The examples deploy a display in an office, so the folder is
+`office-wall-display` and the names built from it (`deploy_office_wall`, and so
+on) say "office". Use your own folder and names. The app works from any folder,
+and its config goes beside it as `<folder>.config.json` (see
+[configuration.md](configuration.md)).
 
-1. The automation at 04:00 calls `shell_command.deploy_office_wall`.
-2. `/config/scripts/deploy_wall.py` (a Python 3 standard-library script that
-   lives only on the HA box, not in this repo) asks GitHub for the latest
-   release and compares its tag with `version` in the deployed `version.json`.
-   If they match it stops.
-3. Otherwise it downloads the tarball and its `.sha256`, verifies the checksum,
-   and extracts into `/config/.deploy/office-wall-display/staging`. It rejects
-   absolute paths, `..`, symlinks and device files, and requires `index.html`
-   and a `version.json` whose `version` equals the tag.
+Whichever way you choose, you also need to [sign the display in](#signing-in-to-ha)
+and [write your config file](#the-config-file).
+
+## Install by hand
+
+Good for trying it out. Nothing updates itself afterwards.
+
+1. Download `wall-panel-<tag>.tar.gz` and `wall-panel-<tag>.tar.gz.sha256` from the
+   [latest release](https://github.com/eledg/ha-wall-panel/releases/latest) and
+   check the checksum: `sha256sum -c wall-panel-<tag>.tar.gz.sha256`.
+2. Extract it into `/config/www/office-wall-display/` so `index.html` and
+   `version.json` are directly inside that folder.
+3. Open `http://<ha-ip>:8123/local/office-wall-display/index.html` on the display.
+
+To update, replace the folder's contents with a newer release. A display that is
+already showing the panel reloads itself once it sees the new `version.json` (see
+[Reloading the display](#reloading-the-display)).
+
+## Automatic updates with the pull script
+
+[`scripts/deploy_wall_panel.py`](../scripts/deploy_wall_panel.py) pulls a release from GitHub
+into `/config/www/<folder>/` and swaps it in safely. Run it on a schedule and the
+display stays on the latest release with nothing copied by hand. It is a Python 3
+script using only the standard library (plus PyYAML, which Home Assistant Core
+already has, and only when you use a token), run through a `shell_command`.
+By default it only follows releases within the major version you have deployed:
+a new major version is reported but never installed by itself, because it can
+need changes on your side (see [Upgrading to a new major version](#upgrading-to-a-new-major-version)).
+
+### How it works
+
+1. A scheduled automation calls `shell_command.deploy_office_wall`.
+2. The script asks GitHub for the releases and picks the newest one with the
+   same major version as the deployed `version.json` (a first install takes the
+   latest). If that is already deployed it stops. If a newer **major** version
+   exists, it prints a notice and leaves the display alone.
+3. Otherwise it downloads `wall-panel-<tag>.tar.gz` and its `.sha256`, verifies
+   the checksum, and extracts into `/config/.deploy/office-wall-display/staging`.
+   It rejects absolute paths, `..`, symlinks and device files, and requires
+   `index.html` and a `version.json` whose `version` equals the tag.
 4. It renames the live folder to `.deploy/office-wall-display/previous`, then
    renames staging into place. If the second rename fails, the first is undone.
 
@@ -21,32 +57,100 @@ Exit code 1 and a persistent notification mean the run failed; the live folder
 is left as it was. Everything except `www/office-wall-display/` lives under
 `/config/.deploy/`, which is not served under `/local/`.
 
-## Setup
+### Setup
 
-1. Create a fine-grained personal access token on GitHub: resource owner is the
-   account that owns the repo, repository access is only `ha-wall-panel`,
-   permission is **Contents: Read-only**. Set an expiry and note the date; the
-   pull fails with HTTP 401 once it lapses.
-2. Add it to Home Assistant's `secrets.yaml` as `github_ha_wall_display_pat`.
-   The file is outside `www`, so it is not served, and the script reads it
-   directly, so the token never appears in traces or process arguments.
-3. Put the script at `/config/scripts/deploy_wall.py`. It is kept on the HA box
-   and covered by the HA backup, so it is not in this repo. To rebuild it, it
-   must do what "How it works" describes, take the target folder name as its
-   first argument, and accept optional `--tag <tag>` and `--fail-swap` flags.
-4. Add the command to `configuration.yaml` and restart Home Assistant:
+1. Put the script on the HA box at `/config/scripts/deploy_wall_panel.py`, for example
+   with the Terminal add-on or SSH:
+
+   ```sh
+   mkdir -p /config/scripts
+   curl -fsSL -o /config/scripts/deploy_wall_panel.py \
+     https://raw.githubusercontent.com/eledg/ha-wall-panel/main/scripts/deploy_wall_panel.py
+   ```
+
+   Read it first, since it runs inside Home Assistant. It is kept on the HA box
+   and covered by the HA backup. To update it, download it again.
+
+2. Add the command to `configuration.yaml` and restart Home Assistant:
 
    ```yaml
    shell_command:
-     deploy_office_wall: "python3 /config/scripts/deploy_wall.py office-wall-display {{ args | default('', true) }}"
+     deploy_office_wall: "python3 /config/scripts/deploy_wall_panel.py office-wall-display {{ args | default('', true) }}"
    ```
 
-5. Create the automation "Office wall display deploy": a `time` trigger at
-   `04:00:00`, mode `single`, that calls `shell_command.deploy_office_wall` with
-   `response_variable: deploy` and `continue_on_error: true`. If
-   `deploy.returncode` is not 0 (or `deploy` is undefined), create a persistent
-   notification with ID `office_wall_display_deploy` containing `deploy.stderr`;
-   otherwise dismiss that notification.
+   This pulls releases from this repository. To pull from a fork, add
+   `--repo <owner>/<repo>`.
+
+3. Create the automation. It runs the script, and you can start it two ways: by
+   hand whenever you like (the automation's three-dot menu, **Run actions**), or
+   on a schedule. This example is scheduled for 04:00 every day. If the script
+   fails, it raises a persistent notification with the error output (cleared when
+   it succeeds). If a new major version is available, it raises a second,
+   separate notification. It is plain YAML, so you can create it in the UI
+   (Settings, Automations & scenes, Create automation, then the three-dot menu,
+   Edit in YAML, and paste it) or add it to `automations.yaml` as a list item
+   (put `- ` before `alias:`, indent the rest by two spaces, and add
+   `id: office_wall_display_deploy`):
+
+   ```yaml
+   alias: Office wall display deploy
+   description: Pull the newest wall panel release (same major version) from GitHub into www.
+   mode: single
+   triggers:
+     - trigger: time
+       at: '04:00:00'
+   actions:
+     - action: shell_command.deploy_office_wall
+       response_variable: deploy
+       continue_on_error: true
+     - if:
+         - condition: template
+           value_template: '{{ deploy is not defined or deploy.returncode != 0 }}'
+       then:
+         - action: persistent_notification.create
+           data:
+             notification_id: office_wall_display_deploy
+             title: Office wall display deploy failed
+             message: "{% if deploy is defined %}{{ deploy.stderr | default('', true) | trim }}{% else %}The shell command did not run.{% endif %}"
+       else:
+         - action: persistent_notification.dismiss
+           data:
+             notification_id: office_wall_display_deploy
+     - if:
+         - condition: template
+           value_template: "{{ deploy is defined and 'major release' in deploy.stdout }}"
+       then:
+         - action: persistent_notification.create
+           data:
+             notification_id: office_wall_display_major
+             title: New major version of the wall panel
+             message: '{{ deploy.stdout }}'
+       else:
+         - action: persistent_notification.dismiss
+           data:
+             notification_id: office_wall_display_major
+   ```
+
+   Leave the `triggers` out if you only want to run it by hand. Otherwise the
+   schedule is yours to choose: each run is one small request when nothing has
+   changed, so every few minutes is fine too (unauthenticated GitHub requests are
+   limited to 60 an hour per address; a token raises that).
+
+### Upgrading to a new major version
+
+A new major version (v2 to v3, say) can change what you need to provide, such as
+the shape of `config.json`, so the script does not install it on its own. When
+the major notification appears:
+
+1. Read the release notes of the new version, in particular any **BREAKING
+   CHANGE** entry, and make the changes it asks for (usually in your
+   `<folder>.config.json`, [configuration.md](configuration.md)).
+2. Deploy it on purpose: run the command with `args: '--tag v3.0.0'` (see
+   [Running by hand](#running-by-hand-and-rolling-back)). From then on, scheduled
+   runs follow the 3.x releases.
+
+If you would rather always follow the latest, add `--allow-major` to the shell
+command and accept that a breaking release can reach the display unannounced.
 
 ## The config file
 
@@ -102,7 +206,7 @@ removed), the app drops them and reloads once to sign in again.
 The user can still read every entity and call any service: HA cannot limit a
 non-admin user to specific entities. It only cannot change HA's configuration.
 
-Measured on the display (#16): sign-in redirect and return in about 3 seconds
+Measured on the display: sign-in redirect and return in about 3 seconds
 with no interaction, the websocket connects, and `Shelly.GetDeviceInfo` shows
 its RPC needs no auth, so nothing secret should be put in the device's KVS.
 
@@ -127,7 +231,8 @@ data:
   args: '--tag v1.1.0'
 ```
 
-The next daily run goes back to the latest release. To go back to the folder
+The next scheduled run moves forward again to the newest release in the
+major version you are on (a pinned major stays pinned until you change it). To go back to the folder
 that was live before the last deploy, swap `.deploy/office-wall-display/previous`
 back into `www/office-wall-display` over SSH.
 
@@ -164,9 +269,8 @@ Verify by hand on the HA box:
 - New release: publish one, run, and see the new `version.json` served.
 - Unchanged: run again; the output says it is already at that tag.
 - Pinned or older tag: run with `args: "--tag <older tag>"`.
-- Bad checksum: temporarily change one character of the expected hash in the
-  copy of the script on the box, run, and expect `sha256 mismatch` with the
-  live folder untouched. Restore the script afterwards.
+- Bad checksum: the script refuses to deploy and the live folder is untouched
+  (`sha256 mismatch`). To see it, serve a release whose `.sha256` doesn't match.
 - Forced swap failure: run with `args: "--fail-swap"` and confirm the live
   folder is unchanged and no `previous` folder is left behind.
 - Not served: `/local/.deploy/office-wall-display/lock` and

@@ -1,6 +1,6 @@
 # Performance budget
 
-Budget for the Wall Display X2i's A35-class processor (#29). The bundle limits
+Budget for the Wall Display X2i's A35-class processor. The bundle limits
 are enforced by the build; the rest are read on the display from the
 **Performance** section of the diagnostics modal (tap the version, bottom right).
 
@@ -38,7 +38,7 @@ Each rated row in the diagnostics modal has a status, and the Performance headin
 shows the worst of them. Green (OK) meets the budget; amber (Slow) is up to 50%
 over it (frame rate down to 20 fps); red (Over) is beyond that; grey (n/a) is not
 measured yet, for example no taps in the last minute or the frames still being
-sampled. JS heap is shown without a light: there is no budget for it until the 48-hour soak (#32) shows what normal growth looks like. The tap row rates the slowest tap in the last 60 seconds. The limits are
+sampled. JS heap is shown without a light: there is no budget for it until a 48-hour soak shows what normal growth looks like. The tap row rates the slowest tap in the last 60 seconds. The limits are
 in `src/lib/perf/status.ts`, so keep that and the table above in step.
 
 The runtime targets are proposals until measured below. Adjust them to what the
@@ -65,7 +65,7 @@ Not yet measured. To fill in:
 2. Tap the version (bottom right). The modal shows first render, first paint,
    store updates in the last 60 s, frames per second and the worst frame, tap to
    frame, and JS heap where the engine reports it.
-3. Toggle the office light a few times, scroll the modal, and open a calendar
+3. Toggle the light a few times, scroll the modal, and open a calendar
    event. Read the numbers again; frames are sampled only while the modal is open.
 4. Do it again while HA is busy (change a light from the HA app during taps) to
    check the acceptance line: no visible lag when tapping a toggle while updates

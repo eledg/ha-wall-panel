@@ -9,7 +9,7 @@
  */
 @theme {
   --color-*: initial;
-  /* Ported from the Lovable design (docs/design.md). oklch needs Chromium 111+. */
+  /* See docs/design.md. oklch needs Chromium 111+. */
   --color-bg: oklch(0.08 0 0);
   --color-surface: oklch(0.16 0.004 250);
   --color-surface-2: oklch(0.22 0.006 250);
@@ -48,7 +48,7 @@
   --font-mono: ui-monospace, monospace;
 }
 
-/* Night palette, ported from the Lovable design. Overrides the @theme tokens. */
+/* Night palette: dimmer and warmer. Overrides the @theme tokens. */
 [data-night='true'] {
   --color-surface: oklch(0.1 0 0);
   --color-surface-2: oklch(0.14 0 0);
