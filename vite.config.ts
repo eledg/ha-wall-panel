@@ -37,6 +37,19 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['src/tests/setup.ts'],
       // The git-ignored design prototype has its own tests and deps; e2e/ is Playwright's.
       exclude: [...configDefaults.exclude, '.lovable-design/**', 'e2e/**'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'lcov'],
+        reportsDirectory: './coverage',
+        // Count every source file, not just those a test happens to import.
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: [
+          '**/*.test.{ts,tsx}',
+          'src/tests/**',
+          'src/dev/**',
+          'src/types/**',
+        ],
+      },
     },
   };
 });
