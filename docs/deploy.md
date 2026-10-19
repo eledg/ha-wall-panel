@@ -92,6 +92,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 
    ```yaml
    alias: Office wall display deploy
+   description: Pull the newest wall panel release (same major version) from GitHub into www.
    mode: single
    triggers:
      - trigger: time
@@ -108,7 +109,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
            data:
              notification_id: office_wall_display_deploy
              title: Office wall display deploy failed
-             message: "{{ deploy.stderr if deploy is defined else 'The shell command did not run.' }}"
+             message: "{% if deploy is defined %}{{ deploy.stderr | default('', true) | trim }}{% else %}The shell command did not run.{% endif %}"
        else:
          - action: persistent_notification.dismiss
            data:
