@@ -81,14 +81,16 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    This pulls releases from this repository. To pull from a fork, add
    `--repo <owner>/<repo>` (see [Private forks](#private-forks)).
 
-3. Create the automation. This example runs at 04:00 every day and runs the
-   script. If it fails, it raises a persistent notification with the script's
-   error output (cleared when it succeeds). If a new major version is available,
-   it raises a second, separate notification. It is plain YAML, so you can create
-   it in the UI (Settings, Automations & scenes, Create automation, then the
-   three-dot menu, Edit in YAML, and paste it) or add it to `automations.yaml`
-   as a list item (put `- ` before `alias:`, indent the rest by two spaces, and
-   add `id: office_wall_display_deploy`):
+3. Create the automation. It runs the script, and you can start it two ways: by
+   hand whenever you like (the automation's three-dot menu, **Run actions**), or
+   on a schedule. This example is scheduled for 04:00 every day. If the script
+   fails, it raises a persistent notification with the error output (cleared when
+   it succeeds). If a new major version is available, it raises a second,
+   separate notification. It is plain YAML, so you can create it in the UI
+   (Settings, Automations & scenes, Create automation, then the three-dot menu,
+   Edit in YAML, and paste it) or add it to `automations.yaml` as a list item
+   (put `- ` before `alias:`, indent the rest by two spaces, and add
+   `id: office_wall_display_deploy`):
 
    ```yaml
    alias: Office wall display deploy
@@ -129,7 +131,8 @@ is left as it was. Everything except `www/office-wall-display/` lives under
              notification_id: office_wall_display_major
    ```
 
-   The schedule is yours to choose. Each run is one small request when nothing has
+   Leave the `triggers` out if you only want to run it by hand. Otherwise the
+   schedule is yours to choose: each run is one small request when nothing has
    changed, so every few minutes is fine too (unauthenticated GitHub requests are
    limited to 60 an hour per address; a token raises that).
 
