@@ -178,7 +178,7 @@ export const HeatingSheet = ({
           onClick={() => press('resume')}
         >
           <span aria-hidden="true">↶</span>
-          Resume schedule
+          <span>Resume schedule</span>
         </ClimateButton>
         <ClimateButton
           disabled={actionsOff || !canBoost(view)}
@@ -189,7 +189,7 @@ export const HeatingSheet = ({
           onClick={() => press('boost')}
         >
           <HeatWavesIcon demand class="size-5" />
-          Boost
+          <span>Boost</span>
         </ClimateButton>
       </div>
       <HeatingHistory

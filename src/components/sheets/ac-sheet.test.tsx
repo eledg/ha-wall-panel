@@ -398,7 +398,7 @@ describe('AcSheet', () => {
       });
       await act(() => {
         document
-          .querySelector('[role="dialog"]')!
+          .querySelector('dialog')!
           .dispatchEvent(new Event('pointerdown', { bubbles: true }));
       });
       await act(() => {

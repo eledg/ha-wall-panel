@@ -78,16 +78,14 @@ export const Diagnostics = ({
     };
   }, [open, activity, idleMs]);
 
-  const statusText =
-    checked === undefined
-      ? ''
-      : checked === 'checking'
-        ? 'Checking for updates…'
-        : checked.status === 'reloading'
-          ? 'Update found. Reloading…'
-          : checked.status === 'failed'
-            ? "Couldn't check"
-            : `Up to date — ${version} (${commit.slice(0, 7)}) · checked ${CHECKED_FORMAT.format(checked.at)}`;
+  const describeCheck = () => {
+    if (checked === undefined) return '';
+    if (checked === 'checking') return 'Checking for updates…';
+    if (checked.status === 'reloading') return 'Update found. Reloading…';
+    if (checked.status === 'failed') return "Couldn't check";
+    return `Up to date — ${version} (${commit.slice(0, 7)}) · checked ${CHECKED_FORMAT.format(checked.at)}`;
+  };
+  const statusText = describeCheck();
 
   const getLatest = async () => {
     setChecked('checking');
@@ -105,12 +103,12 @@ export const Diagnostics = ({
         {version}
       </button>
       {open && (
-        <div
-          role="dialog"
+        <dialog
+          open
           aria-modal="true"
           aria-labelledby="diagnostics-title"
           data-blocks-reload
-          class="fixed inset-0 z-10 flex flex-col bg-bg text-fg"
+          class="fixed inset-0 z-10 m-0 flex size-full max-h-none max-w-none flex-col border-0 bg-bg p-0 text-fg"
           onPointerDown={() => setActivity((n) => n + 1)}
         >
           <header class="flex shrink-0 items-center justify-between gap-4 border-b border-line px-edge py-3">
@@ -184,7 +182,7 @@ export const Diagnostics = ({
               </button>
             </section>
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

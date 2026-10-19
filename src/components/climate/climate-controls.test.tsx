@@ -26,7 +26,7 @@ describe('ClimateSheet', () => {
 
   it('is a labelled dialog with a live status that holds back reload', () => {
     setup();
-    const dialog = document.querySelector('[role="dialog"]')!;
+    const dialog = document.querySelector('dialog')!;
 
     expect(dialog.getAttribute('aria-labelledby')).toBe('t');
     expect(dialog.hasAttribute('data-blocks-reload')).toBe(true);
@@ -39,7 +39,7 @@ describe('ClimateSheet', () => {
 
     await act(() => {
       document
-        .querySelector('[role="dialog"]')!
+        .querySelector('dialog')!
         .dispatchEvent(new Event('pointerdown', { bubbles: true }));
     });
     await act(() =>

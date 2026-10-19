@@ -278,7 +278,7 @@ describe('CalendarTile', () => {
         .find((b) => b.textContent?.includes(label))!
         .click();
     });
-  const dialog = () => document.querySelector('[role=dialog]');
+  const dialog = () => document.querySelector('dialog');
 
   it('opens the details of a row, with its location and notes', async () => {
     await setup();

@@ -401,11 +401,11 @@ describe('calendars', () => {
       const initial = calls(deps).length;
 
       await vi.advanceTimersByTimeAsync(CALENDAR_REFRESH_MS);
-      expect(calls(deps).length).toBe(initial * 2);
+      expect(calls(deps)).toHaveLength(initial * 2);
 
       store.stop();
       await vi.advanceTimersByTimeAsync(CALENDAR_REFRESH_MS * 2);
-      expect(calls(deps).length).toBe(initial * 2);
+      expect(calls(deps)).toHaveLength(initial * 2);
     } finally {
       vi.useRealTimers();
     }
@@ -423,7 +423,7 @@ describe('calendars', () => {
       ),
     });
 
-    expect(calls(deps).length).toBe(before + 1);
+    expect(calls(deps)).toHaveLength(before + 1);
   });
 
   it('keeps the last events when a refresh fails', async () => {

@@ -71,13 +71,13 @@ describe('AcTile', () => {
     const { tile } = await setup();
 
     await act(() => tile()!.click());
-    const dialog = document.querySelector('[role="dialog"]');
+    const dialog = document.querySelector('dialog');
     expect(dialog?.textContent).toContain('Office AC');
 
     await act(() =>
       (document.querySelector('[aria-label="Close"]') as HTMLElement).click(),
     );
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('dialog')).toBeNull();
   });
 
   it('goes stale while disconnected', async () => {

@@ -36,7 +36,7 @@ export const HeatingHistory = ({
         <h3>Demand · last {hours} hours</h3>
         <span class="flex items-center gap-1">
           <span class="size-2 bg-accent" />
-          Heating
+          <span>Heating</span>
         </span>
       </div>
       {intervals === undefined || intervals.length === 0 ? (

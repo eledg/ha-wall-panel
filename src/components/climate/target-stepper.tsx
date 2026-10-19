@@ -1,3 +1,5 @@
+import type { ComponentChildren } from 'preact';
+
 import { MinusIcon } from '@/components/icons/minus-icon.tsx';
 import { PlusIcon } from '@/components/icons/plus-icon.tsx';
 import { Temperature } from '@/components/tiles/base/device-tile.tsx';
@@ -43,6 +45,19 @@ export const TargetStepper = ({
   onStep: (direction: 1 | -1) => void;
 }) => {
   const disabled = locked || busy;
+  let targetValue: ComponentChildren;
+  if (skeleton) {
+    targetValue = (
+      <span
+        aria-hidden="true"
+        class="mx-auto block h-10 w-20 rounded bg-surface-2"
+      />
+    );
+  } else if (target === undefined) {
+    targetValue = <span class="tnum text-4xl font-semibold">—</span>;
+  } else {
+    targetValue = <Temperature value={formatTarget(target, step)} />;
+  }
   return (
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="text-fg-dim">
@@ -72,16 +87,7 @@ export const TargetStepper = ({
           } ${pulseClass(pending)}`}
         >
           <div class="mb-1 text-sm text-fg-dim">Target</div>
-          {skeleton ? (
-            <span
-              aria-hidden="true"
-              class="mx-auto block h-10 w-20 rounded bg-surface-2"
-            />
-          ) : target === undefined ? (
-            <span class="tnum text-4xl font-semibold">—</span>
-          ) : (
-            <Temperature value={formatTarget(target, step)} />
-          )}
+          {targetValue}
         </div>
         <ClimateButton
           aria-label="Raise"

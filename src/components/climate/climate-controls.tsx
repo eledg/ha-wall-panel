@@ -18,11 +18,13 @@ export const ClimateButton = ({
   class: className = '',
   type = 'button',
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) => (
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'class'> & {
+  class?: string;
+}) => (
   <button
     {...props}
     type={type}
-    class={`tap min-h-14 rounded-lg border border-line bg-surface-2 disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 ${String(className)}`}
+    class={`tap min-h-14 rounded-lg border border-line bg-surface-2 disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 ${className}`}
   />
 );
 
@@ -41,25 +43,24 @@ export const PowerButton = ({
   pending: boolean;
   flashing: boolean;
   onClick: () => void;
-}) => (
-  <ClimateButton
-    aria-label={label}
-    aria-pressed={on}
-    aria-busy={pending}
-    disabled={disabled}
-    class={`flex flex-col items-center justify-center gap-2 text-xl font-semibold ${pulseClass(pending)} ${
-      flashing
-        ? WARN
-        : on
-          ? 'border-accent! bg-accent! text-accent-fg'
-          : 'text-fg-dim'
-    }`}
-    onClick={onClick}
-  >
-    <PowerIcon class="size-8" />
-    {on ? 'On' : 'Off'}
-  </ClimateButton>
-);
+}) => {
+  let state = 'text-fg-dim';
+  if (flashing) state = WARN;
+  else if (on) state = 'border-accent! bg-accent! text-accent-fg';
+  return (
+    <ClimateButton
+      aria-label={label}
+      aria-pressed={on}
+      aria-busy={pending}
+      disabled={disabled}
+      class={`flex flex-col items-center justify-center gap-2 text-xl font-semibold ${pulseClass(pending)} ${state}`}
+      onClick={onClick}
+    >
+      <PowerIcon class="size-8" />
+      {on ? 'On' : 'Off'}
+    </ClimateButton>
+  );
+};
 
 /**
  * The full-screen sheet shared by the climate controls: a title with a live
@@ -84,12 +85,12 @@ export const ClimateSheet = ({
   onActivity?: () => void;
   children: ComponentChildren;
 }) => (
-  <div
-    role="dialog"
+  <dialog
+    open
     aria-modal="true"
     aria-labelledby={titleId}
     data-blocks-reload
-    class="fixed inset-0 z-20 bg-bg/90 p-6"
+    class="fixed inset-0 m-0 size-full max-h-none max-w-none border-0 text-fg z-20 bg-bg/90 p-6"
     onPointerDown={onActivity}
   >
     <div class="flex h-full flex-col rounded-tile border border-line bg-surface p-5">
@@ -117,5 +118,5 @@ export const ClimateSheet = ({
         {children}
       </div>
     </div>
-  </div>
+  </dialog>
 );

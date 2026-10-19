@@ -23,7 +23,7 @@ export const Temperature = ({
   >
     {value}
     <span
-      class={`relative -top-[11.5px] ml-[2px] text-xl ${matchDegree ? '' : 'text-fg-dim'}`}
+      class={`relative top-[-11.5px] ml-0.5 text-xl ${matchDegree ? '' : 'text-fg-dim'}`}
     >
       °
     </span>
@@ -77,6 +77,12 @@ export const DeviceTile = ({
   const accent = tone === 'accent' || manual;
   const lit = accent && !offline;
   const colour = manual ? 'text-heating-manual' : 'text-accent';
+  let tileClass = '';
+  if (lit) {
+    tileClass = manual
+      ? 'border-heating-manual! bg-heating-manual-soft!'
+      : 'border-accent! bg-accent-soft!';
+  }
 
   return (
     <Tile
@@ -84,13 +90,7 @@ export const DeviceTile = ({
       state={state}
       onTap={onTap}
       flash={flash}
-      class={
-        lit
-          ? manual
-            ? 'border-heating-manual! bg-heating-manual-soft!'
-            : 'border-accent! bg-accent-soft!'
-          : ''
-      }
+      class={tileClass}
     >
       <div class="flex h-full flex-col justify-between">
         <div

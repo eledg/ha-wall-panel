@@ -69,6 +69,6 @@ describe('HaDebug', () => {
     );
 
     expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)));
-    expect(ids.length).toBe(Object.keys(config.entities).length);
+    expect(ids).toHaveLength(Object.keys(config.entities).length);
   });
 });

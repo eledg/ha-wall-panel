@@ -132,7 +132,7 @@ describe('HeatingTile', () => {
     const { tile } = await setup();
     await act(() => tile()?.click());
 
-    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.querySelector('dialog')).not.toBeNull();
     expect(document.body.textContent).toContain('Central heating');
   });
 });

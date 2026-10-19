@@ -104,7 +104,7 @@ describe('EventSheet', () => {
       }),
     );
 
-    const dialog = document.querySelector('[role=dialog]')!;
+    const dialog = document.querySelector('dialog')!;
     expect(dialog.getAttribute('aria-label')).toBe('Dentist');
     expect(text()).toContain('Dentist');
     expect(text()).toContain('Family');
@@ -200,7 +200,7 @@ describe('EventSheet', () => {
     });
     await act(() => {
       document
-        .querySelector('[role=dialog]')!
+        .querySelector('dialog')!
         .dispatchEvent(new Event('pointerdown', { bubbles: true }));
     });
     await act(() => {

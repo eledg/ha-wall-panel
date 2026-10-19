@@ -22,8 +22,10 @@ export const SWITCHES: { key: SwitchKey; label: string }[] = [
 export const NORMAL = 'border-line bg-surface-2 text-fg-dim';
 export const ACTIVE = 'border-accent! bg-accent-soft! text-accent';
 
-export const stateClass = (flashing: boolean, active: boolean) =>
-  flashing ? WARN : active ? ACTIVE : NORMAL;
+export const stateClass = (flashing: boolean, active: boolean) => {
+  if (flashing) return WARN;
+  return active ? ACTIVE : NORMAL;
+};
 
 /** The mode's glyph: 20px in the picker and summary, 16px in the tile header. */
 export const ModeIcon = ({

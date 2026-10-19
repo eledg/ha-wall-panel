@@ -25,7 +25,7 @@ describe('Diagnostics', () => {
     render(<Diagnostics />, document.body);
 
     expect(document.body.textContent).toBe(__BUILD_INFO__.version);
-    expect(document.querySelector('[role=dialog]')).toBeNull();
+    expect(document.querySelector('dialog')).toBeNull();
   });
 
   it('opens a modal with build details and children, and closes it', async () => {
@@ -37,13 +37,13 @@ describe('Diagnostics', () => {
     );
 
     await click('Diagnostics');
-    const dialog = document.querySelector('[role=dialog]')!;
+    const dialog = document.querySelector('dialog')!;
     expect(dialog.textContent).toContain(__BUILD_INFO__.commit.slice(0, 7));
     expect(dialog.textContent).toContain('Home Assistant');
     expect(dialog.textContent).toContain('debug content');
 
     await click('Close diagnostics');
-    expect(document.querySelector('[role=dialog]')).toBeNull();
+    expect(document.querySelector('dialog')).toBeNull();
   });
 
   it('closes itself after the idle time, restarted by touches', async () => {
@@ -56,18 +56,18 @@ describe('Diagnostics', () => {
     });
     await act(() => {
       document
-        .querySelector('[role=dialog]')!
+        .querySelector('dialog')!
         .dispatchEvent(new Event('pointerdown', { bubbles: true }));
     });
     await act(() => {
       vi.advanceTimersByTime(800);
     });
-    expect(document.querySelector('[role=dialog]')).not.toBeNull();
+    expect(document.querySelector('dialog')).not.toBeNull();
 
     await act(() => {
       vi.advanceTimersByTime(300);
     });
-    expect(document.querySelector('[role=dialog]')).toBeNull();
+    expect(document.querySelector('dialog')).toBeNull();
   });
 
   describe('update buttons', () => {
@@ -144,12 +144,12 @@ describe('Diagnostics', () => {
       await act(() => {
         vi.advanceTimersByTime(800);
       });
-      expect(document.querySelector('[role=dialog]')).not.toBeNull();
+      expect(document.querySelector('dialog')).not.toBeNull();
 
       await act(() => {
         vi.advanceTimersByTime(300);
       });
-      expect(document.querySelector('[role=dialog]')).toBeNull();
+      expect(document.querySelector('dialog')).toBeNull();
     });
   });
 });

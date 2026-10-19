@@ -269,7 +269,7 @@ describe('HeatingSheet', () => {
       expect(
         section.querySelector('[role="img"]')?.getAttribute('aria-label'),
       ).toBe('4 heating periods over the last 6 hours');
-      expect(section.querySelectorAll('.bg-accent').length).toBe(5); // 4 bands + the legend
+      expect(section.querySelectorAll('.bg-accent')).toHaveLength(5); // 4 bands + the legend
       expect(section.textContent).toMatch(
         /\d\d:\d\d.*\d\d:\d\d.*\d\d:\d\d.*\d\d:\d\d/,
       );

@@ -44,8 +44,8 @@ describe('PerfProbe lights', () => {
     });
     await act(() => render(<PerfProbe />, document.body));
 
-    const labels = [...document.querySelectorAll('[role=img]')].map((el) =>
-      el.getAttribute('aria-label'),
+    const labels = [...document.querySelectorAll('[data-light]')].map((el) =>
+      el.textContent.trim(),
     );
     expect(labels).toEqual(['OK', 'OK', 'OK', 'OK', 'OK', 'OK']);
   });
@@ -60,8 +60,8 @@ describe('PerfProbe lights', () => {
     });
     await act(() => render(<PerfProbe />, document.body));
 
-    const labels = [...document.querySelectorAll('[role=img]')].map((el) =>
-      el.getAttribute('aria-label'),
+    const labels = [...document.querySelectorAll('[data-light]')].map((el) =>
+      el.textContent.trim(),
     );
     // Overall first, then render, paint, updates, frames, taps.
     expect(labels).toEqual(['Over', 'Slow', 'Over', 'Over', 'Slow', 'OK']);
@@ -71,8 +71,8 @@ describe('PerfProbe lights', () => {
     setup({ updates: 0 });
     await act(() => render(<PerfProbe />, document.body));
 
-    const labels = [...document.querySelectorAll('[role=img]')].map((el) =>
-      el.getAttribute('aria-label'),
+    const labels = [...document.querySelectorAll('[data-light]')].map((el) =>
+      el.textContent.trim(),
     );
     // Overall is OK from the updates row alone; the rest are n/a.
     expect(labels).toEqual(['OK', 'n/a', 'n/a', 'OK', 'n/a', 'n/a']);

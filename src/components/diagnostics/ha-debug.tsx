@@ -33,6 +33,9 @@ export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
             config.entities[key].domain === 'calendar' && raw
               ? (CALENDAR_STATE[raw] ?? raw)
               : (raw ?? 'no state');
+          const suffix = entity && unit ? ` ${unit}` : '';
+          const value =
+            status === 'connected' ? `${state}${suffix}` : 'Unavailable';
           return (
             <div
               key={key}
@@ -41,11 +44,7 @@ export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
               <dt class="min-w-0 break-all font-mono text-sm text-fg-dim">
                 {config.entities[key].id}
               </dt>
-              <dd class="tnum text-sm font-medium text-fg">
-                {status === 'connected'
-                  ? `${state}${entity && unit ? ` ${unit}` : ''}`
-                  : 'Unavailable'}
-              </dd>
+              <dd class="tnum text-sm font-medium text-fg">{value}</dd>
             </div>
           );
         })}

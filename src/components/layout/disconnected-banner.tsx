@@ -19,10 +19,7 @@ export const DisconnectedBanner = ({
   );
   if (status !== 'disconnected' && status !== 'error') return null;
   return (
-    <div
-      role="status"
-      class="pointer-events-none fixed top-1.5 left-1/2 z-30 -translate-x-1/2 rounded-full border border-warn/40 bg-warn-soft px-3 py-0.5 text-small text-warn"
-    >
+    <output class="pointer-events-none fixed top-1.5 left-1/2 z-30 -translate-x-1/2 rounded-full border border-warn/40 bg-warn-soft px-3 py-0.5 text-small text-warn">
       Reconnecting…
       {lastUpdate !== undefined && (
         <span class="tnum text-fg-dim">
@@ -30,6 +27,6 @@ export const DisconnectedBanner = ({
           last updated {formatTime(lastUpdate)}
         </span>
       )}
-    </div>
+    </output>
   );
 };

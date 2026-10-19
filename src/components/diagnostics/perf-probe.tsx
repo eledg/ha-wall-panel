@@ -26,11 +26,11 @@ const Status = ({ light }: { light: Light }) => {
   const { word, tone } = LIGHTS[light];
   return (
     <span
+      data-light={light}
       class={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 text-small font-semibold ${tone}`}
     >
       <span
-        role="img"
-        aria-label={word}
+        aria-hidden="true"
         class="size-1.5 shrink-0 rounded-full bg-current"
       />
       {word}
