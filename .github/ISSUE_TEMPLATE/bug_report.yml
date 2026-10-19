@@ -5,15 +5,20 @@ body:
   - type: textarea
     id: what
     attributes:
-      label: What happened
-      description: What you saw, and what you expected instead.
+      label: What went wrong
+      description: What you saw, and what you expected to see instead. For example, "the heating tile says Off but the heating is on".
+      placeholder: 'I saw ... but I expected ...'
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      description: The steps that make it happen, so it can be recreated.
+      label: How to make it happen
+      description: The steps someone else can follow to see the same problem, in order, starting from the dashboard.
+      placeholder: |
+        1. Open the heating sheet
+        2. Tap Resume
+        3. Wait ten seconds
     validations:
       required: true
   - type: input
