@@ -14,7 +14,7 @@ import { dropTokens, resolveAuth, TOKENS_KEY, usesDevAuth } from './auth.ts';
 
 beforeEach(() => {
   lib.getAuth.mockReset();
-  history.replaceState(null, '', '/local/wall-dashboard/index.html');
+  history.replaceState(null, '', '/local/wall-panel/index.html');
   localStorage.clear();
 });
 afterEach(() => localStorage.clear());
@@ -82,7 +82,7 @@ describe('resolveAuth', () => {
     history.replaceState(
       null,
       '',
-      '/local/wall-dashboard/index.html?auth_callback=1&code=c&state=s&storeToken=true&keep=1',
+      '/local/wall-panel/index.html?auth_callback=1&code=c&state=s&storeToken=true&keep=1',
     );
     lib.getAuth.mockResolvedValue('auth');
 

@@ -5,7 +5,7 @@ const NOW = new Date('2026-03-14T09:41:00Z');
 
 test.beforeEach(async ({ page }) => {
   await page.clock.install({ time: NOW });
-  await page.goto('/local/wall-dashboard/');
+  await page.goto('/local/wall-panel/');
   // The mock controls are a dev aid, not part of the display. The pixel shift
   // moves the grid by a few px, so hold it still: baselines then never depend
   // on the shift path or step (it has its own test below).
@@ -16,9 +16,9 @@ test.beforeEach(async ({ page }) => {
   await page.clock.runFor(1000);
 });
 
-test('dashboard against the mock HA', async ({ page }) => {
+test('panel against the mock HA', async ({ page }) => {
   await expect(page.getByText('09:41')).toBeVisible();
-  await expect(page).toHaveScreenshot('dashboard.png');
+  await expect(page).toHaveScreenshot('panel.png');
 });
 
 test('calendar: all four rows fit inside the tile', async ({ page }) => {

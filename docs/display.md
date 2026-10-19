@@ -59,7 +59,7 @@ Findings from #41, measured from Home Assistant at `http://<display-ip>/rpc/`.
 
 ## Rendering quirks
 
-Findings from the first deploy of the app (#57 to #61), measured with a temporary probe that showed computed styles on the display. See the [PR history](https://github.com/eledg/ha-wall-dashboard/pulls?q=is%3Apr+57+OR+58+OR+59+OR+60+OR+61) for the probe if it is needed again.
+Findings from the first deploy of the app, measured with a temporary probe that showed computed styles on the display.
 
 ### Buttons get a default grey background
 

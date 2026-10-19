@@ -4,8 +4,8 @@ import { configUrl } from './url.ts';
 
 describe('configUrl', () => {
   it('sits beside the base folder, not inside it', () => {
-    expect(configUrl('/local/wall-dashboard/')).toBe(
-      '/local/wall-dashboard.config.json',
+    expect(configUrl('/local/wall-panel/')).toBe(
+      '/local/wall-panel.config.json',
     );
   });
 

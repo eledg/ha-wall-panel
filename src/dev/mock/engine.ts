@@ -22,7 +22,7 @@ import { forecastFor, weatherScenarios } from '@/dev/mock/scenarios/weather.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
 
 /** Present only in mock code; a build test looks for it in `dist/`. */
-export const MOCK_MARKER = 'wall-dashboard-mock-ha';
+export const MOCK_MARKER = 'wall-panel-mock-ha';
 
 /** An entity that is not in the config, to prove the store filters. */
 export const UNRELATED_ID = 'switch.mock_unrelated';
