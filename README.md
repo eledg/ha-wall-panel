@@ -10,6 +10,10 @@ standard Lovelace dashboard. It is built and tested on a
 [Shelly Wall Display X2i](docs/display.md); other Android displays with a
 modern WebView should work, but check [docs/display.md](docs/display.md) first.
 
+![The dashboard on a 944 x 459 display: clock, weather, calendar, light, room temperature, heating and AC tiles](e2e/__screenshots__/panel.spec.ts/panel.png)
+
+<!-- This is the e2e baseline image, so it stays current when the UI changes (see docs/e2e.md). The data is from the mock Home Assistant (`pnpm dev:mock`). -->
+
 ## What it shows
 
 - Clock and date, and weather with an hourly forecast
