@@ -30,7 +30,7 @@ already showing the panel reloads itself once it sees the new `version.json` (se
 
 ## Automatic updates with the pull script
 
-[`scripts/deploy_wall.py`](../scripts/deploy_wall.py) pulls a release from GitHub
+[`scripts/deploy_wall_panel.py`](../scripts/deploy_wall_panel.py) pulls a release from GitHub
 into `/config/www/<folder>/` and swaps it in safely. Run it on a schedule and the
 display stays on the latest release with nothing copied by hand. It is a Python 3
 script using only the standard library (plus PyYAML, which Home Assistant Core
@@ -59,13 +59,13 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 
 ### Setup
 
-1. Put the script on the HA box at `/config/scripts/deploy_wall.py`, for example
+1. Put the script on the HA box at `/config/scripts/deploy_wall_panel.py`, for example
    with the Terminal add-on or SSH:
 
    ```sh
    mkdir -p /config/scripts
-   curl -fsSL -o /config/scripts/deploy_wall.py \
-     https://raw.githubusercontent.com/eledg/ha-wall-panel/main/scripts/deploy_wall.py
+   curl -fsSL -o /config/scripts/deploy_wall_panel.py \
+     https://raw.githubusercontent.com/eledg/ha-wall-panel/main/scripts/deploy_wall_panel.py
    ```
 
    Read it first, since it runs inside Home Assistant. It is kept on the HA box
@@ -75,7 +75,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 
    ```yaml
    shell_command:
-     deploy_office_wall: "python3 /config/scripts/deploy_wall.py office-wall-display {{ args | default('', true) }}"
+     deploy_office_wall: "python3 /config/scripts/deploy_wall_panel.py office-wall-display {{ args | default('', true) }}"
    ```
 
    This pulls releases from this repository. To pull from a fork, add
@@ -139,7 +139,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 ### Script options
 
 ```
-deploy_wall.py <target> [--repo OWNER/REPO] [--token-secret KEY] [--tag vX.Y.Z] [--allow-major] [--fail-swap]
+deploy_wall_panel.py <target> [--repo OWNER/REPO] [--token-secret KEY] [--tag vX.Y.Z] [--allow-major] [--fail-swap]
 ```
 
 | Option               | Meaning                                                                                                                    |

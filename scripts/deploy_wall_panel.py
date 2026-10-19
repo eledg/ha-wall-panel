@@ -5,7 +5,7 @@ Runs in the Home Assistant Core container through a shell_command. Standard
 library only, plus PyYAML (already present in HA Core) when a token is used.
 See docs/deploy.md.
 
-    deploy_wall.py <target> [--repo OWNER/REPO] [--token-secret KEY]
+    deploy_wall_panel.py <target> [--repo OWNER/REPO] [--token-secret KEY]
                    [--tag vX.Y.Z] [--allow-major] [--fail-swap]
 
 With no --tag, the newest release with the same major version as the deployed
