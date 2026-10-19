@@ -4,11 +4,11 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import type { MockHeatingState } from '@/dev/mock/scenarios/heating.ts';
 import { TARGET_DEBOUNCE_MS } from '@/hooks/use-climate-commands.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { HeatingSheet, PRESS_MS } from './heating-sheet.tsx';
 
@@ -27,7 +27,12 @@ const setup = async ({
     mock.controls.setHeating(state);
     render(
       <HaConnection store={store}>
-        <HeatingSheet store={store} onClose={onClose} idleMs={30_000} />
+        <HeatingSheet
+          tile={tileOf('heating')}
+          store={store}
+          onClose={onClose}
+          idleMs={30_000}
+        />
       </HaConnection>,
       document.body,
     );
@@ -89,9 +94,14 @@ describe('HeatingSheet', () => {
 
       await press('Heating power');
 
-      expect(spy).toHaveBeenLastCalledWith('heatingClimate', 'set_hvac_mode', {
-        hvac_mode: 'off',
-      });
+      expect(spy).toHaveBeenLastCalledWith(
+        'climate',
+        CLIMATE,
+        'set_hvac_mode',
+        {
+          hvac_mode: 'off',
+        },
+      );
       expect(mock.controls.getHeating()).toBe('off');
       expect(onClose).not.toHaveBeenCalled();
       expect(document.body.textContent).toContain('Heating off');
@@ -102,9 +112,14 @@ describe('HeatingSheet', () => {
 
       await press('Heating power');
 
-      expect(spy).toHaveBeenLastCalledWith('heatingClimate', 'set_hvac_mode', {
-        hvac_mode: 'heat',
-      });
+      expect(spy).toHaveBeenLastCalledWith(
+        'climate',
+        CLIMATE,
+        'set_hvac_mode',
+        {
+          hvac_mode: 'heat',
+        },
+      );
     });
   });
 
@@ -124,7 +139,7 @@ describe('HeatingSheet', () => {
       });
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith('heatingClimate', 'set_temperature', {
+      expect(spy).toHaveBeenCalledWith('climate', CLIMATE, 'set_temperature', {
         temperature: 20.5,
       });
     });
@@ -208,7 +223,11 @@ describe('HeatingSheet', () => {
 
       await press('Resume schedule');
 
-      expect(spy).toHaveBeenLastCalledWith('heatingResume', 'press');
+      expect(spy).toHaveBeenLastCalledWith(
+        'button',
+        entityId('heatingResume'),
+        'press',
+      );
       expect(mock.controls.getHeating()).toBe('schedule');
       expect(button('Resume schedule').getAttribute('aria-busy')).toBe('true');
       expect(button('Boost').disabled).toBe(true);
@@ -225,7 +244,11 @@ describe('HeatingSheet', () => {
 
       await press('Boost');
 
-      expect(spy).toHaveBeenLastCalledWith('heatingBoost', 'press');
+      expect(spy).toHaveBeenLastCalledWith(
+        'button',
+        entityId('heatingBoost'),
+        'press',
+      );
       expect(button('Boost').getAttribute('aria-busy')).toBe('true');
       await act(async () => {
         await vi.advanceTimersByTimeAsync(PRESS_MS);
@@ -283,7 +306,11 @@ describe('HeatingSheet', () => {
         await store.start(mock.getAuth);
         render(
           <HaConnection store={store}>
-            <HeatingSheet store={store} onClose={vi.fn()} />
+            <HeatingSheet
+              tile={tileOf('heating')}
+              store={store}
+              onClose={vi.fn()}
+            />
           </HaConnection>,
           document.body,
         );

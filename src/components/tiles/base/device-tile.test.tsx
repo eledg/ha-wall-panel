@@ -2,6 +2,8 @@
 import { render } from 'preact';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { PLACE } from '@/tests/ids.ts';
+
 import { DeviceTile, Temperature } from './device-tile.tsx';
 
 const mount = (ui: preact.ComponentChildren) => render(ui, document.body);
@@ -32,7 +34,7 @@ describe('DeviceTile', () => {
   it('shows the label, status and value', () => {
     mount(
       <DeviceTile
-        area="temp"
+        place={PLACE}
         icon={<i />}
         label="Office"
         status={<span>51%</span>}
@@ -49,7 +51,7 @@ describe('DeviceTile', () => {
   });
 
   it('lights up with the accent tone', () => {
-    mount(<DeviceTile area="ac" icon={<i />} label="AC" tone="accent" />);
+    mount(<DeviceTile place={PLACE} icon={<i />} label="AC" tone="accent" />);
 
     expect(document.body.firstElementChild?.className).toContain(
       'border-accent',
@@ -59,7 +61,7 @@ describe('DeviceTile', () => {
   it('shows unavailable instead of the value', () => {
     mount(
       <DeviceTile
-        area="ac"
+        place={PLACE}
         icon={<i />}
         label="AC"
         state="unavailable"
@@ -73,7 +75,7 @@ describe('DeviceTile', () => {
 
   it('taps when given a handler', () => {
     const onTap = vi.fn();
-    mount(<DeviceTile area="ac" icon={<i />} label="AC" onTap={onTap} />);
+    mount(<DeviceTile place={PLACE} icon={<i />} label="AC" onTap={onTap} />);
 
     document.querySelector('button')!.click();
 

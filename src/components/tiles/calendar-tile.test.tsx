@@ -4,13 +4,13 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { dayLabel, shortDay } from '@/lib/calendar-labels.ts';
 import { CALENDAR_STALE_MS } from '@/services/ha/calendar.ts';
 import type { CalendarEvent } from '@/services/ha/calendar.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import type { HaStore } from '@/services/ha/store.ts';
+import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { buildAgenda, CalendarTile } from './calendar-tile.tsx';
 
@@ -23,7 +23,7 @@ const timed = (
   summary: string,
   day: number,
   hour: number,
-  calendar: CalendarEvent['calendar'] = 'calendarFamily',
+  calendar: CalendarEvent['calendar'] = entityId('calendarFamily'),
 ): CalendarEvent => ({
   calendar,
   summary,
@@ -34,7 +34,7 @@ const timed = (
 });
 
 const allDay = (summary: string, day: number, days = 1): CalendarEvent => ({
-  calendar: 'calendarBirthdays',
+  calendar: entityId('calendarBirthdays'),
   summary,
   fullSummary: summary,
   start: new Date(2026, 9, day).toISOString(),
@@ -123,7 +123,7 @@ const setup = async () => {
     await store.start(mock.getAuth);
     render(
       <HaConnection store={store}>
-        <CalendarTile area="cal" store={store} />
+        <CalendarTile tile={tileOf('calendar')} store={store} />
       </HaConnection>,
       document.body,
     );
@@ -187,7 +187,10 @@ describe('CalendarTile', () => {
     const store = createHaStore(mock.deps);
     await act(async () => {
       await store.start(mock.getAuth);
-      render(<CalendarTile area="cal" store={store} />, document.body);
+      render(
+        <CalendarTile tile={tileOf('calendar')} store={store} />,
+        document.body,
+      );
     });
 
     await vi.waitFor(() => expect(text()).toContain('Calendar unavailable'));
@@ -235,16 +238,19 @@ describe('CalendarTile', () => {
       getSnapshot: () => ({
         ...store.getSnapshot(),
         calendarUpdated: {
-          calendarFamily: Date.now() - ageMs,
-          calendarF1: Date.now() - ageMs,
-          calendarBirthdays: Date.now() - ageMs,
+          [entityId('calendarFamily')]: Date.now() - ageMs,
+          [entityId('calendarF1')]: Date.now() - ageMs,
+          [entityId('calendarBirthdays')]: Date.now() - ageMs,
         },
       }),
     });
     const show = (fake: HaStore) =>
       act(() => {
         render(null, document.body);
-        render(<CalendarTile area="cal" store={fake} />, document.body);
+        render(
+          <CalendarTile tile={tileOf('calendar')} store={fake} />,
+          document.body,
+        );
       });
 
     await show(withAge(CALENDAR_STALE_MS - 60_000));

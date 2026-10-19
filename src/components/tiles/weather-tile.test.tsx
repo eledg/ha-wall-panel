@@ -4,9 +4,9 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { pickForecast, WeatherTile } from './weather-tile.tsx';
 
@@ -20,7 +20,10 @@ const setup = async () => {
   const store = createHaStore(mock.deps);
   await act(async () => {
     await store.start(mock.getAuth);
-    render(<WeatherTile area="weather" store={store} />, document.body);
+    render(
+      <WeatherTile tile={tileOf('weather')} store={store} />,
+      document.body,
+    );
   });
   return { mock, store };
 };
@@ -73,15 +76,15 @@ describe('WeatherTile', () => {
   it('renders the last known state, marked stale, once offline', async () => {
     const { store } = await setup();
     const { entities, forecasts } = store.getSnapshot();
-    expect(entities.weather).toBeDefined();
-    expect(forecasts.weather).toBeDefined();
+    expect(entities[entityId('weather')]).toBeDefined();
+    expect(forecasts[entityId('weather')]).toBeDefined();
 
     const offline = { ...store.getSnapshot(), status: 'disconnected' as const };
     await act(async () => {
       render(
         <HaConnection store={{ ...store, getSnapshot: () => offline }}>
           <WeatherTile
-            area="weather"
+            tile={tileOf('weather')}
             store={{ ...store, getSnapshot: () => offline }}
           />
         </HaConnection>,
@@ -96,7 +99,10 @@ describe('WeatherTile', () => {
   it('shows a skeleton before the first state arrives', async () => {
     const store = createHaStore(createMockHa().deps);
     await act(async () =>
-      render(<WeatherTile area="weather" store={store} />, document.body),
+      render(
+        <WeatherTile tile={tileOf('weather')} store={store} />,
+        document.body,
+      ),
     );
 
     expect(text()).not.toContain('unavailable');

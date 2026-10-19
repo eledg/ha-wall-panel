@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 
+import type { Placement } from '@/config/config.ts';
 import { useOffline } from '@/hooks/use-offline.ts';
-import type { GridArea } from '@/lib/grid.ts';
 
 import { Tile, type TileState, Unavailable } from './tile.tsx';
 
@@ -46,7 +46,7 @@ export type DeviceTone = 'accent' | 'manual' | 'neutral';
  * (or red `manual`) tone lights the tile unless HA is disconnected.
  */
 export const DeviceTile = ({
-  area,
+  place,
   state,
   icon,
   label,
@@ -58,7 +58,7 @@ export const DeviceTile = ({
   onTap,
   centerValue = false,
 }: {
-  area: GridArea;
+  place: Placement;
   state?: TileState;
   icon: ComponentChildren;
   label: string;
@@ -86,7 +86,7 @@ export const DeviceTile = ({
 
   return (
     <Tile
-      area={area}
+      place={place}
       state={state}
       onTap={onTap}
       flash={flash}

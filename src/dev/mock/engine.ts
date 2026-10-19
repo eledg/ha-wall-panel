@@ -1,6 +1,14 @@
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
-import { getConfig, type RuntimeConfig } from '@/config/config.ts';
+import {
+  type CalendarKind,
+  entityRefs,
+  firstTile,
+  getConfig,
+  type RuntimeConfig,
+  type TileConfig,
+  type TileType,
+} from '@/config/config.ts';
 import {
   AC_DEFAULT_MODE,
   acAttributes,
@@ -121,57 +129,89 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     };
   };
 
-  const light = cfg.entities.light.id;
+  /**
+   * The mock's controls act on the first tile of each type; any further tiles
+   * get a plain default state (below) and no scenarios.
+   */
+  const mockTile = <T extends TileType>(type: T): TileConfig<T> => {
+    const tile = firstTile(type, cfg);
+    if (!tile) throw new Error(`The mock needs a ${type} tile in its config`);
+    return tile;
+  };
+
+  const light = mockTile('toggle').entities.entity;
   entities.set(light, make(light, 'off'));
-  const weather = cfg.entities.weather.id;
+  const weather = mockTile('weather').entities.entity;
   const scenarios = weatherScenarios();
   let scenario = scenarios[0]!;
   entities.set(weather, make(weather, scenario.state, scenario.attributes));
   let calendarScenario = calendarScenarios[0]!;
   let calendarFails = false;
-  const calendarKeys = [
-    'calendarFamily',
-    'calendarF1',
-    'calendarBirthdays',
-  ] as const;
-  for (const key of calendarKeys) {
-    entities.set(cfg.entities[key].id, make(cfg.entities[key].id, 'off'));
+  // The scenarios name their calendars by kind: the unmarked one is the family's.
+  const calendarKinds = new Map<string, CalendarKind | undefined>();
+  for (const tile of cfg.tiles) {
+    if (tile.type !== 'calendar') continue;
+    for (const { entity, kind } of tile.calendars)
+      calendarKinds.set(entity, kind);
   }
-  const ac = cfg.entities.acClimate.id;
+  const SCENARIO_KEY = {
+    f1: 'calendarF1',
+    birthdays: 'calendarBirthdays',
+  } as const;
+  for (const id of calendarKinds.keys()) entities.set(id, make(id, 'off'));
+  const ac = mockTile('ac').entities.climate;
   entities.set(ac, make(ac, 'off', acAttributes()));
-  const roomTemp = cfg.entities.roomTemperature.id;
+  const room = mockTile('temperature').entities;
+  const roomTemp = room.temperature;
   entities.set(roomTemp, make(roomTemp, '22.2', { unit_of_measurement: '°C' }));
-  const roomHumidity = cfg.entities.roomHumidity.id;
   entities.set(
-    roomHumidity,
-    make(roomHumidity, '50.9', { unit_of_measurement: '%' }),
+    room.humidity,
+    make(room.humidity, '50.9', { unit_of_measurement: '%' }),
   );
-  const roomBattery = cfg.entities.roomBattery.id;
-  entities.set(
-    roomBattery,
-    make(roomBattery, '100', { unit_of_measurement: '%' }),
-  );
-  const acSwitches = [
-    cfg.entities.acPowerful.id,
-    cfg.entities.acEconomy.id,
-    cfg.entities.acQuietFan.id,
-  ];
-  for (const id of acSwitches) entities.set(id, make(id, 'off'));
-  const heating = cfg.entities.heatingClimate.id;
-  const heatingSchedule = cfg.entities.heatingSchedule.id;
-  const heatingDemand = cfg.entities.heatingDemand.id;
+  if (room.battery) {
+    entities.set(
+      room.battery,
+      make(room.battery, '100', { unit_of_measurement: '%' }),
+    );
+  }
+  const heatingEntities = mockTile('heating').entities;
+  const heating = heatingEntities.climate;
+  const heatingSchedule = heatingEntities.schedule;
+  const heatingDemand = heatingEntities.demand;
   const fixture = heatingFixture('schedule');
   entities.set(heating, make(heating, fixture.power, heatingAttributes()));
   entities.set(heatingSchedule, make(heatingSchedule, fixture.schedule));
   entities.set(heatingDemand, make(heatingDemand, 'on'));
-  const heatingCloud = cfg.entities.heatingCloud.id;
-  entities.set(heatingCloud, make(heatingCloud, 'on'));
+  entities.set(heatingEntities.cloud, make(heatingEntities.cloud, 'on'));
   // Presses never change a button's state, as in HA.
-  for (const id of [
-    cfg.entities.heatingResume.id,
-    cfg.entities.heatingBoost.id,
-  ]) {
+  for (const id of [heatingEntities.resume, heatingEntities.boost]) {
     entities.set(id, make(id, 'unknown'));
+  }
+  // Every other entity (the first tile's switches, further tiles) starts plain.
+  const DEFAULT_STATE = {
+    binary_sensor: 'on',
+    button: 'unknown',
+    sensor: '0',
+    weather: scenario.state,
+  } as const;
+  for (const { id, domain } of entityRefs(cfg)) {
+    if (entities.has(id)) continue;
+    const state =
+      domain in DEFAULT_STATE
+        ? DEFAULT_STATE[domain as keyof typeof DEFAULT_STATE]
+        : 'off';
+    entities.set(
+      id,
+      make(
+        id,
+        state,
+        domain === 'climate'
+          ? acAttributes()
+          : domain === 'weather'
+            ? scenario.attributes
+            : {},
+      ),
+    );
   }
   let historyFails = false;
   // What `climate.turn_on` restores, as the real unit does.
@@ -237,12 +277,11 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       if (calendarFails) {
         return Promise.reject(new Error('Mock HA: calendar failed'));
       }
-      const key = (
-        Object.keys(cfg.entities) as (keyof typeof cfg.entities)[]
-      ).find((k) => cfg.entities[k].id === entityId);
-      if (!key || !entities.has(entityId)) {
+      if (!calendarKinds.has(entityId) || !entities.has(entityId)) {
         return Promise.reject(new Error(`Mock HA: unknown entity ${entityId}`));
       }
+      const kind = calendarKinds.get(entityId);
+      const key = kind ? SCENARIO_KEY[kind] : 'calendarFamily';
       return Promise.resolve(calendarScenario.events(new Date())[key] ?? []);
     },
     fetchHistory: (_auth, entityId) => {
@@ -280,9 +319,9 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
         if (servicesFail) {
           return Promise.reject(new Error('Mock HA: service call failed'));
         }
-        if (id === cfg.entities.heatingResume.id) {
+        if (id === heatingEntities.resume) {
           setHeatingParts('heat', true, SCHEDULED_TARGET);
-        } else if (id === cfg.entities.heatingBoost.id) {
+        } else if (id === heatingEntities.boost) {
           setHeatingParts('heat', false, BOOST_TARGET, true);
         }
         return Promise.resolve();
@@ -413,9 +452,7 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       calendarScenario =
         calendarScenarios.find((s) => s.id === id) ?? calendarScenario;
       // As HA does when events change, touch the entities so the store refetches.
-      for (const key of calendarKeys) {
-        entities.set(cfg.entities[key].id, make(cfg.entities[key].id, 'off'));
-      }
+      for (const id of calendarKinds.keys()) entities.set(id, make(id, 'off'));
       publish();
     },
     failCalendar: (failing) => {

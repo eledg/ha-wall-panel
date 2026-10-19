@@ -7,10 +7,10 @@ import {
 } from 'home-assistant-js-websocket';
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
-import { getConfig, validateConfig } from '@/config/config.ts';
+import { entityProblem, entityRefs, getConfig } from '@/config/config.ts';
 import type {
-  ENTITY_DOMAINS,
-  EntityKey,
+  CalendarKind,
+  EntityDomain,
   RuntimeConfig,
 } from '@/config/config.ts';
 
@@ -24,8 +24,6 @@ import type { CalendarEvent, RawCalendarEvent } from './calendar.ts';
 import { cancellableDelay } from './delay.ts';
 import { fetchHistory } from './history.ts';
 import type { RawHistoryState } from './history.ts';
-
-export type { EntityKey };
 
 /** The services each domain accepts through `callService`. */
 type DomainServices = {
@@ -66,8 +64,7 @@ export type ForecastItem = {
   precipitation_probability?: number;
 };
 
-export type ServiceName<K extends EntityKey> =
-  DomainServices[(typeof ENTITY_DOMAINS)[K]];
+export type ServiceName<D extends EntityDomain> = DomainServices[D];
 
 export type HaStatus =
   'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
@@ -81,13 +78,14 @@ export type HaSnapshot = {
   lastUpdate?: number;
   /** Entity IDs the store tracks: the configured ones that pass validation. */
   subscribed: string[];
-  entities: Partial<Record<EntityKey, HassEntity>>;
+  /** Current state by entity ID. */
+  entities: Partial<Record<string, HassEntity>>;
   /** Last forecast fetched per weather entity; kept while HA is unreachable. */
-  forecasts: Partial<Record<EntityKey, ForecastItem[]>>;
+  forecasts: Partial<Record<string, ForecastItem[]>>;
   /** Last events fetched per calendar entity; kept when a fetch fails. */
-  calendars: Partial<Record<EntityKey, CalendarEvent[]>>;
+  calendars: Partial<Record<string, CalendarEvent[]>>;
   /** When each calendar last loaded (epoch ms), so the tile can tell old events. */
-  calendarUpdated: Partial<Record<EntityKey, number>>;
+  calendarUpdated: Partial<Record<string, number>>;
   /** True when a calendar has failed to load and has no earlier events to show. */
   calendarFailed: boolean;
 };
@@ -131,14 +129,25 @@ export const createHaStore = (
   deps: HaDeps = realDeps,
   cfg: RuntimeConfig = getConfig(),
 ) => {
-  const invalid = new Set(validateConfig(cfg).map(({ key }) => key));
-  const tracked = (Object.keys(cfg.entities) as EntityKey[]).filter(
-    (key) => !invalid.has(key),
-  );
+  // The same entity may be used by several tiles; it is tracked once.
+  const domains = new Map<string, EntityDomain>();
+  for (const ref of entityRefs(cfg)) {
+    if (!entityProblem(ref)) domains.set(ref.id, ref.domain);
+  }
+  const tracked = [...domains.keys()];
+  const trackedIn = (domain: EntityDomain) =>
+    tracked.filter((id) => domains.get(id) === domain);
+  // Calendars of one kind get the tidying for it (see `normaliseEvents`).
+  const calendarKinds = new Map<string, CalendarKind | undefined>();
+  for (const tile of cfg.tiles) {
+    if (tile.type !== 'calendar') continue;
+    for (const { entity, kind } of tile.calendars)
+      calendarKinds.set(entity, kind);
+  }
 
   let snapshot: HaSnapshot = {
     status: 'idle',
-    subscribed: tracked.map((key) => cfg.entities[key].id),
+    subscribed: tracked,
     entities: {},
     forecasts: {},
     calendars: {},
@@ -158,7 +167,7 @@ export const createHaStore = (
   // Kept for the calendar's REST calls, which the websocket library cannot make.
   let calendarAuth: Auth | undefined;
   // Calendars whose fetch failed with nothing earlier to show.
-  const calendarsFailed = new Set<EntityKey>();
+  const calendarsFailed = new Set<string>();
   let cancelRetry: (() => void) | undefined;
   // Kept outside the snapshot so HA's event stream doesn't re-render the app.
   let lastSeen: number | undefined;
@@ -193,16 +202,15 @@ export const createHaStore = (
    * Current HA serves forecasts only through `weather.get_forecasts`, not as an
    * attribute. A failed fetch keeps the previous forecast.
    */
-  const refreshForecast = async (key: EntityKey) => {
-    const { id } = cfg.entities[key];
+  const refreshForecast = async (id: string) => {
     const mine = generation;
-    const features = snapshot.entities[key]?.attributes.supported_features;
+    const features = snapshot.entities[id]?.attributes.supported_features;
     if (!connection) return;
     // An entity that cannot do hourly forecasts would only error; show current
     // conditions alone, and drop any forecast from before.
     if (typeof features === 'number' && !(features & FORECAST_HOURLY)) {
-      if (snapshot.forecasts[key]) {
-        const { [key]: _dropped, ...rest } = snapshot.forecasts;
+      if (snapshot.forecasts[id]) {
+        const { [id]: _dropped, ...rest } = snapshot.forecasts;
         update({ forecasts: rest });
       }
       return;
@@ -218,7 +226,7 @@ export const createHaStore = (
       )) as { response?: Record<string, { forecast?: ForecastItem[] }> };
       const forecast = result.response?.[id]?.forecast;
       if (mine === generation && forecast) {
-        update({ forecasts: { ...snapshot.forecasts, [key]: forecast } });
+        update({ forecasts: { ...snapshot.forecasts, [id]: forecast } });
       }
     } catch (err) {
       console.error(`Forecast for ${id} failed`, err);
@@ -226,16 +234,13 @@ export const createHaStore = (
   };
 
   const refreshForecasts = () =>
-    tracked
-      .filter((key) => cfg.entities[key].domain === 'weather')
-      .forEach((key) => void refreshForecast(key));
+    trackedIn('weather').forEach((id) => void refreshForecast(id));
 
   /**
    * Fetches today and the next week of one calendar. A failed fetch keeps the
    * previous events, so the tile never goes blank over a hiccup.
    */
-  const refreshCalendar = async (key: EntityKey) => {
-    const { id } = cfg.entities[key];
+  const refreshCalendar = async (id: string) => {
     const mine = generation;
     const auth = calendarAuth;
     if (!auth) return;
@@ -243,26 +248,24 @@ export const createHaStore = (
     try {
       const raw = await deps.fetchCalendarEvents(auth, id, start, end);
       if (mine !== generation) return;
-      const events = normaliseEvents(key, raw);
-      calendarsFailed.delete(key);
+      const events = normaliseEvents(id, raw, calendarKinds.get(id));
+      calendarsFailed.delete(id);
       update({
-        calendars: { ...snapshot.calendars, [key]: events },
-        calendarUpdated: { ...snapshot.calendarUpdated, [key]: Date.now() },
+        calendars: { ...snapshot.calendars, [id]: events },
+        calendarUpdated: { ...snapshot.calendarUpdated, [id]: Date.now() },
         calendarFailed: calendarsFailed.size > 0,
       });
     } catch (err) {
       console.error(`Calendar ${id} failed`, err);
-      if (mine === generation && !snapshot.calendars[key]) {
-        calendarsFailed.add(key);
+      if (mine === generation && !snapshot.calendars[id]) {
+        calendarsFailed.add(id);
         update({ calendarFailed: true });
       }
     }
   };
 
   const refreshCalendars = () =>
-    tracked
-      .filter((key) => cfg.entities[key].domain === 'calendar')
-      .forEach((key) => void refreshCalendar(key));
+    trackedIn('calendar').forEach((id) => void refreshCalendar(id));
 
   /**
    * Retries until HA answers, so a display that wakes before HA is up recovers
@@ -322,24 +325,23 @@ export const createHaStore = (
       unsubscribe = deps.subscribeEntities(conn, (all) => {
         lastSeen = Date.now();
         const entities: HaSnapshot['entities'] = {};
-        for (const key of tracked) {
-          const entity = all[cfg.entities[key].id];
-          if (entity) entities[key] = entity;
+        for (const id of tracked) {
+          const entity = all[id];
+          if (entity) entities[id] = entity;
         }
         const changed = tracked.filter(
-          (key) => entities[key] !== snapshot.entities[key],
+          (id) => entities[id] !== snapshot.entities[id],
         );
         if (changed.length > 0) {
           update({ entities });
+          const present = (id: string) => entities[id] !== undefined;
           changed
-            .filter((key) => cfg.entities[key].domain === 'weather')
-            .filter((key) => entities[key])
-            .forEach((key) => void refreshForecast(key));
+            .filter((id) => domains.get(id) === 'weather' && present(id))
+            .forEach((id) => void refreshForecast(id));
           // A calendar entity changes when its current or next event does.
           changed
-            .filter((key) => cfg.entities[key].domain === 'calendar')
-            .filter((key) => entities[key])
-            .forEach((key) => void refreshCalendar(key));
+            .filter((id) => domains.get(id) === 'calendar' && present(id))
+            .forEach((id) => void refreshCalendar(id));
         }
       });
       forecastTimer = setInterval(refreshForecasts, FORECAST_REFRESH_MS);
@@ -362,21 +364,21 @@ export const createHaStore = (
    * Recorded states of a configured entity over a window. Rejects while HA is
    * not connected, so a sheet can show its empty state.
    */
-  const history = (key: EntityKey, start: Date, end: Date) => {
+  const history = (id: string, start: Date, end: Date) => {
     const auth = calendarAuth;
-    if (!auth || invalid.has(key)) {
-      return Promise.reject(new Error(`Cannot read history of ${key}`));
+    if (!auth || !domains.has(id)) {
+      return Promise.reject(new Error(`Cannot read history of ${id}`));
     }
-    return deps.fetchHistory(auth, cfg.entities[key].id, start, end);
+    return deps.fetchHistory(auth, id, start, end);
   };
 
-  const callService = <K extends EntityKey>(
-    key: K,
-    service: ServiceName<K>,
+  const callService = <D extends EntityDomain>(
+    domain: D,
+    id: string,
+    service: ServiceName<D>,
     data?: object,
   ) => {
-    const { domain, id } = cfg.entities[key];
-    if (!connection || invalid.has(key)) {
+    if (!connection || domains.get(id) !== domain) {
       return Promise.reject(new Error(`Cannot call ${domain}.${service}`));
     }
     return deps.callService(connection, domain, service, data, {

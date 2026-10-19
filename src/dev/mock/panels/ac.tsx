@@ -1,4 +1,4 @@
-import { entityId } from '@/config/config.ts';
+import { entitiesOf } from '@/dev/mock/entities.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
@@ -10,11 +10,12 @@ export const acPanel: MockPanel = {
   title: 'AC',
   Panel: ({ mock }) => {
     useMockChanges(mock);
-    const ac = entityId('acClimate');
+    const entities = entitiesOf('ac');
+    const ac = entities.climate;
     const switches = [
-      ['Powerful', entityId('acPowerful')],
-      ['Economy', entityId('acEconomy')],
-      ['Quiet', entityId('acQuietFan')],
+      ['Powerful', entities.powerful],
+      ['Economy', entities.economy],
+      ['Quiet', entities.quietFan],
     ] as const;
     const state = mock.getState(ac);
     const attrs = state?.attributes ?? {};

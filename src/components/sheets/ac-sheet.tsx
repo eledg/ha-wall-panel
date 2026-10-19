@@ -15,7 +15,7 @@ import {
 } from '@/components/climate/climate-controls.tsx';
 import { TargetStepper } from '@/components/climate/target-stepper.tsx';
 import { FanIcon } from '@/components/icons/fan-icon.tsx';
-import { getConfig } from '@/config/config.ts';
+import type { TileConfig } from '@/config/config.ts';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import {
   useClimateCommands,
@@ -47,18 +47,23 @@ type SwitchStates = Record<SwitchKey, string | undefined>;
  * is turned off, with the button, on Escape, or after `idleMs` without a touch.
  */
 export const AcSheet = ({
+  tile,
   onClose,
   store = haStore,
   idleMs = IDLE_CLOSE_MS,
 }: {
+  tile: TileConfig<'ac'>;
   onClose: () => void;
   store?: HaStore;
   idleMs?: number;
 }) => {
-  const entity = useSnapshot(store, (s) => s.entities.acClimate);
-  const room = useSnapshot(store, (s) => s.entities.roomTemperature);
+  const { entities } = tile;
+  const entity = useSnapshot(store, (s) => s.entities[entities.climate]);
+  const room = useSnapshot(store, (s) =>
+    entities.room ? s.entities[entities.room] : undefined,
+  );
   const switchStates = useSnapshot(store, (s) =>
-    SWITCHES.map(({ key }) => s.entities[key]?.state ?? '').join(','),
+    SWITCHES.map(({ key }) => s.entities[entities[key]]?.state ?? '').join(','),
   );
   const offline = useOffline();
   const view = readAc(entity);
@@ -80,14 +85,20 @@ export const AcSheet = ({
     limits: view,
     commands,
     call: (temperature) =>
-      store.callService('acClimate', 'set_temperature', { temperature }),
+      store.callService('climate', entities.climate, 'set_temperature', {
+        temperature,
+      }),
   });
 
   const togglePower = () => {
     const next = !view.on;
     send(
       { key: 'power', power: next, done: (s) => s.view.on === next },
-      store.callService('acClimate', next ? 'turn_on' : 'turn_off'),
+      store.callService(
+        'climate',
+        entities.climate,
+        next ? 'turn_on' : 'turn_off',
+      ),
       // Only close once HA accepts it, so a failure still shows on this screen.
       next ? undefined : onClose,
     );
@@ -99,17 +110,21 @@ export const AcSheet = ({
     if (which === 'mode') {
       send(
         { key: 'mode', done: (s) => s.view.mode === value },
-        store.callService('acClimate', 'set_hvac_mode', { hvac_mode: value }),
+        store.callService('climate', entities.climate, 'set_hvac_mode', {
+          hvac_mode: value,
+        }),
       );
     } else if (which === 'fan') {
       send(
         { key: 'fan', done: (s) => s.view.fan === value },
-        store.callService('acClimate', 'set_fan_mode', { fan_mode: value }),
+        store.callService('climate', entities.climate, 'set_fan_mode', {
+          fan_mode: value,
+        }),
       );
     } else {
       send(
         { key: 'swing', done: (s) => s.view.swing === value },
-        store.callService('acClimate', 'set_swing_mode', {
+        store.callService('climate', entities.climate, 'set_swing_mode', {
           swing_mode: value,
         }),
       );
@@ -119,7 +134,7 @@ export const AcSheet = ({
     const next = switches[key] !== 'on';
     send(
       { key, done: (s) => s.switches[key] === (next ? 'on' : 'off') },
-      store.callService(key, 'toggle'),
+      store.callService('switch', entities[key], 'toggle'),
     );
   };
   const poweringOn = pending?.power === true && !view.on;
@@ -166,7 +181,7 @@ export const AcSheet = ({
       <ClimateSheet
         title={open.label}
         titleId="ac-picker-title"
-        status={getConfig().labels.ac}
+        status={tile.label}
         onClose={onClose}
         onActivity={onActivity}
       >
@@ -185,7 +200,7 @@ export const AcSheet = ({
 
   return (
     <ClimateSheet
-      title={getConfig().labels.ac}
+      title={tile.label}
       titleId="ac-title"
       status={acStatus(view, pending?.power)}
       warning={!view.usable}
@@ -202,7 +217,7 @@ export const AcSheet = ({
           onClick={togglePower}
         />
         <TargetStepper
-          currentLabel={`${getConfig().labels.room} now`}
+          currentLabel="Room now"
           targetLabel="AC target"
           current={Number.isFinite(roomTemp) ? roomTemp : undefined}
           target={steps.shown}

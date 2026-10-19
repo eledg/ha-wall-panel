@@ -4,10 +4,10 @@ import { FlameIcon } from '@/components/icons/flame-icon.tsx';
 import { HeatWavesIcon } from '@/components/icons/heat-waves-icon.tsx';
 import { PauseIcon } from '@/components/icons/pause-icon.tsx';
 import { HeatingSheet } from '@/components/sheets/heating-sheet.tsx';
+import type { TileConfig } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { type HeatingState, readHeating } from '@/lib/climate/heating-model.ts';
 import { formatTemp } from '@/lib/format.ts';
-import type { GridArea } from '@/lib/grid.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
@@ -39,16 +39,19 @@ const STATE_LABEL: Record<HeatingState, string> = {
  * colour and status line, and a heat-waves icon that follows boiler demand alone. Tapping opens the `HeatingSheet`.
  */
 export const HeatingTile = ({
-  area,
+  tile,
   store = haStore,
 }: {
-  area: GridArea;
+  tile: TileConfig<'heating'>;
   store?: HaStore;
 }) => {
-  const climate = useSnapshot(store, (s) => s.entities.heatingClimate);
-  const schedule = useSnapshot(store, (s) => s.entities.heatingSchedule);
-  const demand = useSnapshot(store, (s) => s.entities.heatingDemand);
-  const cloud = useSnapshot(store, (s) => s.entities.heatingCloud);
+  const climate = useSnapshot(store, (s) => s.entities[tile.entities.climate]);
+  const schedule = useSnapshot(
+    store,
+    (s) => s.entities[tile.entities.schedule],
+  );
+  const demand = useSnapshot(store, (s) => s.entities[tile.entities.demand]);
+  const cloud = useSnapshot(store, (s) => s.entities[tile.entities.cloud]);
   const [open, setOpen] = useState(false);
   const view = readHeating(climate, schedule, demand, cloud);
   const state = tileState([climate, schedule], view.usable);
@@ -57,12 +60,12 @@ export const HeatingTile = ({
   return (
     <>
       <DeviceTile
-        area={area}
+        place={tile}
         state={state}
         onTap={state === 'unavailable' ? undefined : () => setOpen(true)}
         tone={TONE[view.state]}
         icon={<FlameIcon class="size-4" />}
-        label="Heating"
+        label={tile.label}
         right={<HeatWavesIcon demand={view.demand} class="size-5" />}
         status={
           view.state === 'paused' ? (
@@ -86,7 +89,13 @@ export const HeatingTile = ({
           )
         }
       />
-      {open && <HeatingSheet store={store} onClose={() => setOpen(false)} />}
+      {open && (
+        <HeatingSheet
+          tile={tile}
+          store={store}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   );
 };

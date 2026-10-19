@@ -104,13 +104,12 @@
   }
 }
 
-/* Tile grid; areas come from src/grid.ts through --cols, --rows and --areas. */
+/* Tile grid; the size comes from src/lib/grid.ts through --cols and --rows. */
 @utility dash-grid {
   display: grid;
   gap: var(--spacing-gap);
   grid-template-columns: var(--cols);
   grid-template-rows: var(--rows);
-  grid-template-areas: var(--areas);
   /* Pixel shift (src/pixel-shift.ts): glide so a step is never seen. */
   transition:
     transform 60s linear,
@@ -119,6 +118,15 @@
     grid-template-columns: 1fr 1fr;
     grid-template-rows: none;
     grid-auto-rows: minmax(7.5rem, auto);
-    grid-template-areas: var(--areas-narrow);
+  }
+}
+
+/* Where a tile sits: the --col, --row, --w and --h that placeStyle sets. */
+@utility tile-place {
+  grid-column: var(--col) / span var(--w);
+  grid-row: var(--row) / span var(--h);
+  @media (orientation: portrait) {
+    grid-column: span var(--nw);
+    grid-row: auto;
   }
 }

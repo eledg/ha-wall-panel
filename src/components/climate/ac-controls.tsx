@@ -4,19 +4,16 @@ import { FanIcon } from '@/components/icons/fan-icon.tsx';
 import { PowerIcon } from '@/components/icons/power-icon.tsx';
 import { SnowflakeIcon } from '@/components/icons/snowflake-icon.tsx';
 import { ThermoIcon } from '@/components/icons/thermo-icon.tsx';
-import type { EntityKey } from '@/services/ha/store.ts';
 
 import { ClimateButton, pulseClass, WARN } from './climate-controls.tsx';
 
-export type SwitchKey = Extract<
-  EntityKey,
-  'acPowerful' | 'acEconomy' | 'acQuietFan'
->;
+/** The roles of an AC tile that are switches. */
+export type SwitchKey = 'powerful' | 'economy' | 'quietFan';
 
 export const SWITCHES: { key: SwitchKey; label: string }[] = [
-  { key: 'acPowerful', label: 'Powerful' },
-  { key: 'acEconomy', label: 'Economy' },
-  { key: 'acQuietFan', label: 'Quiet' },
+  { key: 'powerful', label: 'Powerful' },
+  { key: 'economy', label: 'Economy' },
+  { key: 'quietFan', label: 'Quiet' },
 ];
 
 export const NORMAL = 'border-line bg-surface-2 text-fg-dim';

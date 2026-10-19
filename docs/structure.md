@@ -5,15 +5,15 @@
 file they cover. ESLint enforces the alias and the layering below
 (`eslint.config.js`).
 
-| Folder        | What belongs here                                                              |
-| ------------- | ------------------------------------------------------------------------------ |
-| `config/`     | The entity list, night hours and shared timings. A leaf: imports nothing.      |
-| `services/`   | The data layer: the HA store, auth, connection, history, perf counters.        |
-| `lib/`        | Plain logic with no preact: formatting, grid, night maths, entity view models. |
-| `hooks/`      | Preact hooks.                                                                  |
-| `components/` | All UI: icons, layout, tiles (`base/` is the shared shell), sheets, controls.  |
-| `dev/mock/`   | The in-page fake HA. Never part of a build.                                    |
-| `types/`      | Ambient globals injected by Vite.                                              |
+| Folder        | What belongs here                                                                    |
+| ------------- | ------------------------------------------------------------------------------------ |
+| `config/`     | The tile and entity schema, night hours and shared timings. A leaf: imports nothing. |
+| `services/`   | The data layer: the HA store, auth, connection, history, perf counters.              |
+| `lib/`        | Plain logic with no preact: formatting, grid, night maths, entity view models.       |
+| `hooks/`      | Preact hooks.                                                                        |
+| `components/` | All UI: icons, layout, tiles (`base/` is the shared shell), sheets, controls.        |
+| `dev/mock/`   | The in-page fake HA. Never part of a build.                                          |
+| `types/`      | Ambient globals injected by Vite.                                                    |
 
 ## Layering
 

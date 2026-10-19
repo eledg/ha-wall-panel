@@ -1,34 +1,35 @@
 # Entity reference
 
-The entities the dashboard uses. Each row is a key in the `entities` object of
-`config.json` (see the README, Configuration); you supply the Home Assistant entity
-ID for each, and it must be in the domain shown.
+The entities each tile reads. A tile in `config.json` (see
+[configuration.md](configuration.md#tiles)) names its entities by the settings
+below; you supply the Home Assistant entity ID for each, and it must be in the
+domain shown. A tile type may appear any number of times.
 
-| Config key          | Domain          | Attributes read                                                                                                                         | Notes                                                                    |
-| ------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `light`             | `switch`        | `state`                                                                                                                                 | The room light. A plain switch: no dimming.                              |
-| `weather`           | `weather`       | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Current conditions plus an hourly forecast. See [Weather](#weather).     |
-| `calendarFamily`    | `calendar`      | `state`; events via REST                                                                                                                | First calendar, drawn in the family colour. See [Calendars](#calendars). |
-| `calendarF1`        | `calendar`      | `state`; events via REST                                                                                                                | Second calendar, drawn in the F1 colour; long F1 titles are shortened.   |
-| `calendarBirthdays` | `calendar`      | `state`; events via REST                                                                                                                | Third calendar: yearly all-day birthdays.                                |
-| `acClimate`         | `climate`       | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | The air conditioner. See [Air conditioning](#air-conditioning).          |
-| `acPowerful`        | `switch`        | `state`                                                                                                                                 | AC Powerful boost.                                                       |
-| `acEconomy`         | `switch`        | `state`                                                                                                                                 | AC economy mode.                                                         |
-| `acQuietFan`        | `switch`        | `state`                                                                                                                                 | AC quiet fan.                                                            |
-| `roomTemperature`   | `sensor`        | `state`                                                                                                                                 | Room temperature. See [Room temperature](#room-temperature).             |
-| `roomHumidity`      | `sensor`        | `state`                                                                                                                                 | Room humidity.                                                           |
-| `roomBattery`       | `sensor`        | `state`                                                                                                                                 | Room sensor battery; diagnostics only.                                   |
-| `heatingClimate`    | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating. See [Heating](#heating).                                |
-| `heatingSchedule`   | `switch`        | `state`                                                                                                                                 | Heating control: on follows the schedule.                                |
-| `heatingDemand`     | `binary_sensor` | `state`                                                                                                                                 | Boiler demand, whole house.                                              |
-| `heatingCloud`      | `binary_sensor` | `state`                                                                                                                                 | Heating cloud link; `off` makes the heating unavailable.                 |
-| `heatingResume`     | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                                                |
-| `heatingBoost`      | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                                          |
+| Tile type     | Setting       | Domain          | Attributes read                                                                                                                         | Notes                                                                   |
+| ------------- | ------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `clock`       | none          |                 |                                                                                                                                         | The time and date.                                                      |
+| `toggle`      | `entity`      | `switch`        | `state`                                                                                                                                 | A room light. A plain switch: no dimming.                               |
+| `weather`     | `entity`      | `weather`       | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Current conditions plus an hourly forecast. See [Weather](#weather).    |
+| `calendar`    | `calendars`   | `calendar`      | `state`; events via REST                                                                                                                | A list of calendars, each with `entity`. See [Calendars](#calendars).   |
+| `ac`          | `climate`     | `climate`       | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | The air conditioner. See [Air conditioning](#air-conditioning).         |
+|               | `powerful`    | `switch`        | `state`                                                                                                                                 | AC Powerful boost.                                                      |
+|               | `economy`     | `switch`        | `state`                                                                                                                                 | AC economy mode.                                                        |
+|               | `quietFan`    | `switch`        | `state`                                                                                                                                 | AC quiet fan.                                                           |
+|               | `room`        | `sensor`        | `state`                                                                                                                                 | Optional. The room temperature shown beside the target in the AC sheet. |
+| `temperature` | `temperature` | `sensor`        | `state`                                                                                                                                 | Room temperature. See [Room temperature](#room-temperature).            |
+|               | `humidity`    | `sensor`        | `state`                                                                                                                                 | Room humidity.                                                          |
+|               | `battery`     | `sensor`        | `state`                                                                                                                                 | Optional. Room sensor battery; diagnostics only.                        |
+| `heating`     | `climate`     | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating. See [Heating](#heating).                               |
+|               | `schedule`    | `switch`        | `state`                                                                                                                                 | Heating control: on follows the schedule.                               |
+|               | `demand`      | `binary_sensor` | `state`                                                                                                                                 | Boiler demand, whole house.                                             |
+|               | `cloud`       | `binary_sensor` | `state`                                                                                                                                 | Heating cloud link; `off` makes the heating unavailable.                |
+|               | `resume`      | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                                               |
+|               | `boost`       | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                                         |
 
 ## Calendars
 
-Only the three calendars above are shown (`calendarFamily`, `calendarF1`,
-`calendarBirthdays`); any other calendar in HA is ignored.
+Only the calendars listed in a `calendar` tile are shown; any other calendar in
+HA is ignored. Several tiles may each list their own.
 
 - **State** is `on` while an event is in progress, else `off`. The attributes
   describe a single event (`message`, `all_day`, `start_time`, `end_time`), so
@@ -51,13 +52,13 @@ Only the three calendars above are shown (`calendarFamily`, `calendarF1`,
     the store drops the description for that calendar and the sheet shows no notes.
 - **Order is not guaranteed.** Neither this endpoint nor the `calendar.get_events`
   service sorts or takes a sort option, so the tile sorts by start time.
-- F1 summaries (when `calendarF1` is an F1 calendar) are long and carry sponsor
+- F1 summaries (for a calendar of `kind` `f1`) are long and carry sponsor
   names (`🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race`), so the store rewrites them as
   `🏁 F1 Singapore - Race`: the leading emoji, `F1`, the event's `location`
   (clean: `Singapore`, `United States`, ...) and the text after the last `-`.
   Sessions seen in 2026: Practice 1-3, Qualifying, Race, Sprint Qualification and
   Sprint Race. A title that doesn't fit the pattern, or has no location, is kept
-  as HA sends it. Other calendars' titles are untouched. The detail sheet shows the title in full, as HA sends it.
+  as HA sends it. Other calendars' titles are untouched. A calendar of `kind` `birthdays` also gets the age from a `Born 1977` note. The detail sheet shows the title in full, as HA sends it.
 - **Health:** a calendar whose entity is missing is a config error and is left out.
   One that is `unavailable` is usually transient, so its cached events stay,
   flagged in the legend. Cached events are badged `stale` once 15 minutes pass
@@ -86,7 +87,7 @@ daily forecasts shows current conditions alone.
 
 ## Air conditioning
 
-One unit is shown, the `acClimate` entity; any other climate entity is ignored. The tile (`components/tiles/ac-tile.tsx`) opens a control
+One unit is shown per `ac` tile, from its `climate` entity. The tile (`components/tiles/ac-tile.tsx`) opens a control
 sheet (`ac-sheet.tsx`).
 
 - **State** is the HVAC mode: `off`, `cool`, `heat`, `fan_only`, `dry` or `auto`.
@@ -114,11 +115,11 @@ sheet (`ac-sheet.tsx`).
 
 The room tile (`components/tiles/temperature-tile.tsx`) reads one temperature and
 humidity sensor (tested with a Shelly BLU H&T):
-`roomTemperature` (shown to one decimal) and
-`roomHumidity` (whole percent, with a droplet, above the
+`temperature` (shown to one decimal) and
+`humidity` (whole percent, with a droplet, above the
 temperature). A missing, `unavailable` or non-numeric
 temperature shows "— n/a"; an unusable humidity shows "—" and leaves the
-temperature alone. `roomBattery` is subscribed too, but only so the diagnostics
+temperature alone. `battery` is subscribed too, but only so the diagnostics
 screen lists it (`100 %`); no tile shows it.
 
 ## Heating
@@ -126,34 +127,34 @@ screen lists it (`100 %`); no tile shows it.
 The Heating tile (`components/tiles/heating-tile.tsx`) and its sheet
 (`heating-sheet.tsx`) show the **whole-house** heating (tested with Tado). The tile shows the
 target (or "Off"), with no humidity, as in the design; the sheet shows the room
-temperature from the `heatingClimate` entity, the room the heating controls.
+temperature from the `climate` entity, the room the heating controls.
 
 Two signals, kept separate (`heating-model.ts`):
 
-| State    | Power (`heatingClimate`) | Control (`heatingSchedule`) |
-| -------- | ------------------------ | --------------------------- |
-| Schedule | `heat`                   | `on`                        |
-| Manual   | `heat`                   | `off`                       |
-| Off      | `off`                    | `off`                       |
-| Paused   | `off`                    | `on`                        |
+| State    | Power (`climate`) | Control (`schedule`) |
+| -------- | ----------------- | -------------------- |
+| Schedule | `heat`            | `on`                 |
+| Manual   | `heat`            | `off`                |
+| Off      | `off`             | `off`                |
+| Paused   | `off`             | `on`                 |
 
 - **Control comes from the schedule switch**, not a zone-mode sensor:
   after switching off by hand the zone mode lags the switch by ~4 s and would show
   a false "Paused".
 - **Paused** is Tado's automatic ~15-minute shut-off (probably open-window
   detection, unconfirmed). The UI says "Paused" and never a cause or countdown.
-- **Demand** (`heatingDemand`) is home-wide and drives the
+- **Demand** (`demand`) is home-wide and drives the
   heat-waves icon alone: filled when `on`, outlined when `off`, in every state. In
   Schedule or Manual the target can be reached with no demand, so a lit tile with
   outlined waves is correct.
 - **Unavailable**: the climate or schedule entity unusable, or
-  `heatingCloud` `off`. The cloud
+  `cloud` `off`. The cloud
   link drops without an error, so this is the only signal that the data is stale.
 - **Services**: power is `climate.set_hvac_mode` (`heat` / `off`); the target is
   `climate.set_temperature` (5 to 30, 0.5 steps; the entity has no
   `target_temp_step`), with rapid taps sent as one call. Resume is `button.press`
-  on `heatingResume` and Boost on
-  `heatingBoost`. The buttons stay `unknown` after a press, so
+  on `resume` and Boost on
+  `boost`. The buttons stay `unknown` after a press, so
   the sheet's pending state is a short local timer, and Boost shows no state.
 - **Resume** is enabled in Manual and Off (`canResume`). Whether Resume from Off
   returns to the schedule is **untested**.

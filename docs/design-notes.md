@@ -40,7 +40,7 @@ how to deploy is in [deploy.md](deploy.md).
   trusted-network sign-in replaced it.)
 - **Room temperature** comes from a separate sensor, not the display's own,
   which reads about 3 to 4 degrees C warm while the display is active.
-- **Configuration at runtime:** entity IDs live in a `config.json` beside the
+- **Configuration at runtime:** the tiles, their layout and entity IDs live in a `config.json` beside the
   app's folder rather than in the build, so a release is generic and a deploy
   never wipes your config.
 

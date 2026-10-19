@@ -3,8 +3,8 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { entityId } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { entityId } from '@/tests/ids.ts';
 
 import { createMockHa } from './engine.ts';
 import { Overlay } from './overlay.tsx';
@@ -81,16 +81,22 @@ describe('Overlay', () => {
     await press('Mock');
 
     await press('Snow');
-    expect(store.getSnapshot().entities.weather?.state).toBe('snowy');
+    expect(store.getSnapshot().entities[entityId('weather')]?.state).toBe(
+      'snowy',
+    );
     expect(document.body.textContent).toContain(`${id}: snowy`);
 
     await press('Missing');
     expect(document.body.textContent).toContain(`${id}: missing`);
     await press('Restore');
-    expect(store.getSnapshot().entities.weather?.state).toBe('snowy');
+    expect(store.getSnapshot().entities[entityId('weather')]?.state).toBe(
+      'snowy',
+    );
 
     await press('Unavailable');
-    expect(store.getSnapshot().entities.weather?.state).toBe('unavailable');
+    expect(store.getSnapshot().entities[entityId('weather')]?.state).toBe(
+      'unavailable',
+    );
 
     await press('Disconnected');
     expect(store.getSnapshot().status).toBe('disconnected');
@@ -120,7 +126,9 @@ describe('Overlay', () => {
     await press('Rain');
 
     await vi.waitFor(() => expect(error).toHaveBeenCalled());
-    expect(store.getSnapshot().entities.weather?.state).toBe('rainy');
+    expect(store.getSnapshot().entities[entityId('weather')]?.state).toBe(
+      'rainy',
+    );
     error.mockRestore();
   });
 });

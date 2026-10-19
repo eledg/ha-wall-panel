@@ -1,4 +1,4 @@
-import { entityId } from '@/config/config.ts';
+import { entitiesOf } from '@/dev/mock/entities.ts';
 import { HEATING_STATES } from '@/dev/mock/scenarios/heating.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
@@ -11,9 +11,7 @@ export const heatingPanel: MockPanel = {
   title: 'Heating',
   Panel: ({ mock }) => {
     useMockChanges(mock);
-    const climate = entityId('heatingClimate');
-    const demand = entityId('heatingDemand');
-    const cloud = entityId('heatingCloud');
+    const { climate, demand, cloud } = entitiesOf('heating');
     const state = mock.getState(climate);
     const attrs = state?.attributes ?? {};
     return (

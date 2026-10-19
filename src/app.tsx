@@ -5,31 +5,13 @@ import { ConfigWarning } from '@/components/layout/config-warning.tsx';
 import { DisconnectedBanner } from '@/components/layout/disconnected-banner.tsx';
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
 import { Shell } from '@/components/layout/shell.tsx';
-import { AcTile } from '@/components/tiles/ac-tile.tsx';
-import { CalendarTile } from '@/components/tiles/calendar-tile.tsx';
-import { ClockTile } from '@/components/tiles/clock-tile.tsx';
-import { HeatingTile } from '@/components/tiles/heating-tile.tsx';
-import { TemperatureTile } from '@/components/tiles/temperature-tile.tsx';
-import { ToggleTile } from '@/components/tiles/toggle-tile.tsx';
-import { WeatherTile } from '@/components/tiles/weather-tile.tsx';
+import { renderTile } from '@/components/tiles/render-tile.tsx';
 import { getConfig } from '@/config/config.ts';
 
 export const App = () => (
   <>
     <Shell>
-      <HaConnection>
-        <ClockTile area="clock" />
-        <WeatherTile area="weather" />
-        <CalendarTile area="cal" />
-        <ToggleTile
-          entity="light"
-          label={getConfig().labels.light}
-          area="light"
-        />
-        <TemperatureTile area="temp" />
-        <HeatingTile area="heat" />
-        <AcTile area="ac" />
-      </HaConnection>
+      <HaConnection>{getConfig().tiles.map(renderTile)}</HaConnection>
     </Shell>
     <ConfigWarning />
     <DisconnectedBanner />

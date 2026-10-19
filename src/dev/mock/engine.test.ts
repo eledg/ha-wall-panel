@@ -1,8 +1,9 @@
 import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it, vi } from 'vitest';
 
-import { entityId, getConfig } from '@/config/config.ts';
+import { entityRefs } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { entityId } from '@/tests/ids.ts';
 
 import { createMockHa, UNRELATED_ID } from './engine.ts';
 
@@ -15,9 +16,9 @@ const AC_SWITCHES = [
   entityId('acQuietFan'),
 ];
 const CALENDARS = [
-  getConfig().entities.calendarFamily,
-  getConfig().entities.calendarF1,
-  getConfig().entities.calendarBirthdays,
+  entityId('calendarFamily'),
+  entityId('calendarF1'),
+  entityId('calendarBirthdays'),
 ];
 
 const connect = async () => {
@@ -56,7 +57,7 @@ describe('createMockHa', () => {
         entityId('heatingCloud'),
         entityId('heatingResume'),
         entityId('heatingBoost'),
-        ...CALENDARS.map(({ id }) => id),
+        ...CALENDARS,
         UNRELATED_ID,
       ].sort(),
     );
@@ -221,32 +222,17 @@ describe('store against the mock', () => {
 
     const { status, entities } = store.getSnapshot();
     expect(status).toBe('connected');
-    expect(Object.keys(entities).sort()).toEqual([
-      'acClimate',
-      'acEconomy',
-      'acPowerful',
-      'acQuietFan',
-      'calendarBirthdays',
-      'calendarF1',
-      'calendarFamily',
-      'heatingBoost',
-      'heatingClimate',
-      'heatingCloud',
-      'heatingDemand',
-      'heatingResume',
-      'heatingSchedule',
-      'light',
-      'roomBattery',
-      'roomHumidity',
-      'roomTemperature',
-      'weather',
-    ]);
+    expect(Object.keys(entities).sort()).toEqual(
+      [...new Set(entityRefs().map(({ id }) => id))].sort(),
+    );
 
-    await store.callService('light', 'toggle');
-    expect(store.getSnapshot().entities.light?.state).toBe('on');
+    await store.callService('switch', LIGHT, 'toggle');
+    expect(store.getSnapshot().entities[entityId('light')]?.state).toBe('on');
 
     mock.controls.setUnavailable(LIGHT);
-    expect(store.getSnapshot().entities.light?.state).toBe('unavailable');
+    expect(store.getSnapshot().entities[entityId('light')]?.state).toBe(
+      'unavailable',
+    );
   });
 });
 
@@ -257,14 +243,14 @@ describe('mock service failures', () => {
     await store.start(mock.getAuth);
     mock.controls.failServices(true);
 
-    await expect(store.callService('light', 'toggle')).rejects.toThrow(
+    await expect(store.callService('switch', LIGHT, 'toggle')).rejects.toThrow(
       'service call failed',
     );
-    expect(store.getSnapshot().entities.light?.state).toBe('off');
+    expect(store.getSnapshot().entities[entityId('light')]?.state).toBe('off');
 
     mock.controls.failServices(false);
-    await store.callService('light', 'toggle');
-    expect(store.getSnapshot().entities.light?.state).toBe('on');
+    await store.callService('switch', LIGHT, 'toggle');
+    expect(store.getSnapshot().entities[entityId('light')]?.state).toBe('on');
   });
 });
 
@@ -282,11 +268,11 @@ describe('mock weather controls', () => {
     mock.controls.setWeather('snowy');
 
     await vi.waitFor(() =>
-      expect(store.getSnapshot().forecasts.weather?.[2]?.condition).toBe(
-        'snowy',
-      ),
+      expect(
+        store.getSnapshot().forecasts[entityId('weather')]?.[2]?.condition,
+      ).toBe('snowy'),
     );
-    expect(store.getSnapshot().entities.weather).toMatchObject({
+    expect(store.getSnapshot().entities[entityId('weather')]).toMatchObject({
       state: 'snowy',
       attributes: { temperature: -1 },
     });
@@ -295,13 +281,15 @@ describe('mock weather controls', () => {
   it('drops the old forecast when the entity has no hourly support', async () => {
     const { mock, store } = await setup();
     await vi.waitFor(() =>
-      expect(store.getSnapshot().forecasts.weather).toBeDefined(),
+      expect(store.getSnapshot().forecasts[entityId('weather')]).toBeDefined(),
     );
 
     mock.controls.setWeather('no-forecast');
 
     await vi.waitFor(() =>
-      expect(store.getSnapshot().forecasts.weather).toBeUndefined(),
+      expect(
+        store.getSnapshot().forecasts[entityId('weather')],
+      ).toBeUndefined(),
     );
   });
 
@@ -310,7 +298,7 @@ describe('mock weather controls', () => {
 
     mock.controls.removeEntity(WEATHER);
 
-    expect(store.getSnapshot().entities.weather).toBeUndefined();
+    expect(store.getSnapshot().entities[entityId('weather')]).toBeUndefined();
     await expect(
       mock.deps.callService(
         {} as never,
@@ -337,16 +325,16 @@ describe('mock weather controls', () => {
   it('keeps the last forecast when fetches fail', async () => {
     const { mock, store } = await setup();
     await vi.waitFor(() =>
-      expect(store.getSnapshot().forecasts.weather).toBeDefined(),
+      expect(store.getSnapshot().forecasts[entityId('weather')]).toBeDefined(),
     );
-    const before = store.getSnapshot().forecasts.weather;
+    const before = store.getSnapshot().forecasts[entityId('weather')];
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mock.controls.failForecast(true);
     mock.controls.setWeather('rainy');
 
     await vi.waitFor(() => expect(error).toHaveBeenCalled());
-    expect(store.getSnapshot().forecasts.weather).toBe(before);
+    expect(store.getSnapshot().forecasts[entityId('weather')]).toBe(before);
     error.mockRestore();
   });
 

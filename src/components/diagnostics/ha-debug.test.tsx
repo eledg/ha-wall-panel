@@ -4,9 +4,10 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
-import { entityId, getConfig } from '@/config/config.ts';
+import { entityRefs } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
+import { entityId } from '@/tests/ids.ts';
 
 import { HaDebug } from './ha-debug.tsx';
 
@@ -48,7 +49,7 @@ describe('HaDebug', () => {
     expect(text).toContain('on');
     expect(text).toContain('No event now');
     expect(text).toContain(
-      `${Object.keys(getConfig().entities).length} entities`,
+      `${new Set(entityRefs().map(({ id }) => id)).size} entities`,
     );
   });
 
@@ -71,6 +72,6 @@ describe('HaDebug', () => {
     );
 
     expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)));
-    expect(ids).toHaveLength(Object.keys(getConfig().entities).length);
+    expect(ids).toHaveLength(new Set(entityRefs().map(({ id }) => id)).size);
   });
 });

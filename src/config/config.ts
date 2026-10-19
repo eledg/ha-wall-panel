@@ -12,55 +12,118 @@ export type EntityDomain =
   | 'switch'
   | 'weather';
 
-export type EntitySpec = { domain: EntityDomain; id: string };
+type RoleSpec = { domain: EntityDomain; optional?: true };
 
 /**
- * The entities the dashboard needs, and the Home Assistant domain each must be
- * in. The IDs themselves come from `config.json` (see `load.ts`); the domain is
- * fixed here because the app calls domain-specific services on them.
+ * The tile types, and the entities ("roles") each one reads. The IDs come from
+ * `config.json` (see `load.ts`); the domain of each role is fixed here because
+ * the app calls domain-specific services on them. A calendar tile has no roles:
+ * it lists its calendars instead (see `CalendarSource`).
  */
-export const ENTITY_DOMAINS = {
-  /** A room light, a plain switch: no dimming. */
-  light: 'switch',
+export const TILE_ROLES = {
+  /** The time and date. */
+  clock: {},
   /** Current conditions plus hourly forecast. */
-  weather: 'weather',
-  /** Shared family calendar. */
-  calendarFamily: 'calendar',
-  /** Formula 1 race weekends. */
-  calendarF1: 'calendar',
-  /** Birthdays: yearly all-day events. */
-  calendarBirthdays: 'calendar',
-  /** Air conditioning: mode, target, fan speed and swing. */
-  acClimate: 'climate',
-  /** AC "Powerful" boost. */
-  acPowerful: 'switch',
-  /** AC economy mode. */
-  acEconomy: 'switch',
-  /** AC quiet fan. */
-  acQuietFan: 'switch',
-  /** Room temperature sensor. */
-  roomTemperature: 'sensor',
-  /** Room humidity, from the same sensor. */
-  roomHumidity: 'sensor',
-  /** Battery of the room sensor; shown in the diagnostics screen only. */
-  roomBattery: 'sensor',
-  /** Central heating: power (`heat` / `off`), target and room temperature. */
-  heatingClimate: 'climate',
-  /** Heating control: on follows the schedule, off is manual (or switched off). */
-  heatingSchedule: 'switch',
-  /** Whether the heating is asking the boiler for heat, for the whole house. */
-  heatingDemand: 'binary_sensor',
-  /** Cloud connection of the heating: its data goes stale silently when it drops. */
-  heatingCloud: 'binary_sensor',
-  /** Returns the heating to its schedule. Press-only: the state is never read. */
-  heatingResume: 'button',
-  /** Boosts heating. Press-only: the state is never read. */
-  heatingBoost: 'button',
-} as const satisfies Record<string, EntityDomain>;
+  weather: { entity: { domain: 'weather' } },
+  /** One or more calendars, merged into an agenda. */
+  calendar: {},
+  /** A plain switch, a room light with no dimming. */
+  toggle: { entity: { domain: 'switch' } },
+  /** A room's temperature and humidity. */
+  temperature: {
+    temperature: { domain: 'sensor' },
+    humidity: { domain: 'sensor' },
+    /** Shown in the diagnostics screen only. */
+    battery: { domain: 'sensor', optional: true },
+  },
+  /** Central heating. */
+  heating: {
+    /** Power (`heat` / `off`), target and room temperature. */
+    climate: { domain: 'climate' },
+    /** On follows the schedule, off is manual (or switched off). */
+    schedule: { domain: 'switch' },
+    /** Whether the heating is asking the boiler for heat. */
+    demand: { domain: 'binary_sensor' },
+    /** Cloud connection of the heating: its data goes stale silently when it drops. */
+    cloud: { domain: 'binary_sensor' },
+    /** Returns the heating to its schedule. Press-only: the state is never read. */
+    resume: { domain: 'button' },
+    /** Boosts heating. Press-only: the state is never read. */
+    boost: { domain: 'button' },
+  },
+  /** Air conditioning. */
+  ac: {
+    /** Mode, target, fan speed and swing. */
+    climate: { domain: 'climate' },
+    powerful: { domain: 'switch' },
+    economy: { domain: 'switch' },
+    quietFan: { domain: 'switch' },
+    /** Room temperature, shown beside the target in the controls. */
+    room: { domain: 'sensor', optional: true },
+  },
+} as const satisfies Record<string, Record<string, RoleSpec>>;
 
-export type EntityKey = keyof typeof ENTITY_DOMAINS;
+export type TileType = keyof typeof TILE_ROLES;
 
-export const ENTITY_KEYS = Object.keys(ENTITY_DOMAINS) as EntityKey[];
+export const TILE_TYPES = Object.keys(TILE_ROLES) as TileType[];
+
+type Roles<T extends TileType> = (typeof TILE_ROLES)[T];
+type OptionalRole<
+  T extends TileType,
+  R extends keyof Roles<T>,
+> = Roles<T>[R] extends { optional: true } ? true : false;
+
+/** The entity IDs of one tile, by role. Optional roles may be absent. */
+export type TileEntities<T extends TileType> = {
+  [R in keyof Roles<T> as OptionalRole<T, R> extends true ? never : R]: string;
+} & {
+  [R in keyof Roles<T> as OptionalRole<T, R> extends true ? R : never]?: string;
+};
+
+/** Calendar colours, named after the palette in `index.css`. */
+export const CALENDAR_COLORS = ['yellow', 'blue', 'green'] as const;
+export type CalendarColor = (typeof CALENDAR_COLORS)[number];
+
+/**
+ * Tidying the app applies to a calendar's events: `f1` shortens race titles and
+ * drops the promotional notes, `birthdays` adds the age from a "Born 1977" note.
+ */
+export const CALENDAR_KINDS = ['f1', 'birthdays'] as const;
+export type CalendarKind = (typeof CALENDAR_KINDS)[number];
+
+export type CalendarSource = {
+  entity: string;
+  label: string;
+  color: CalendarColor;
+  kind?: CalendarKind;
+};
+
+/** Where a tile sits on the grid: 1-based column and row, and how many it spans. */
+export type Placement = { col: number; row: number; w: number; h: number };
+
+/** The landscape grid. */
+export const GRID_COLS = 6;
+export const GRID_ROWS = 3;
+
+/** The default name shown on a tile, when its config gives no `label`. */
+export const DEFAULT_LABEL: Record<TileType, string> = {
+  clock: '',
+  weather: 'Weather',
+  calendar: 'Calendar',
+  toggle: 'Light',
+  temperature: 'Room',
+  heating: 'Heating',
+  ac: 'AC',
+};
+
+export type TileConfig<T extends TileType = TileType> = T extends TileType
+  ? Placement & {
+      id: string;
+      type: T;
+      label: string;
+      entities: TileEntities<T>;
+    } & (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown)
+  : never;
 
 /**
  * Night mode (src/lib/night.ts): from `startHour` until `endHour` local time the
@@ -73,62 +136,68 @@ export type NightConfig = {
   wakeMs: number;
 };
 
-/** Names shown on the tiles and sheets that stand for one room or device. */
-export type Labels = { light: string; room: string; ac: string };
-
 export const DEFAULT_NIGHT: NightConfig = {
   startHour: 21,
   endHour: 7,
   wakeMs: 15_000,
 };
 
-export const DEFAULT_LABELS: Labels = {
-  light: 'Light',
-  room: 'Room',
-  ac: 'AC',
-};
-
-/** What `validateConfig` accepts; looser than `RuntimeConfig` so tests can pass a few entities. */
-export type Config = {
-  entities: Record<string, EntitySpec>;
-  night?: NightConfig;
-};
-
 export type RuntimeConfig = {
-  entities: Record<EntityKey, EntitySpec>;
+  tiles: TileConfig[];
   night: NightConfig;
-  labels: Labels;
 };
 
+/** What `validateConfig` accepts: a config whose night settings may be left out. */
+export type Config = { tiles: TileConfig[]; night?: NightConfig };
+
+/** `key` says where: a tile path such as `tiles[2].climate`, or a top-level setting. */
 export type ConfigIssue = { key: string; message: string };
 
-/** Every entity set to `value(key)`, in its fixed domain. */
-export const entitiesFrom = (
-  value: (key: EntityKey) => string,
-): RuntimeConfig['entities'] =>
-  Object.fromEntries(
-    ENTITY_KEYS.map((key) => [
-      key,
-      { domain: ENTITY_DOMAINS[key], id: value(key) },
-    ]),
-  ) as RuntimeConfig['entities'];
-
-/**
- * The live configuration: all placeholders until `applyConfig` replaces it,
- * once, before the app starts (from `config.json`, or the mock's fixture).
- * Read it through `getConfig` / `entityId` at the point of use, never at
- * import time, when it may not be loaded yet.
- */
-let current: RuntimeConfig = {
-  entities: entitiesFrom(placeholder),
-  night: DEFAULT_NIGHT,
-  labels: DEFAULT_LABELS,
+/** One entity a tile reads, with where it was configured. */
+export type EntityRef = {
+  /** Where in `config.json`, such as `tiles[2].climate`. */
+  path: string;
+  id: string;
+  domain: EntityDomain;
 };
 
-export const getConfig = () => current;
+const roleSpecs = (type: TileType) =>
+  Object.entries(TILE_ROLES[type] as Record<string, RoleSpec>);
 
-/** The Home Assistant entity ID configured for `key`. */
-export const entityId = (key: EntityKey) => current.entities[key].id;
+/** Every entity the tiles read, including the calendars of a calendar tile. */
+export const entityRefs = (cfg: Config = current): EntityRef[] =>
+  cfg.tiles.flatMap((tile, index): EntityRef[] => {
+    const at = `tiles[${index}]`;
+    const entities = tile.entities as Record<string, string | undefined>;
+    const roles = roleSpecs(tile.type).flatMap(([role, spec]) => {
+      const id = entities[role];
+      if (id === undefined && spec.optional) return [];
+      return [{ path: `${at}.${role}`, id: id ?? '', domain: spec.domain }];
+    });
+    const calendars =
+      tile.type === 'calendar'
+        ? tile.calendars.map((source, n): EntityRef => ({
+            path: `${at}.calendars[${n}]`,
+            id: source.entity,
+            domain: 'calendar',
+          }))
+        : [];
+    return [...roles, ...calendars];
+  });
+
+/** The first configured tile of `type`, if there is one. */
+export const firstTile = <T extends TileType>(type: T, cfg: Config = current) =>
+  cfg.tiles.find((tile) => tile.type === type) as TileConfig<T> | undefined;
+
+/**
+ * The live configuration: no tiles until `applyConfig` replaces it, once,
+ * before the app starts (from `config.json`, or the mock's fixture). Read it
+ * through `getConfig` at the point of use, never at import time, when it may not
+ * be loaded yet.
+ */
+let current: RuntimeConfig = { tiles: [], night: DEFAULT_NIGHT };
+
+export const getConfig = () => current;
 
 /** Problems found while reading `config.json`, shown with the live config's own. */
 let loadIssues: ConfigIssue[] = [];
@@ -144,7 +213,7 @@ export const applyConfig = (
   loaded = true;
 };
 
-/** `config.json` could not be read: the entities stay placeholders. */
+/** `config.json` could not be read: there are no tiles. */
 export const markConfigUnavailable = (message: string) => {
   loadIssues = [{ key: 'config.json', message }];
   loaded = false;
@@ -152,16 +221,32 @@ export const markConfigUnavailable = (message: string) => {
 
 const ENTITY_ID = /^([a-z_]+)\.([a-z0-9_]+)$/;
 
+/** What is wrong with one entity ID, or `undefined` when it is usable. */
+export const entityProblem = ({ id, domain }: EntityRef) => {
+  if (id.trim() === '') return 'entity ID is missing';
+  if (id.startsWith(PLACEHOLDER_PREFIX))
+    return 'entity ID is still a placeholder';
+  const match = ENTITY_ID.exec(id);
+  if (!match) return `"${id}" is not a valid entity ID`;
+  if (match[1] !== domain) return `"${id}" should be in the ${domain} domain`;
+  return undefined;
+};
+
 /**
- * Returns one issue per missing, placeholder or malformed entity. For the live
- * config it also reports what went wrong reading `config.json`; if that file
- * could not be read at all, that is the only issue.
+ * Returns one issue per missing, placeholder or malformed entity, plus bad
+ * placement and duplicate tile IDs. For the live config it also reports what
+ * went wrong reading `config.json`; if that file could not be read at all, that
+ * is the only issue.
  */
 export const validateConfig = (cfg: Config = current): ConfigIssue[] => {
-  if (cfg !== current)
-    return [...validateEntities(cfg), ...validateNight(cfg.night)];
+  const own = [
+    ...validateTiles(cfg),
+    ...validateEntities(cfg),
+    ...validateNight(cfg.night),
+  ];
+  if (cfg !== current) return own;
   if (!loaded) return loadIssues;
-  return [...loadIssues, ...validateEntities(cfg), ...validateNight(cfg.night)];
+  return [...loadIssues, ...own];
 };
 
 const validateNight = (night?: NightConfig): ConfigIssue[] => {
@@ -177,15 +262,56 @@ const validateNight = (night?: NightConfig): ConfigIssue[] => {
 };
 
 const validateEntities = (cfg: Config): ConfigIssue[] =>
-  Object.entries(cfg.entities).flatMap(
-    ([key, { domain, id }]): ConfigIssue[] => {
-      if (id.trim() === '') return [{ key, message: 'entity ID is missing' }];
-      if (id.startsWith(PLACEHOLDER_PREFIX))
-        return [{ key, message: 'entity ID is still a placeholder' }];
-      const match = ENTITY_ID.exec(id);
-      if (!match) return [{ key, message: `"${id}" is not a valid entity ID` }];
-      if (match[1] !== domain)
-        return [{ key, message: `"${id}" should be in the ${domain} domain` }];
-      return [];
-    },
-  );
+  entityRefs(cfg).flatMap((ref): ConfigIssue[] => {
+    const message = entityProblem(ref);
+    return message ? [{ key: ref.path, message }] : [];
+  });
+
+const whole = (n: number) => Number.isInteger(n);
+
+const validateTiles = ({ tiles }: Config): ConfigIssue[] => {
+  if (tiles.length === 0)
+    return [{ key: 'tiles', message: 'no tiles are configured' }];
+  const issues: ConfigIssue[] = [];
+  const seen = new Set<string>();
+  const taken = new Map<string, string>();
+  tiles.forEach((tile, index) => {
+    const at = `tiles[${index}]`;
+    if (seen.has(tile.id))
+      issues.push({ key: `${at}.id`, message: `"${tile.id}" is used twice` });
+    seen.add(tile.id);
+
+    const { col, row, w, h } = tile;
+    const fits =
+      [col, row, w, h].every(whole) &&
+      col >= 1 &&
+      row >= 1 &&
+      w >= 1 &&
+      h >= 1 &&
+      col + w - 1 <= GRID_COLS &&
+      row + h - 1 <= GRID_ROWS;
+    if (!fits) {
+      issues.push({
+        key: at,
+        message: `must sit inside the ${GRID_COLS} x ${GRID_ROWS} grid (col, row, w and h are whole numbers from 1)`,
+      });
+      return;
+    }
+    for (let r = row; r < row + h; r++) {
+      for (let c = col; c < col + w; c++) {
+        const cell = `${c},${r}`;
+        const other = taken.get(cell);
+        if (other !== undefined) {
+          issues.push({
+            key: at,
+            message: `overlaps "${other}" at column ${c}, row ${r}`,
+          });
+          return;
+        }
+      }
+    }
+    for (let r = row; r < row + h; r++)
+      for (let c = col; c < col + w; c++) taken.set(`${c},${r}`, tile.id);
+  });
+  return issues;
+};

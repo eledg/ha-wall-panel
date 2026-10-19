@@ -1,8 +1,8 @@
 import { DropletIcon } from '@/components/icons/droplet-icon.tsx';
 import { WeatherIcon } from '@/components/icons/weather-icon.tsx';
 import type { IconCondition } from '@/components/icons/weather-icon.tsx';
+import type { TileConfig } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
-import type { GridArea } from '@/lib/grid.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { ForecastItem, HaStore } from '@/services/ha/store.ts';
 
@@ -65,23 +65,18 @@ const hour = (datetime: string) =>
  * showing the last known state, dimmed and badged stale.
  */
 export const WeatherTile = ({
-  area,
+  tile,
   store = haStore,
   now = () => new Date(),
 }: {
-  area: GridArea;
+  tile: TileConfig<'weather'>;
   store?: HaStore;
   now?: () => Date;
 }) => {
+  const id = tile.entities.entity;
   const [status, subscribed, entity, forecast] = useSnapshot(
     store,
-    (s) =>
-      [
-        s.status,
-        s.subscribed,
-        s.entities.weather,
-        s.forecasts.weather,
-      ] as const,
+    (s) => [s.status, s.subscribed, s.entities[id], s.forecasts[id]] as const,
   );
   const usable =
     entity !== undefined &&
@@ -95,10 +90,10 @@ export const WeatherTile = ({
   else if (!entity) state = 'loading';
   else if (!usable) state = 'unavailable';
 
-  if (state === 'loading') return <Tile area={area} state="loading" />;
+  if (state === 'loading') return <Tile place={tile} state="loading" />;
   if (!usable || !entity) {
     return (
-      <Tile area={area} state="unavailable">
+      <Tile place={tile} state="unavailable">
         <div class="flex h-full flex-col justify-center gap-1">
           <Unavailable label="Weather unavailable" />
           <div class="text-sm text-fg-dim">
@@ -114,7 +109,7 @@ export const WeatherTile = ({
   const periods = pickForecast(forecast ?? [], at);
   const rainNow = currentPeriod(forecast ?? [], at)?.precipitation_probability;
   return (
-    <Tile area={area} state={state}>
+    <Tile place={tile} state={state}>
       <div class="flex h-full items-center gap-4">
         <div class="flex shrink-0 items-center gap-3">
           <WeatherIcon condition={icon} class="size-16 text-fg" />

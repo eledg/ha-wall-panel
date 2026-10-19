@@ -13,6 +13,7 @@ import {
 } from '@/components/climate/heating-history.tsx';
 import { TargetStepper } from '@/components/climate/target-stepper.tsx';
 import { HeatWavesIcon } from '@/components/icons/heat-waves-icon.tsx';
+import type { TileConfig } from '@/config/config.ts';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import {
   useClimateCommands,
@@ -47,18 +48,21 @@ type Window = { start: number; end: number; intervals: Interval[] | undefined };
  * reports their state), so their pending state is a short local timer.
  */
 export const HeatingSheet = ({
+  tile,
   onClose,
   store = haStore,
   idleMs = IDLE_CLOSE_MS,
 }: {
+  tile: TileConfig<'heating'>;
   onClose: () => void;
   store?: HaStore;
   idleMs?: number;
 }) => {
-  const climate = useSnapshot(store, (s) => s.entities.heatingClimate);
-  const schedule = useSnapshot(store, (s) => s.entities.heatingSchedule);
-  const demand = useSnapshot(store, (s) => s.entities.heatingDemand);
-  const cloud = useSnapshot(store, (s) => s.entities.heatingCloud);
+  const { entities } = tile;
+  const climate = useSnapshot(store, (s) => s.entities[entities.climate]);
+  const schedule = useSnapshot(store, (s) => s.entities[entities.schedule]);
+  const demand = useSnapshot(store, (s) => s.entities[entities.demand]);
+  const cloud = useSnapshot(store, (s) => s.entities[entities.cloud]);
   const offline = useOffline();
   const view = readHeating(climate, schedule, demand, cloud);
   const commands = useClimateCommands(view, {
@@ -74,7 +78,9 @@ export const HeatingSheet = ({
     limits: view,
     commands,
     call: (temperature) =>
-      store.callService('heatingClimate', 'set_temperature', { temperature }),
+      store.callService('climate', entities.climate, 'set_temperature', {
+        temperature,
+      }),
   });
   const [history, setHistory] = useState<Window>();
 
@@ -87,7 +93,7 @@ export const HeatingSheet = ({
       const end = Date.now();
       const start = end - HISTORY_HOURS * 3_600_000;
       store
-        .history('heatingDemand', new Date(start), new Date(end))
+        .history(entities.demand, new Date(start), new Date(end))
         .then(
           (rows) => toIntervals(rows, start, end),
           (err: unknown) => {
@@ -110,13 +116,13 @@ export const HeatingSheet = ({
       cancelled = true;
       clearInterval(timer);
     };
-  }, [store]);
+  }, [store, entities.demand]);
 
   const togglePower = () => {
     const next = !view.on;
     send(
       { key: 'power', power: next, done: (v) => v.on === next },
-      store.callService('heatingClimate', 'set_hvac_mode', {
+      store.callService('climate', entities.climate, 'set_hvac_mode', {
         hvac_mode: next ? 'heat' : 'off',
       }),
     );
@@ -124,10 +130,7 @@ export const HeatingSheet = ({
   const press = (key: 'resume' | 'boost') =>
     send(
       { key, hold: PRESS_MS },
-      store.callService(
-        key === 'resume' ? 'heatingResume' : 'heatingBoost',
-        'press',
-      ),
+      store.callService('button', entities[key], 'press'),
     );
   const busy = pending !== undefined;
   const locked = offline || !view.usable || !view.on;

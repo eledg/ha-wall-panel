@@ -1,24 +1,75 @@
 {
-  "entities": {
-    "light": "switch.living_room_light",
-    "weather": "weather.home",
-    "calendarFamily": "calendar.family",
-    "calendarF1": "calendar.formula_1",
-    "calendarBirthdays": "calendar.birthdays",
-    "acClimate": "climate.living_room_ac",
-    "acPowerful": "switch.living_room_ac_powerful",
-    "acEconomy": "switch.living_room_ac_economy_mode",
-    "acQuietFan": "switch.living_room_ac_quiet_fan",
-    "roomTemperature": "sensor.living_room_temperature",
-    "roomHumidity": "sensor.living_room_humidity",
-    "roomBattery": "sensor.living_room_sensor_battery",
-    "heatingClimate": "climate.living_room_thermostat",
-    "heatingSchedule": "switch.living_room_schedule",
-    "heatingDemand": "binary_sensor.heating_demand",
-    "heatingCloud": "binary_sensor.heating_cloud_connection",
-    "heatingResume": "button.living_room_resume_schedule",
-    "heatingBoost": "button.heating_boost_all_zones"
-  },
-  "night": { "startHour": 21, "endHour": 7, "wakeMs": 15000 },
-  "labels": { "light": "Light", "room": "Room", "ac": "AC" }
+  "tiles": [
+    { "type": "clock", "col": 1, "row": 1, "w": 3 },
+    {
+      "type": "weather",
+      "col": 1,
+      "row": 2,
+      "w": 3,
+      "entity": "weather.home"
+    },
+    {
+      "type": "calendar",
+      "col": 4,
+      "row": 1,
+      "w": 3,
+      "h": 2,
+      "calendars": [
+        { "entity": "calendar.family", "label": "Family", "color": "yellow" },
+        {
+          "entity": "calendar.birthdays",
+          "label": "Birthdays",
+          "color": "blue",
+          "kind": "birthdays"
+        },
+        {
+          "entity": "calendar.formula_1",
+          "label": "F1",
+          "color": "green",
+          "kind": "f1"
+        }
+      ]
+    },
+    {
+      "type": "toggle",
+      "label": "Light",
+      "col": 1,
+      "row": 3,
+      "w": 2,
+      "entity": "switch.living_room_light"
+    },
+    {
+      "type": "temperature",
+      "label": "Room",
+      "col": 3,
+      "row": 3,
+      "temperature": "sensor.living_room_temperature",
+      "humidity": "sensor.living_room_humidity",
+      "battery": "sensor.living_room_sensor_battery"
+    },
+    {
+      "type": "heating",
+      "label": "Heating",
+      "col": 4,
+      "row": 3,
+      "climate": "climate.living_room_thermostat",
+      "schedule": "switch.living_room_schedule",
+      "demand": "binary_sensor.heating_demand",
+      "cloud": "binary_sensor.heating_cloud_connection",
+      "resume": "button.living_room_resume_schedule",
+      "boost": "button.heating_boost_all_zones"
+    },
+    {
+      "type": "ac",
+      "label": "AC",
+      "col": 5,
+      "row": 3,
+      "climate": "climate.living_room_ac",
+      "powerful": "switch.living_room_ac_powerful",
+      "economy": "switch.living_room_ac_economy_mode",
+      "quietFan": "switch.living_room_ac_quiet_fan",
+      "room": "sensor.living_room_temperature"
+    }
+  ],
+  "night": { "startHour": 21, "endHour": 7, "wakeMs": 15000 }
 }

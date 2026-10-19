@@ -1,6 +1,6 @@
 import type { Auth } from 'home-assistant-js-websocket';
 
-import type { EntityKey } from './store.ts';
+import type { CalendarKind } from '@/config/config.ts';
 
 /** How often calendar events are re-fetched; HA pushes no event when they change. */
 export const CALENDAR_REFRESH_MS = 5 * 60_000;
@@ -13,7 +13,8 @@ export const CALENDAR_DAYS = 7;
 
 /** One calendar event, reduced to what the tile and its detail sheet show. */
 export type CalendarEvent = {
-  calendar: EntityKey;
+  /** Entity ID of the calendar the event came from. */
+  calendar: string;
   /** The title for the tile's rows, shortened for some calendars (see `shortenF1`). */
   summary: string;
   /** The title as HA sends it, for the detail sheet. */
@@ -55,10 +56,10 @@ export const shortenF1 = (summary: string, location?: string | null) => {
 };
 
 /**
- * Calendars whose descriptions aren't worth showing. F1's is the same ~1.5 KB
- * of promotional links on every event.
+ * Kinds of calendar whose descriptions aren't worth showing. F1's is the same
+ * ~1.5 KB of promotional links on every event.
  */
-const NO_NOTES = new Set<EntityKey>(['calendarF1']);
+const NO_NOTES = new Set<CalendarKind>(['f1']);
 
 /** Trimmed text, or `undefined` when HA sends nothing, `null` or `""`. */
 const textOf = (value?: string | null) => value?.trim() || undefined;
@@ -97,9 +98,9 @@ export const withBirthdayAge = (
 
 /** Per-calendar tidying of titles that are too long for the tile. */
 const SUMMARY_FORMATTERS: Partial<
-  Record<EntityKey, (summary: string, raw: RawCalendarEvent) => string>
+  Record<CalendarKind, (summary: string, raw: RawCalendarEvent) => string>
 > = {
-  calendarF1: (summary, raw) => shortenF1(summary, raw.location),
+  f1: (summary, raw) => shortenF1(summary, raw.location),
 };
 
 /**
@@ -108,8 +109,9 @@ const SUMMARY_FORMATTERS: Partial<
  * items, so `Date` parses them. All-day `end` dates are exclusive in HA.
  */
 export const normaliseEvent = (
-  calendar: EntityKey,
+  calendar: string,
   raw: RawCalendarEvent,
+  kind?: CalendarKind,
 ): CalendarEvent | undefined => {
   const allDay = raw.start.date !== undefined;
   const start = allDay
@@ -123,16 +125,16 @@ export const normaliseEvent = (
   }
   const rawSummary = raw.summary?.trim() || 'Untitled';
   const fullSummary =
-    calendar === 'calendarBirthdays'
+    kind === 'birthdays'
       ? withBirthdayAge(rawSummary, raw.description, start)
       : rawSummary;
   const location = textOf(raw.location);
-  const description = NO_NOTES.has(calendar)
-    ? undefined
-    : textOf(raw.description);
+  const description =
+    kind && NO_NOTES.has(kind) ? undefined : textOf(raw.description);
   return {
     calendar,
-    summary: SUMMARY_FORMATTERS[calendar]?.(fullSummary, raw) ?? fullSummary,
+    summary:
+      (kind && SUMMARY_FORMATTERS[kind])?.(fullSummary, raw) ?? fullSummary,
     fullSummary,
     ...(location && { location }),
     ...(description && { description }),
@@ -143,9 +145,13 @@ export const normaliseEvent = (
 };
 
 /** Normalises a whole response, dropping items with no usable times. */
-export const normaliseEvents = (calendar: EntityKey, raw: RawCalendarEvent[]) =>
+export const normaliseEvents = (
+  calendar: string,
+  raw: RawCalendarEvent[],
+  kind?: CalendarKind,
+) =>
   raw
-    .map((item) => normaliseEvent(calendar, item))
+    .map((item) => normaliseEvent(calendar, item, kind))
     .filter((event): event is CalendarEvent => event !== undefined);
 
 /** Local midnight today until `CALENDAR_DAYS` days later: what the store fetches. */
