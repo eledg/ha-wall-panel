@@ -136,6 +136,15 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    changed, so every few minutes is fine too (unauthenticated GitHub requests are
    limited to 60 an hour per address; a token raises that).
 
+### Several panels
+
+One release works in any folder, so you can run more than one panel from one Home
+Assistant: add a `shell_command` for each folder (the folder is the script's first
+argument), give each its own `<folder>.config.json`, and call each from an
+automation. Every folder keeps its own version, so you can pin or roll back one
+panel with `--tag` on its command without touching the others (see
+[Running by hand](#running-by-hand-and-rolling-back)).
+
 ### Upgrading to a new major version
 
 A new major version (v2 to v3, say) can change what you need to provide, such as
