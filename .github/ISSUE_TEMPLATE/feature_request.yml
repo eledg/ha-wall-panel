@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest a tile, a setting or another improvement.
-labels: [enhancement]
+labels: ['type:feature']
 body:
   - type: textarea
     id: problem

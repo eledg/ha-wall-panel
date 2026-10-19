@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
+      - uses: eledg/github-actions/setup-pnpm@v1
       - run: pnpm exec semantic-release
       # semantic-release tags the commit when it produces a version; pass that
       # tag on so the release job only runs for commits that were released.
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
+      - uses: eledg/github-actions/setup-pnpm@v1
       # Lint, typecheck and tests already passed in CI for this commit.
       - name: Build
         run: pnpm build

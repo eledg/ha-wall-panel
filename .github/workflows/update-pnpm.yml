@@ -19,7 +19,7 @@ jobs:
     name: Update pnpm
     steps:
       - uses: actions/checkout@v7
-      - uses: eledg/github-actions/update-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
+      - uses: eledg/github-actions/update-pnpm@v1
         with:
           github-token: ${{ secrets.PR_PAT_TOKEN }}
           assignees: ${{ github.repository_owner }}
