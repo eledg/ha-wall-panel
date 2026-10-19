@@ -33,8 +33,7 @@ already showing the panel reloads itself once it sees the new `version.json` (se
 [`scripts/deploy_wall_panel.py`](../scripts/deploy_wall_panel.py) pulls a release from GitHub
 into `/config/www/<folder>/` and swaps it in safely. Run it on a schedule and the
 display stays on the latest release with nothing copied by hand. It is a Python 3
-script using only the standard library (plus PyYAML, which Home Assistant Core
-already has, and only when you use a token), run through a `shell_command`.
+script using only the standard library, run through a `shell_command`.
 By default it only follows releases within the major version you have deployed:
 a new major version is reported but never installed by itself, because it can
 need changes on your side (see [Upgrading to a new major version](#upgrading-to-a-new-major-version)).
@@ -134,7 +133,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    Leave the `triggers` out if you only want to run it by hand. Otherwise the
    schedule is yours to choose: each run is one small request when nothing has
    changed, so every few minutes is fine too (unauthenticated GitHub requests are
-   limited to 60 an hour per address; a token raises that).
+   limited to 60 an hour per address).
 
 ### Several panels
 

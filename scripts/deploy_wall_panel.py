@@ -2,20 +2,17 @@
 """Pull a wall panel release from GitHub into /config/www/<target>.
 
 Runs in the Home Assistant Core container through a shell_command. Standard
-library only, plus PyYAML (already present in HA Core) when a token is used.
-See docs/deploy.md.
+library only. See docs/deploy.md.
 
-    deploy_wall_panel.py <target> [--repo OWNER/REPO] [--token-secret KEY]
+    deploy_wall_panel.py <target> [--repo OWNER/REPO]
                    [--tag vX.Y.Z] [--allow-major] [--fail-swap]
 
 With no --tag, the newest release with the same major version as the deployed
 one is deployed. A newer major version is reported but never deployed by
 itself, since it can need changes on your side (read its release notes, then
 deploy it with --tag, or pass --allow-major to always follow the latest). A
-first install takes the latest release. A public repository needs no
-token; for a private one, --token-secret names the key in /config/secrets.yaml
-that holds a GitHub token with read access to the repository's contents.
---fail-swap forces the final rename to fail, to test that the previous folder is
+first install takes the latest release. The repository must be public: requests
+are anonymous. --fail-swap forces the final rename to fail, to test that the previous folder is
 restored.
 
 Exit 0: deployed, or already up to date. Exit 1: failed.
@@ -41,6 +38,7 @@ ASSET_PREFIX = "wall-panel"  # release assets are <prefix>-<tag>.tar.gz and .sha
 TIMEOUT = 30
 MAX_DOWNLOAD = 25 * 1024 * 1024
 MAX_EXTRACTED = 50 * 1024 * 1024
+HEADERS = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
 
 
 class DeployError(Exception):
@@ -72,28 +70,15 @@ def fetch(url, headers, limit):
     return status, response_headers, body
 
 
-def read_token(secrets_file, key):
-    try:
-        import yaml  # only needed for a private repository
-    except ImportError:
-        raise DeployError("PyYAML is needed to read the token from secrets.yaml") from None
-
-    with open(secrets_file) as f:
-        token = (yaml.safe_load(f) or {}).get(key)
-    if not token:
-        raise DeployError(f"{key} not found in {secrets_file}")
-    return str(token)
-
-
-def get_release(api, repo, tag, auth):
+def get_release(api, repo, tag):
     path = f"tags/{urllib.parse.quote(tag, safe='')}" if tag else "latest"
     status, _, body = fetch(
         f"{api}/repos/{repo}/releases/{path}",
-        {**auth, "Accept": "application/vnd.github+json"},
+        HEADERS,
         1024 * 1024,
     )
     if status in (403, 429):
-        raise DeployError(f"release lookup refused: HTTP {status} (rate limited, or the token cannot read {repo})")
+        raise DeployError(f"release lookup refused: HTTP {status} (rate limited, try again later)")
     if status != 200:
         raise DeployError(f"release lookup failed: HTTP {status}")
     return json.loads(body)
@@ -105,10 +90,10 @@ def parse_version(tag):
     return tuple(int(part) for part in match.groups()) if match else None
 
 
-def list_releases(api, repo, auth):
+def list_releases(api, repo):
     status, _, body = fetch(
         f"{api}/repos/{repo}/releases?per_page=100",
-        {**auth, "Accept": "application/vnd.github+json"},
+        HEADERS,
         4 * 1024 * 1024,
     )
     if status != 200:
@@ -116,15 +101,15 @@ def list_releases(api, repo, auth):
     return [r for r in json.loads(body) if not r.get("draft") and not r.get("prerelease")]
 
 
-def pick_release(api, repo, auth, args, current):
+def pick_release(api, repo, args, current):
     """Choose the release to deploy, or None when there is nothing to do."""
     if args.tag:
-        return get_release(api, repo, args.tag, auth)
+        return get_release(api, repo, args.tag)
     have = parse_version(current)
     if args.allow_major or have is None:
-        return get_release(api, repo, None, auth)
+        return get_release(api, repo, None)
 
-    versioned = [(parse_version(r["tag_name"]), r) for r in list_releases(api, repo, auth)]
+    versioned = [(parse_version(r["tag_name"]), r) for r in list_releases(api, repo)]
     versioned = [(v, r) for v, r in versioned if v is not None]
     if not versioned:
         raise DeployError(f"no releases found in {repo}")
@@ -141,13 +126,12 @@ def pick_release(api, repo, auth, args, current):
     return best if best_version > have else None
 
 
-def download_asset(release, name, auth):
+def download_asset(release, name):
     asset = next((a for a in release["assets"] if a["name"] == name), None)
     if asset is None:
         raise DeployError(f"release {release['tag_name']} has no asset {name}")
-    status, headers, body = fetch(asset["url"], {**auth, "Accept": "application/octet-stream"}, MAX_DOWNLOAD)
+    status, headers, body = fetch(asset["url"], {**HEADERS, "Accept": "application/octet-stream"}, MAX_DOWNLOAD)
     if status in (301, 302, 303, 307, 308):
-        # The signed download URL rejects requests that also carry Authorization.
         status, _, body = fetch(headers["Location"], {}, MAX_DOWNLOAD)
     if status != 200:
         raise DeployError(f"download of {name} failed: HTTP {status}")
@@ -218,12 +202,8 @@ def deploy(args):
             log("another deploy is running, skipping")
             return
 
-        auth = {"X-GitHub-Api-Version": "2022-11-28"}
-        if args.token_secret:
-            secrets_file = os.path.join(args.config_dir, "secrets.yaml")
-            auth["Authorization"] = f"Bearer {read_token(secrets_file, args.token_secret)}"
         current = deployed_version(www)
-        release = pick_release(args.api_url, args.repo, auth, args, current)
+        release = pick_release(args.api_url, args.repo, args, current)
         if release is None or release["tag_name"] == current:
             log(f"{args.target} is up to date at {current}")
             return
@@ -231,8 +211,8 @@ def deploy(args):
         log(f"deploying {release_tag} from {args.repo} (currently {current or 'nothing'})")
 
         archive_name = f"{ASSET_PREFIX}-{release_tag}.tar.gz"
-        archive = download_asset(release, archive_name, auth)
-        checksum = download_asset(release, archive_name + ".sha256", auth)
+        archive = download_asset(release, archive_name)
+        checksum = download_asset(release, archive_name + ".sha256")
         expected = checksum.decode().split()[0].lower()
         if hashlib.sha256(archive).hexdigest() != expected:
             raise DeployError("sha256 mismatch")
@@ -257,7 +237,6 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(description="Pull a wall panel release into /config/www/<target>.")
     parser.add_argument("target", help="folder name under /config/www")
     parser.add_argument("--repo", default=DEFAULT_REPO, help=f"GitHub OWNER/REPO to read releases from (default {DEFAULT_REPO})")
-    parser.add_argument("--token-secret", help="key in secrets.yaml holding a GitHub token (private repositories only)")
     parser.add_argument("--tag", help="deploy this release tag instead of the latest")
     parser.add_argument("--allow-major", action="store_true", help="also follow a new major version (default: only within the deployed major)")
     parser.add_argument("--fail-swap", action="store_true", help="force the swap to fail (testing)")
@@ -268,8 +247,6 @@ def parse_args(argv):
         parser.error("invalid target name")
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", args.repo):
         parser.error("invalid repo, expected OWNER/REPO")
-    if args.token_secret and not re.fullmatch(r"[A-Za-z0-9_]+", args.token_secret):
-        parser.error("invalid token secret name")
     if args.tag and not re.fullmatch(r"[A-Za-z0-9._-]+", args.tag):
         parser.error("invalid tag")
     host = urllib.parse.urlparse(args.api_url).hostname
