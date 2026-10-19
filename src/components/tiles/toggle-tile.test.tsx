@@ -10,7 +10,7 @@ import { createHaStore } from '@/services/ha/store.ts';
 
 import { ToggleTile } from './toggle-tile.tsx';
 
-const id = config.entities.officeLight.id;
+const id = config.entities.light.id;
 
 const setup = async () => {
   const mock = createMockHa();
@@ -20,7 +20,7 @@ const setup = async () => {
     render(
       <HaConnection store={store}>
         <ToggleTile
-          entity="officeLight"
+          entity="light"
           label="Office light"
           area="light"
           store={store}

@@ -121,7 +121,7 @@ export const createMockHa = (cfg: typeof config = config) => {
     };
   };
 
-  const light = cfg.entities.officeLight.id;
+  const light = cfg.entities.light.id;
   entities.set(light, make(light, 'off'));
   const weather = cfg.entities.weather.id;
   const scenarios = weatherScenarios();
@@ -139,14 +139,14 @@ export const createMockHa = (cfg: typeof config = config) => {
   }
   const ac = cfg.entities.acClimate.id;
   entities.set(ac, make(ac, 'off', acAttributes()));
-  const roomTemp = cfg.entities.officeTemperature.id;
+  const roomTemp = cfg.entities.roomTemperature.id;
   entities.set(roomTemp, make(roomTemp, '22.2', { unit_of_measurement: '°C' }));
-  const roomHumidity = cfg.entities.officeHumidity.id;
+  const roomHumidity = cfg.entities.roomHumidity.id;
   entities.set(
     roomHumidity,
     make(roomHumidity, '50.9', { unit_of_measurement: '%' }),
   );
-  const roomBattery = cfg.entities.officeBattery.id;
+  const roomBattery = cfg.entities.roomBattery.id;
   entities.set(
     roomBattery,
     make(roomBattery, '100', { unit_of_measurement: '%' }),

@@ -1,5 +1,6 @@
 import { DropletIcon } from '@/components/icons/droplet-icon.tsx';
 import { ThermoIcon } from '@/components/icons/thermo-icon.tsx';
+import { config } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { readTemperature } from '@/lib/climate/temperature-model.ts';
 import { formatHumidity, formatTemp } from '@/lib/format.ts';
@@ -10,7 +11,7 @@ import type { HaStore } from '@/services/ha/store.ts';
 import { DeviceTile, MissingValue, Temperature } from './base/device-tile.tsx';
 import { tileState } from './base/tile.tsx';
 
-/** The office temperature and humidity, from the Shelly BLU H&T sensor. */
+/** The room temperature and humidity, from one sensor. */
 export const TemperatureTile = ({
   area,
   store = haStore,
@@ -20,9 +21,9 @@ export const TemperatureTile = ({
 }) => {
   const temperatureEntity = useSnapshot(
     store,
-    (s) => s.entities.officeTemperature,
+    (s) => s.entities.roomTemperature,
   );
-  const humidityEntity = useSnapshot(store, (s) => s.entities.officeHumidity);
+  const humidityEntity = useSnapshot(store, (s) => s.entities.roomHumidity);
   const { value } = readTemperature(temperatureEntity);
   const { value: percent } = readTemperature(humidityEntity);
 
@@ -31,11 +32,11 @@ export const TemperatureTile = ({
       area={area}
       state={tileState([temperatureEntity])}
       icon={<ThermoIcon class="size-4" />}
-      label="Office"
+      label={config.labels.room}
       status={
         <span
           class="tnum flex items-center gap-0.5 text-xs text-fg-dim"
-          aria-label="Office humidity"
+          aria-label={`${config.labels.room} humidity`}
         >
           <DropletIcon class="size-3" />
           {percent === undefined ? '—' : formatHumidity(percent)}

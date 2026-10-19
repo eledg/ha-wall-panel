@@ -48,6 +48,16 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    notification with ID `office_wall_display_deploy` containing `deploy.stderr`;
    otherwise dismiss that notification.
 
+## The config file
+
+The release holds no entity IDs. The app reads them from a `config.json` that
+you keep on the HA box (see the README, Configuration). The deploy swaps the
+whole `www/<folder>/` directory, so the file lives **beside** it and survives
+every deploy: for a build served from `/local/<folder>/` it is
+`/config/www/<folder>.config.json`, at `/local/<folder>.config.json`. Create it
+once, before the first deploy of a build that needs it. A missing or invalid file
+shows a banner on the display instead of the tiles' data.
+
 ## Signing in to HA
 
 The app talks to HA over its websocket and needs credentials. `/local/` is

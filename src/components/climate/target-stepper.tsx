@@ -23,7 +23,7 @@ export const TargetStepper = ({
   flashing,
   onStep,
 }: {
-  /** Caption above the room temperature, e.g. `Office now`. */
+  /** Caption above the room temperature, e.g. `Room now`. */
   currentLabel: string;
   /** Accessible name of the target readout, e.g. `AC target`. */
   targetLabel: string;

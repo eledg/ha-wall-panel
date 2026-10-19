@@ -8,6 +8,7 @@ import {
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { config, validateConfig } from '@/config/config.ts';
+import type { ENTITY_DOMAINS, EntityKey } from '@/config/config.ts';
 
 import {
   CALENDAR_REFRESH_MS,
@@ -20,8 +21,7 @@ import { cancellableDelay } from './delay.ts';
 import { fetchHistory } from './history.ts';
 import type { RawHistoryState } from './history.ts';
 
-type Entities = typeof config.entities;
-export type EntityKey = keyof Entities;
+export type { EntityKey };
 
 /** The services each domain accepts through `callService`. */
 type DomainServices = {
@@ -63,7 +63,7 @@ export type ForecastItem = {
 };
 
 export type ServiceName<K extends EntityKey> =
-  DomainServices[Entities[K]['domain']];
+  DomainServices[(typeof ENTITY_DOMAINS)[K]];
 
 export type HaStatus =
   'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';

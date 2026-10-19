@@ -6,7 +6,7 @@ import { createHaStore } from '@/services/ha/store.ts';
 
 import { createMockHa, UNRELATED_ID } from './engine.ts';
 
-const LIGHT = config.entities.officeLight.id;
+const LIGHT = config.entities.light.id;
 const WEATHER = config.entities.weather.id;
 const AC = config.entities.acClimate.id;
 const AC_SWITCHES = [
@@ -47,9 +47,9 @@ describe('createMockHa', () => {
         WEATHER,
         AC,
         ...AC_SWITCHES,
-        config.entities.officeTemperature.id,
-        config.entities.officeHumidity.id,
-        config.entities.officeBattery.id,
+        config.entities.roomTemperature.id,
+        config.entities.roomHumidity.id,
+        config.entities.roomBattery.id,
         config.entities.heatingClimate.id,
         config.entities.heatingSchedule.id,
         config.entities.heatingDemand.id,
@@ -235,18 +235,18 @@ describe('store against the mock', () => {
       'heatingDemand',
       'heatingResume',
       'heatingSchedule',
-      'officeBattery',
-      'officeHumidity',
-      'officeLight',
-      'officeTemperature',
+      'light',
+      'roomBattery',
+      'roomHumidity',
+      'roomTemperature',
       'weather',
     ]);
 
-    await store.callService('officeLight', 'toggle');
-    expect(store.getSnapshot().entities.officeLight?.state).toBe('on');
+    await store.callService('light', 'toggle');
+    expect(store.getSnapshot().entities.light?.state).toBe('on');
 
     mock.controls.setUnavailable(LIGHT);
-    expect(store.getSnapshot().entities.officeLight?.state).toBe('unavailable');
+    expect(store.getSnapshot().entities.light?.state).toBe('unavailable');
   });
 });
 
@@ -257,14 +257,14 @@ describe('mock service failures', () => {
     await store.start(mock.getAuth);
     mock.controls.failServices(true);
 
-    await expect(store.callService('officeLight', 'toggle')).rejects.toThrow(
+    await expect(store.callService('light', 'toggle')).rejects.toThrow(
       'service call failed',
     );
-    expect(store.getSnapshot().entities.officeLight?.state).toBe('off');
+    expect(store.getSnapshot().entities.light?.state).toBe('off');
 
     mock.controls.failServices(false);
-    await store.callService('officeLight', 'toggle');
-    expect(store.getSnapshot().entities.officeLight?.state).toBe('on');
+    await store.callService('light', 'toggle');
+    expect(store.getSnapshot().entities.light?.state).toBe('on');
   });
 });
 

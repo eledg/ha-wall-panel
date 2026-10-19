@@ -14,7 +14,7 @@ import { AcSheet } from './ac-sheet.tsx';
 
 const AC = config.entities.acClimate.id;
 const POWERFUL = config.entities.acPowerful.id;
-const OFFICE = config.entities.officeTemperature.id;
+const OFFICE = config.entities.roomTemperature.id;
 
 const setup = async ({
   on = true,

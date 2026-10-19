@@ -27,7 +27,7 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: {
     command: `pnpm exec vite --mode mock --port ${PORT}`,
-    url: `http://localhost:${PORT}/local/office-wall-display/`,
+    url: `http://localhost:${PORT}/local/wall-dashboard/`,
     reuseExistingServer: !process.env.CI,
   },
 });

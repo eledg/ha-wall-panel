@@ -1,7 +1,7 @@
 # Home Assistant Wall Dashboard
 
-[![CI](https://github.com/eledg/ha-wall-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/eledg/ha-wall-dashboard/actions/workflows/ci.yml)
-[![Release](https://github.com/eledg/ha-wall-dashboard/actions/workflows/release.yml/badge.svg)](https://github.com/eledg/ha-wall-dashboard/actions/workflows/release.yml)
+[![CI](https://github.com/eledg/ha-wall-panel/actions/workflows/ci.yml/badge.svg)](https://github.com/eledg/ha-wall-panel/actions/workflows/ci.yml)
+[![Release](https://github.com/eledg/ha-wall-panel/actions/workflows/release.yml/badge.svg)](https://github.com/eledg/ha-wall-panel/actions/workflows/release.yml)
 
 A touch-friendly, dark-themed wall dashboard for a Shelly Wall Display X2i,
 backed by Home Assistant. It is a static web app that Home Assistant serves
@@ -42,25 +42,50 @@ Run `pnpm validate` before committing.
 
 ## Configuration
 
-| Variable         | Default                       | Purpose                                                            |
-| ---------------- | ----------------------------- | ------------------------------------------------------------------ |
-| `WALL_BASE_PATH` | `/local/office-wall-display/` | Public path the build is served from. Must start and end with `/`. |
+Two things are configured, and neither is in the code.
+
+**The build** takes one variable:
+
+| Variable         | Default                  | Purpose                                                            |
+| ---------------- | ------------------------ | ------------------------------------------------------------------ |
+| `WALL_BASE_PATH` | `/local/wall-dashboard/` | Public path the build is served from. Must start and end with `/`. |
 
 Home Assistant serves `/config/www/<folder>/` at `/local/<folder>/`, so set
 `WALL_BASE_PATH` to target another display or folder.
 
+**Your home** is described in a `config.json` that the app fetches when it
+starts, so one build works for every setup and a release never contains your
+entity IDs. Copy [`config.example.json`](config.example.json), fill in your
+entity IDs, and put it **beside** the app's folder, not inside it (a deploy
+replaces the whole folder): for the default base path that is
+`/config/www/wall-dashboard.config.json`, served at
+`/local/wall-dashboard.config.json`. The file has:
+
+- `entities`: the Home Assistant entity ID for each key, all required. Each key
+  has a fixed domain; see [docs/entities.md](docs/entities.md) for what each is
+  for and which attributes the app reads.
+- `night` (optional): `startHour`, `endHour` (0 to 23, may span midnight) and
+  `wakeMs`, how long a tap wakes the display. Defaults to 21, 7 and 15000.
+- `labels` (optional): the names for the `light`, `room` and `ac` tiles.
+  Defaults to "Light", "Room" and "AC".
+
+If the file is missing or wrong, the dashboard shows a banner saying what is
+the matter instead of failing silently. Edits show on the next load: the app
+asks for the file without caching it.
+
 The display opens the dashboard through the dock icon's Home Assistant URL
 (Settings, Network, Home Assistant on the display), for example
-`http://<ha-ip>:8123/local/office-wall-display/index.html`. The URL must end in
+`http://<ha-ip>:8123/local/wall-dashboard/index.html`. The URL must end in
 `index.html`.
 
 Everything under `/local/` is served without login, so never put secrets in
-the build. The display signs in to Home Assistant through the
+the build or in `config.json`. The display signs in to Home Assistant through the
 `trusted_networks` provider, so it needs no token; see
 [docs/deploy.md](docs/deploy.md#signing-in-to-ha).
 
 `pnpm dev` connects to your HA with `HA_DEV_URL` and `HA_DEV_TOKEN` from
-`.env.local`. `pnpm dev:mock` needs neither: it runs the app against a fake HA
+`.env.local`, and serves your own `config.json` from the repo root (git-ignored;
+`HA_DEV_CONFIG` points elsewhere). `pnpm dev:mock` needs neither: it runs the app against a fake HA
 (`src/dev/mock/`) with a single Mock overlay for the light and weather
 (see [docs/mock.md](docs/mock.md)). Neither is ever part of a build.
 

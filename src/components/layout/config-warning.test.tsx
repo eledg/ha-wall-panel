@@ -14,13 +14,13 @@ describe('ConfigWarning', () => {
   it('lists each issue visibly', () => {
     render(
       <ConfigWarning
-        issues={[{ key: 'officeLight', message: 'entity ID is missing' }]}
+        issues={[{ key: 'light', message: 'entity ID is missing' }]}
       />,
       document.body,
     );
 
     expect(document.querySelector('[role="alert"]')?.textContent).toContain(
-      'officeLight: entity ID is missing',
+      'light: entity ID is missing',
     );
   });
 });

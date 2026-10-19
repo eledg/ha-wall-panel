@@ -10,8 +10,8 @@ import { createHaStore } from '@/services/ha/store.ts';
 
 import { TemperatureTile } from './temperature-tile.tsx';
 
-const TEMP = config.entities.officeTemperature.id;
-const HUMIDITY = config.entities.officeHumidity.id;
+const TEMP = config.entities.roomTemperature.id;
+const HUMIDITY = config.entities.roomHumidity.id;
 
 const setup = async (connect = true) => {
   const mock = createMockHa();

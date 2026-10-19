@@ -1,4 +1,10 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -126,4 +132,80 @@ describe('production build', () => {
       expect(text, file).not.toContain('mock-overlay');
     }
   }, 30_000);
+});
+
+describe('dev-ha plugin, config.json', () => {
+  type Handler = (req: unknown, res: FakeResponse) => void;
+  type FakeResponse = {
+    statusCode: number;
+    headers: Record<string, string>;
+    body?: string;
+    setHeader: (name: string, value: string) => void;
+    end: (body?: string) => void;
+  };
+
+  /** Mounts the plugin on a fake dev server and returns what it serves where. */
+  const mount = (
+    mode: string,
+    settings: Record<string, string>,
+    base = '/local/wall/',
+  ) => {
+    const mounted: { path: string; handler: Handler }[] = [];
+    const server = {
+      config: { mode },
+      middlewares: {
+        use: (path: string, handler: Handler) =>
+          mounted.push({ path, handler }),
+      },
+    };
+    (devHaPlugin(settings, base).configureServer as (s: unknown) => void)(
+      server,
+    );
+    return mounted;
+  };
+
+  const request = (handler: Handler) =>
+    new Promise<FakeResponse>((resolve) => {
+      const res: FakeResponse = {
+        statusCode: 200,
+        headers: {},
+        setHeader: (name, value) => void (res.headers[name] = value),
+        end: (body) => {
+          res.body = body;
+          resolve(res);
+        },
+      };
+      handler({}, res);
+    });
+
+  let dir: string;
+  afterEach(() => dir && rmSync(dir, { recursive: true, force: true }));
+
+  it('serves the local config where the app looks for it', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'wall-config-'));
+    const file = join(dir, 'config.json');
+    writeFileSync(file, '{"entities":{}}');
+
+    const [route] = mount('development', { HA_DEV_CONFIG: file });
+    const res = await request(route!.handler);
+
+    expect(route!.path).toBe('/local/wall.config.json');
+    expect(res.headers['content-type']).toBe('application/json');
+    expect(res.body).toBe('{"entities":{}}');
+  });
+
+  it('answers 404 when there is no local config', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'wall-config-'));
+
+    const [route] = mount('development', {
+      HA_DEV_CONFIG: join(dir, 'absent.json'),
+    });
+
+    expect((await request(route!.handler)).statusCode).toBe(404);
+  });
+
+  it('serves nothing under the mock or tests', () => {
+    expect(mount('mock', {})).toEqual([]);
+    expect(mount('test', {})).toEqual([]);
+  });
 });

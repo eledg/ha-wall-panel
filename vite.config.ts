@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   // Folder under HA's /config/www/ that this build is served from.
   // Override with WALL_BASE_PATH to target another display.
-  const base = env.WALL_BASE_PATH || '/local/office-wall-display/';
+  const base = env.WALL_BASE_PATH || '/local/wall-dashboard/';
 
   return {
     base,
@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
       preact(),
       buildInfoPlugin(resolveBuildInfo(env)),
       bundleBudgetPlugin(),
-      devHaPlugin(env),
+      devHaPlugin(env, base),
     ],
     // Fail rather than drift to another port, so `pnpm dev` is never mistaken
     // for a `pnpm dev:mock` server still running on the usual one.
@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
       target: 'es2023',
     },
     test: {
+      setupFiles: ['src/tests/setup.ts'],
       // The git-ignored design prototype has its own tests and deps; e2e/ is Playwright's.
       exclude: [...configDefaults.exclude, '.lovable-design/**', 'e2e/**'],
     },

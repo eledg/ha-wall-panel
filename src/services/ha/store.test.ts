@@ -57,7 +57,7 @@ describe('createHaStore', () => {
     const bad = {
       entities: {
         ...config.entities,
-        officeLight: { domain: 'switch', id: placeholder('light') },
+        light: { domain: 'switch', id: placeholder('light') },
       },
     } as unknown as typeof config;
 
@@ -71,10 +71,10 @@ describe('createHaStore', () => {
       config.entities.acClimate.id,
       config.entities.acPowerful.id,
       config.entities.acEconomy.id,
-      config.entities.officeTemperature.id,
-      config.entities.officeHumidity.id,
-      config.entities.officeBattery.id,
       config.entities.acQuietFan.id,
+      config.entities.roomTemperature.id,
+      config.entities.roomHumidity.id,
+      config.entities.roomBattery.id,
       config.entities.heatingClimate.id,
       config.entities.heatingSchedule.id,
       config.entities.heatingDemand.id,
@@ -89,12 +89,12 @@ describe('createHaStore', () => {
     await store.start(settings);
 
     push({
-      [config.entities.officeLight.id]: entity('light', 'on'),
+      [config.entities.light.id]: entity('light', 'on'),
       'switch.unrelated': entity('other', 'on'),
     });
 
-    expect(Object.keys(store.getSnapshot().entities)).toEqual(['officeLight']);
-    expect(store.getSnapshot().entities.officeLight?.state).toBe('on');
+    expect(Object.keys(store.getSnapshot().entities)).toEqual(['light']);
+    expect(store.getSnapshot().entities.light?.state).toBe('on');
   });
 
   it('notifies subscribers only when a tracked entity changes', async () => {
@@ -104,8 +104,8 @@ describe('createHaStore', () => {
     store.subscribe(listener);
     const light = entity('light', 'on');
 
-    push({ [config.entities.officeLight.id]: light });
-    push({ [config.entities.officeLight.id]: light, 'switch.other': light });
+    push({ [config.entities.light.id]: light });
+    push({ [config.entities.light.id]: light, 'switch.other': light });
 
     expect(listener).toHaveBeenCalledTimes(1);
   });
@@ -207,7 +207,7 @@ describe('createHaStore', () => {
       const { store, listeners, push } = setup();
       await store.start(settings);
       vi.setSystemTime(new Date('2026-03-14T09:45:00Z'));
-      push({ [config.entities.officeLight.id]: entity('light', 'on') });
+      push({ [config.entities.light.id]: entity('light', 'on') });
       expect(store.getSnapshot().lastUpdate).toBeUndefined();
 
       vi.setSystemTime(new Date('2026-03-14T09:50:00Z'));
@@ -239,21 +239,21 @@ describe('createHaStore', () => {
     const { store, deps, conn } = setup();
     await store.start(settings);
 
-    await store.callService('officeLight', 'toggle');
+    await store.callService('light', 'toggle');
 
     expect(deps.callService).toHaveBeenCalledWith(
       conn,
       'switch',
       'toggle',
       undefined,
-      { entity_id: config.entities.officeLight.id },
+      { entity_id: config.entities.light.id },
     );
   });
 
   it('rejects a service call while not connected', async () => {
     const { store, deps } = setup();
 
-    await expect(store.callService('officeLight', 'toggle')).rejects.toThrow();
+    await expect(store.callService('light', 'toggle')).rejects.toThrow();
     expect(deps.callService).not.toHaveBeenCalled();
   });
 

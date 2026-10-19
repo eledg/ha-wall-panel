@@ -100,7 +100,7 @@ describe('Overlay', () => {
 
   it('drives the light from the same overlay', async () => {
     const { mock, press } = await setup();
-    const light = config.entities.officeLight.id;
+    const light = config.entities.light.id;
     await press('Mock');
 
     await press('HA flips light');

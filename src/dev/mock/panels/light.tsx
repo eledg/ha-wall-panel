@@ -3,7 +3,7 @@ import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
 
-const light = config.entities.officeLight.id;
+const light = config.entities.light.id;
 
 export const lightPanel: MockPanel = {
   id: 'light',

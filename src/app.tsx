@@ -12,6 +12,7 @@ import { HeatingTile } from '@/components/tiles/heating-tile.tsx';
 import { TemperatureTile } from '@/components/tiles/temperature-tile.tsx';
 import { ToggleTile } from '@/components/tiles/toggle-tile.tsx';
 import { WeatherTile } from '@/components/tiles/weather-tile.tsx';
+import { config } from '@/config/config.ts';
 
 export const App = () => (
   <>
@@ -20,7 +21,7 @@ export const App = () => (
         <ClockTile area="clock" />
         <WeatherTile area="weather" />
         <CalendarTile area="cal" />
-        <ToggleTile entity="officeLight" label="Office light" area="light" />
+        <ToggleTile entity="light" label={config.labels.light} area="light" />
         <TemperatureTile area="temp" />
         <HeatingTile area="heat" />
         <AcTile area="ac" />

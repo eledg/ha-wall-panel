@@ -32,7 +32,7 @@ describe('HaDebug', () => {
     await act(async () => {
       await store.start(() => Promise.resolve({} as Auth));
       push({
-        [config.entities.officeLight.id]: {
+        [config.entities.light.id]: {
           state: 'on',
           attributes: {},
         },

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { config, placeholder, validateConfig } from './config.ts';
+import { mockConfig } from '@/dev/mock/config.ts';
+
+import {
+  applyConfig,
+  config,
+  entitiesFrom,
+  markConfigUnavailable,
+  placeholder,
+  validateConfig,
+} from './config.ts';
 
 const withEntities = (
   entities: Record<
@@ -12,8 +21,36 @@ const withEntities = (
 });
 
 describe('validateConfig', () => {
-  it('accepts the shipped config', () => {
+  it('accepts the fixture config', () => {
     expect(validateConfig(config)).toEqual([]);
+  });
+
+  it('flags every entity of a config that is all placeholders', () => {
+    const issues = validateConfig({
+      entities: entitiesFrom(placeholder),
+    });
+
+    expect(issues).toHaveLength(Object.keys(mockConfig.entities).length);
+    expect(issues.every((i) => /placeholder/.test(i.message))).toBe(true);
+  });
+
+  it('reports only that config.json is unreadable when it could not be read', () => {
+    markConfigUnavailable('could not read /x: HTTP 404');
+
+    expect(validateConfig()).toEqual([
+      { key: 'config.json', message: 'could not read /x: HTTP 404' },
+    ]);
+    applyConfig(mockConfig);
+    expect(validateConfig()).toEqual([]);
+  });
+
+  it('adds problems found while reading to the live config issues', () => {
+    applyConfig(mockConfig, [{ key: 'night', message: 'must be an object' }]);
+
+    expect(validateConfig()).toEqual([
+      { key: 'night', message: 'must be an object' },
+    ]);
+    applyConfig(mockConfig);
   });
 
   it('flags a placeholder entity', () => {
