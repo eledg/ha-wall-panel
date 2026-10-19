@@ -1,24 +1,30 @@
 # Deploying to Home Assistant
 
+The examples on this page deploy to a display in an office, so the folder is
+`office-wall-display` and the names built from it (`deploy_office_wall`, and so
+on) say "office". Use your own folder and names; the app works from any folder,
+and its config goes beside it as `<folder>.config.json` (see
+[configuration.md](configuration.md)).
+
 A daily automation pulls the latest GitHub Release into
-`/config/www/wall-panel/`. Nothing is copied by hand.
+`/config/www/office-wall-display/`. Nothing is copied by hand.
 
 ## How it works
 
-1. The automation at 04:00 calls `shell_command.deploy_wall_panel`.
+1. The automation at 04:00 calls `shell_command.deploy_office_wall`.
 2. `/config/scripts/deploy_wall.py` (a Python 3 standard-library script that
    lives only on the HA box, not in this repo) asks GitHub for the latest
    release and compares its tag with `version` in the deployed `version.json`.
    If they match it stops.
 3. Otherwise it downloads the tarball and its `.sha256`, verifies the checksum,
-   and extracts into `/config/.deploy/wall-panel/staging`. It rejects
+   and extracts into `/config/.deploy/office-wall-display/staging`. It rejects
    absolute paths, `..`, symlinks and device files, and requires `index.html`
    and a `version.json` whose `version` equals the tag.
-4. It renames the live folder to `.deploy/wall-panel/previous`, then
+4. It renames the live folder to `.deploy/office-wall-display/previous`, then
    renames staging into place. If the second rename fails, the first is undone.
 
 Exit code 1 and a persistent notification mean the run failed; the live folder
-is left as it was. Everything except `www/wall-panel/` lives under
+is left as it was. Everything except `www/office-wall-display/` lives under
 `/config/.deploy/`, which is not served under `/local/`.
 
 ## Setup
@@ -29,7 +35,7 @@ is left as it was. Everything except `www/wall-panel/` lives under
    permission is **Contents: Read-only**. Set an expiry and note the date; the
    pull fails with HTTP 401 once it lapses. A public repository's releases
    download without a token, so a script for a public repo can skip steps 1 and 2.
-2. Add it to Home Assistant's `secrets.yaml` as `github_ha_wall_panel_pat`.
+2. Add it to Home Assistant's `secrets.yaml` as `github_ha_wall_display_pat`.
    The file is outside `www`, so it is not served, and the script reads it
    directly, so the token never appears in traces or process arguments.
 3. Put the script at `/config/scripts/deploy_wall.py`. It is kept on the HA box
@@ -41,14 +47,14 @@ is left as it was. Everything except `www/wall-panel/` lives under
 
    ```yaml
    shell_command:
-     deploy_wall_panel: "python3 /config/scripts/deploy_wall.py wall-panel {{ args | default('', true) }}"
+     deploy_office_wall: "python3 /config/scripts/deploy_wall.py office-wall-display {{ args | default('', true) }}"
    ```
 
-5. Create the automation "Wall panel deploy": a `time` trigger at
-   `04:00:00`, mode `single`, that calls `shell_command.deploy_wall_panel` with
+5. Create the automation "Office wall display deploy": a `time` trigger at
+   `04:00:00`, mode `single`, that calls `shell_command.deploy_office_wall` with
    `response_variable: deploy` and `continue_on_error: true`. If
    `deploy.returncode` is not 0 (or `deploy` is undefined), create a persistent
-   notification with ID `wall_panel_deploy` containing `deploy.stderr`;
+   notification with ID `office_wall_display_deploy` containing `deploy.stderr`;
    otherwise dismiss that notification.
 
 ## The config file
@@ -120,19 +126,19 @@ and `dev-ha.test.ts` builds with a sentinel token to check that.
 ## Running by hand and rolling back
 
 Run the automation from its menu with "Run actions", or call
-`shell_command.deploy_wall_panel` in Developer Tools, Actions.
+`shell_command.deploy_office_wall` in Developer Tools, Actions.
 
 To deploy a specific release (including an older one), pass the tag:
 
 ```yaml
-action: shell_command.deploy_wall_panel
+action: shell_command.deploy_office_wall
 data:
   args: '--tag v1.1.0'
 ```
 
 The next daily run goes back to the latest release. To go back to the folder
-that was live before the last deploy, swap `.deploy/wall-panel/previous`
-back into `www/wall-panel` over SSH.
+that was live before the last deploy, swap `.deploy/office-wall-display/previous`
+back into `www/office-wall-display` over SSH.
 
 ## Reloading the display
 
@@ -172,5 +178,5 @@ Verify by hand on the HA box:
   live folder untouched. Restore the script afterwards.
 - Forced swap failure: run with `args: "--fail-swap"` and confirm the live
   folder is unchanged and no `previous` folder is left behind.
-- Not served: `/local/.deploy/wall-panel/lock` and
+- Not served: `/local/.deploy/office-wall-display/lock` and
   `/local/secrets.yaml` both return 404.

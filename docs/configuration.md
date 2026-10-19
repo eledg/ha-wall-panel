@@ -1,6 +1,6 @@
 # Configuration
 
-Nothing about your home is in the build. The app reads a `config.json` when it
+The build does not contain home specific code. The app reads a `config.json` when it
 starts, so one release works for every setup. The build itself takes no
 settings and works from any folder.
 
