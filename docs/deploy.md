@@ -79,7 +79,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    ```
 
    This pulls releases from this repository. To pull from a fork, add
-   `--repo <owner>/<repo>` (see [Private forks](#private-forks)).
+   `--repo <owner>/<repo>`.
 
 3. Create the automation. It runs the script, and you can start it two ways: by
    hand whenever you like (the automation's three-dot menu, **Run actions**), or
@@ -153,18 +153,6 @@ deploy_wall_panel.py <target> [--repo OWNER/REPO] [--token-secret KEY] [--tag vX
 
 `--config-dir` and `--api-url` exist for testing the script away from Home
 Assistant and are not needed in normal use.
-
-### Private forks
-
-The releases of this repository are public, so no token is needed. Only if you
-pull from a **private** fork: create a fine-grained personal access token on
-GitHub with the fork as its only repository and **Contents: Read-only**
-permission. Set an expiry and note the date; the pull fails with HTTP 401 once it
-lapses. Add it to Home Assistant's `secrets.yaml` (for example as
-`github_ha_wall_display_pat`; that file is outside `www`, so it is not served) and
-add `--repo <owner>/<repo> --token-secret github_ha_wall_display_pat` to the
-shell command. The script reads the file directly, so the token never appears
-in traces or process arguments.
 
 ### Upgrading to a new major version
 
