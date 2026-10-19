@@ -84,46 +84,48 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 3. Create the automation. This example runs at 04:00 every day and runs the
    script. If it fails, it raises a persistent notification with the script's
    error output (cleared when it succeeds). If a new major version is available,
-   it raises a second, separate notification:
+   it raises a second, separate notification. It is plain YAML, so you can create
+   it in the UI (Settings, Automations & scenes, Create automation, then the
+   three-dot menu, Edit in YAML, and paste it) or add it to `automations.yaml`
+   as a list item (put `- ` before `alias:`, indent the rest by two spaces, and
+   add `id: office_wall_display_deploy`):
 
    ```yaml
-   automation:
-     - alias: Office wall display deploy
-       id: office_wall_display_deploy
-       mode: single
-       triggers:
-         - trigger: time
-           at: '04:00:00'
-       actions:
-         - action: shell_command.deploy_office_wall
-           response_variable: deploy
-           continue_on_error: true
-         - if:
-             - condition: template
-               value_template: '{{ deploy is not defined or deploy.returncode != 0 }}'
-           then:
-             - action: persistent_notification.create
-               data:
-                 notification_id: office_wall_display_deploy
-                 title: Office wall display deploy failed
-                 message: "{{ deploy.stderr if deploy is defined else 'The shell command did not run.' }}"
-           else:
-             - action: persistent_notification.dismiss
-               data:
-                 notification_id: office_wall_display_deploy
-         - if:
-             - condition: template
-               value_template: "{{ deploy is defined and 'major release' in deploy.stdout }}"
-           then:
-             - action: persistent_notification.create
-               data:
-                 notification_id: office_wall_display_major
-                 title: New major version of the wall panel
-                 message: '{{ deploy.stdout }}'
-           else:
-             - action: persistent_notification.dismiss
-               data:
-                 notification_id: office_wall_display_major
+   alias: Office wall display deploy
+   mode: single
+   triggers:
+     - trigger: time
+       at: '04:00:00'
+   actions:
+     - action: shell_command.deploy_office_wall
+       response_variable: deploy
+       continue_on_error: true
+     - if:
+         - condition: template
+           value_template: '{{ deploy is not defined or deploy.returncode != 0 }}'
+       then:
+         - action: persistent_notification.create
+           data:
+             notification_id: office_wall_display_deploy
+             title: Office wall display deploy failed
+             message: "{{ deploy.stderr if deploy is defined else 'The shell command did not run.' }}"
+       else:
+         - action: persistent_notification.dismiss
+           data:
+             notification_id: office_wall_display_deploy
+     - if:
+         - condition: template
+           value_template: "{{ deploy is defined and 'major release' in deploy.stdout }}"
+       then:
+         - action: persistent_notification.create
+           data:
+             notification_id: office_wall_display_major
+             title: New major version of the wall panel
+             message: '{{ deploy.stdout }}'
+       else:
+         - action: persistent_notification.dismiss
+           data:
+             notification_id: office_wall_display_major
    ```
 
    The schedule is yours to choose. Each run is one small request when nothing has
