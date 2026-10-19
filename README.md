@@ -3,10 +3,37 @@
 [![CI](https://github.com/eledg/ha-wall-panel/actions/workflows/ci.yml/badge.svg)](https://github.com/eledg/ha-wall-panel/actions/workflows/ci.yml)
 [![Release](https://github.com/eledg/ha-wall-panel/actions/workflows/release.yml/badge.svg)](https://github.com/eledg/ha-wall-panel/actions/workflows/release.yml)
 
-A touch-friendly, dark-themed wall panel for a Shelly Wall Display X2i,
-backed by Home Assistant. It is a static web app that Home Assistant serves
-from `/config/www/` and the display opens full-screen, replacing a standard
-Lovelace dashboard.
+A touch-friendly, dark-themed [Home Assistant](https://www.home-assistant.io)
+dashboard for Android wall displays. It is a static web app that Home Assistant
+serves from `/config/www/` and the display opens full-screen, replacing a
+standard Lovelace dashboard. It is built and tested on a
+[Shelly Wall Display X2i](docs/display.md); other Android displays with a
+modern WebView should work, but check [docs/display.md](docs/display.md) first.
+
+## What it shows
+
+- Clock and date, and weather with an hourly forecast
+- Up to three calendars with event details
+- A light toggle, room temperature and humidity
+- Air-conditioner controls (mode, target, fan, swing)
+- Central heating with a demand history
+- Night mode, burn-in pixel shift, a disconnected banner and automatic reload
+  when a new release is deployed
+
+Your entities, night hours and tile names come from a `config.json` you keep on
+the HA box, so every release is generic. See [docs/configuration.md](docs/configuration.md).
+
+## Quick start
+
+1. Download `wall-panel-<tag>.tar.gz` from the
+   [latest release](https://github.com/eledg/ha-wall-panel/releases/latest) and
+   extract it into `/config/www/<folder>/` on Home Assistant.
+2. Copy [`config.example.json`](config.example.json) to
+   `/config/www/<folder>.config.json` and fill in your entity IDs.
+3. Open `http://<ha-ip>:8123/local/<folder>/index.html` on the display (on the
+   Shelly: the dock icon's Home Assistant URL). The URL must end in `index.html`.
+4. Set up sign-in and, if you want, automatic updates: see
+   [docs/deploy.md](docs/deploy.md).
 
 ## Stack
 
@@ -15,12 +42,11 @@ Lovelace dashboard.
 - Vitest + happy-dom for tests, ESLint and Prettier for linting and formatting
 - Static output only, no SSR
 
-## Getting started
+## Development
 
 ```sh
 pnpm install
-cp .env.example .env   # optional, see Configuration
-pnpm dev
+pnpm dev:mock          # fake HA, no token or config needed
 ```
 
 ## Commands
@@ -42,37 +68,18 @@ Run `pnpm validate` before committing.
 
 ## Configuration
 
-The build takes no settings, and the same release works from any folder. Home
-Assistant serves `/config/www/<folder>/` at `/local/<folder>/`, so pick the
-folder you deploy into and the app works out where it is from its own address.
+The build takes no settings and works from any folder. Your home is described in
+a `config.json` beside the app's folder (a deploy replaces the whole folder, so
+the file lives next to it): for an app in `/config/www/wall-panel/` that is
+`/config/www/wall-panel.config.json`. It lists the entity ID for each tile's
+data, optional night-mode hours and optional tile names. If the file is missing
+or wrong, the dashboard shows a banner saying what is the matter.
 
-**Your home** is described in a `config.json` that the app fetches when it
-starts, so one build works for every setup and a release never contains your
-entity IDs. Copy [`config.example.json`](config.example.json), fill in your
-entity IDs, and put it **beside** the app's folder, named after it (a deploy
-replaces the whole folder): for an app in `/config/www/wall-panel/` that is
-`/config/www/wall-panel.config.json`, served at
-`/local/wall-panel.config.json`. The file has:
+- [docs/configuration.md](docs/configuration.md): the file, its fields and where it goes
+- [docs/entities.md](docs/entities.md): each entity key, its domain and what the app reads
 
-- `entities`: the Home Assistant entity ID for each key, all required. Each key
-  has a fixed domain; see [docs/entities.md](docs/entities.md) for what each is
-  for and which attributes the app reads.
-- `night` (optional): `startHour`, `endHour` (0 to 23, may span midnight) and
-  `wakeMs`, how long a tap wakes the display. Defaults to 21, 7 and 15000.
-- `labels` (optional): the names for the `light`, `room` and `ac` tiles.
-  Defaults to "Light", "Room" and "AC".
-
-If the file is missing or wrong, the dashboard shows a banner saying what is
-the matter instead of failing silently. Edits show on the next load: the app
-asks for the file without caching it.
-
-The display opens the dashboard through the dock icon's Home Assistant URL
-(Settings, Network, Home Assistant on the display), for example
-`http://<ha-ip>:8123/local/wall-panel/index.html`. The URL must end in
-`index.html`.
-
-Everything under `/local/` is served without login, so never put secrets in
-the build or in `config.json`. The display signs in to Home Assistant through the
+Everything under `/local/` is served without login, so never put secrets in the
+build or in `config.json`. The display signs in to Home Assistant through the
 `trusted_networks` provider, so it needs no token; see
 [docs/deploy.md](docs/deploy.md#signing-in-to-ha).
 
@@ -93,7 +100,7 @@ the build or in `config.json`. The display signs in to Home Assistant through th
   `wall-panel-<tag>.tar.gz` and its `.sha256` attached. The archive has
   `index.html` and `version.json` at its root.
 
-Deployment to Home Assistant is not automated yet.
+Deployment to Home Assistant is described in [docs/deploy.md](docs/deploy.md).
 
 ## Contributing
 
@@ -102,7 +109,12 @@ convention in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Docs
 
-- [docs/display.md](docs/display.md): findings from testing on the display
-- [docs/design.md](docs/design.md): the Lovable design reference and port status
+- [docs/configuration.md](docs/configuration.md): the `config.json` file
+- [docs/entities.md](docs/entities.md): the entities the app uses and what it reads
+- [docs/deploy.md](docs/deploy.md): deploying to Home Assistant, signing in, rolling back
+- [docs/display.md](docs/display.md): findings from testing on the Shelly Wall Display X2i
+- [docs/design.md](docs/design.md): the UI rules and shared pieces
+- [docs/design-notes.md](docs/design-notes.md): why it is built this way, and open questions
 - [docs/mock.md](docs/mock.md): the mock HA and its overlay
+- [docs/e2e.md](docs/e2e.md) and [docs/performance.md](docs/performance.md): screenshot tests and the performance budget
 - [docs/structure.md](docs/structure.md): how `src/` is organised and the import rules

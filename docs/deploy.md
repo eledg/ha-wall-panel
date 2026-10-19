@@ -1,51 +1,54 @@
 # Deploying to Home Assistant
 
 A daily automation pulls the latest GitHub Release into
-`/config/www/office-wall-display/`. Nothing is copied by hand.
+`/config/www/wall-panel/`. Nothing is copied by hand.
 
 ## How it works
 
-1. The automation at 04:00 calls `shell_command.deploy_office_wall`.
+1. The automation at 04:00 calls `shell_command.deploy_wall_panel`.
 2. `/config/scripts/deploy_wall.py` (a Python 3 standard-library script that
    lives only on the HA box, not in this repo) asks GitHub for the latest
    release and compares its tag with `version` in the deployed `version.json`.
    If they match it stops.
 3. Otherwise it downloads the tarball and its `.sha256`, verifies the checksum,
-   and extracts into `/config/.deploy/office-wall-display/staging`. It rejects
+   and extracts into `/config/.deploy/wall-panel/staging`. It rejects
    absolute paths, `..`, symlinks and device files, and requires `index.html`
    and a `version.json` whose `version` equals the tag.
-4. It renames the live folder to `.deploy/office-wall-display/previous`, then
+4. It renames the live folder to `.deploy/wall-panel/previous`, then
    renames staging into place. If the second rename fails, the first is undone.
 
 Exit code 1 and a persistent notification mean the run failed; the live folder
-is left as it was. Everything except `www/office-wall-display/` lives under
+is left as it was. Everything except `www/wall-panel/` lives under
 `/config/.deploy/`, which is not served under `/local/`.
 
 ## Setup
 
-1. Create a fine-grained personal access token on GitHub: resource owner is the
-   account that owns the repo, repository access is only `ha-wall-panel`,
+1. Only if you pull from a **private** repository (for example a private fork):
+   create a fine-grained personal access token on GitHub. Resource owner is the
+   account that owns the repo, repository access is only that repository,
    permission is **Contents: Read-only**. Set an expiry and note the date; the
-   pull fails with HTTP 401 once it lapses.
-2. Add it to Home Assistant's `secrets.yaml` as `github_ha_wall_display_pat`.
+   pull fails with HTTP 401 once it lapses. A public repository's releases
+   download without a token, so a script for a public repo can skip steps 1 and 2.
+2. Add it to Home Assistant's `secrets.yaml` as `github_ha_wall_panel_pat`.
    The file is outside `www`, so it is not served, and the script reads it
    directly, so the token never appears in traces or process arguments.
 3. Put the script at `/config/scripts/deploy_wall.py`. It is kept on the HA box
    and covered by the HA backup, so it is not in this repo. To rebuild it, it
    must do what "How it works" describes, take the target folder name as its
    first argument, and accept optional `--tag <tag>` and `--fail-swap` flags.
+   The repository to read releases from (`<owner>/<repo>`) is set in the script.
 4. Add the command to `configuration.yaml` and restart Home Assistant:
 
    ```yaml
    shell_command:
-     deploy_office_wall: "python3 /config/scripts/deploy_wall.py office-wall-display {{ args | default('', true) }}"
+     deploy_wall_panel: "python3 /config/scripts/deploy_wall.py wall-panel {{ args | default('', true) }}"
    ```
 
-5. Create the automation "Office wall display deploy": a `time` trigger at
-   `04:00:00`, mode `single`, that calls `shell_command.deploy_office_wall` with
+5. Create the automation "Wall panel deploy": a `time` trigger at
+   `04:00:00`, mode `single`, that calls `shell_command.deploy_wall_panel` with
    `response_variable: deploy` and `continue_on_error: true`. If
    `deploy.returncode` is not 0 (or `deploy` is undefined), create a persistent
-   notification with ID `office_wall_display_deploy` containing `deploy.stderr`;
+   notification with ID `wall_panel_deploy` containing `deploy.stderr`;
    otherwise dismiss that notification.
 
 ## The config file
@@ -102,7 +105,7 @@ removed), the app drops them and reloads once to sign in again.
 The user can still read every entity and call any service: HA cannot limit a
 non-admin user to specific entities. It only cannot change HA's configuration.
 
-Measured on the display (#16): sign-in redirect and return in about 3 seconds
+Measured on the display: sign-in redirect and return in about 3 seconds
 with no interaction, the websocket connects, and `Shelly.GetDeviceInfo` shows
 its RPC needs no auth, so nothing secret should be put in the device's KVS.
 
@@ -117,19 +120,19 @@ and `dev-ha.test.ts` builds with a sentinel token to check that.
 ## Running by hand and rolling back
 
 Run the automation from its menu with "Run actions", or call
-`shell_command.deploy_office_wall` in Developer Tools, Actions.
+`shell_command.deploy_wall_panel` in Developer Tools, Actions.
 
 To deploy a specific release (including an older one), pass the tag:
 
 ```yaml
-action: shell_command.deploy_office_wall
+action: shell_command.deploy_wall_panel
 data:
   args: '--tag v1.1.0'
 ```
 
 The next daily run goes back to the latest release. To go back to the folder
-that was live before the last deploy, swap `.deploy/office-wall-display/previous`
-back into `www/office-wall-display` over SSH.
+that was live before the last deploy, swap `.deploy/wall-panel/previous`
+back into `www/wall-panel` over SSH.
 
 ## Reloading the display
 
@@ -169,5 +172,5 @@ Verify by hand on the HA box:
   live folder untouched. Restore the script afterwards.
 - Forced swap failure: run with `args: "--fail-swap"` and confirm the live
   folder is unchanged and no `previous` folder is left behind.
-- Not served: `/local/.deploy/office-wall-display/lock` and
+- Not served: `/local/.deploy/wall-panel/lock` and
   `/local/secrets.yaml` both return 404.

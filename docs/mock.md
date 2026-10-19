@@ -39,7 +39,7 @@ each control stays visible. Its panels:
   brings back the last mode used. Attributes live in `src/dev/mock/scenarios/ac.ts`.
 - **Heating**: puts the heating in Schedule, Manual, Off or Paused (power ×
   control, as HA reports them) and flips boiler demand on its own. Also makes the
-  climate unavailable, drops the Tado cloud connection, makes the demand history
+  climate unavailable, drops the heating cloud connection, makes the demand history
   fetch fail, and `Make calls fail`. The mock validates the target like HA (5-30,
   0.5 steps), a manual target ends the schedule, switching off by hand sets control to
   off and clears demand, and Resume / Boost leave their buttons `unknown`. Six hours

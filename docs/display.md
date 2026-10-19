@@ -1,6 +1,12 @@
 # Shelly Wall Display X2i: measured findings
 
-Findings from #1, measured on the device with a plain test page.
+The panel is built and tested on a Shelly Wall Display X2i, an Android-based
+wall display, and these are the measurements that shaped it. Another Android
+display will differ in screen size, browser engine, dimming and wake behaviour,
+so repeat the checks here with a plain test page before trusting these numbers.
+Background and the reasoning behind the design are in [design-notes.md](design-notes.md).
+
+Findings from the first on-device tests, measured with a plain test page.
 
 ## Kiosk URL
 
@@ -32,7 +38,7 @@ Findings from #1, measured on the device with a plain test page.
 
 ## Behaviour while the page is not in front
 
-Findings from #10, measured with test page v4 (one-second tick, animation frame count, and logged visibility, focus and page lifecycle events, kept in `localStorage`).
+Findings from the dimmed-screen test, measured with test page v4 (one-second tick, animation frame count, and logged visibility, focus and page lifecycle events, kept in `localStorage`).
 
 - The page itself never dims or blanks. Only the Shelly app's default view does, so the screen never went dark while the page was showing.
 - To test, the display was moved from the page to the Shelly default view at about 12:36, left there for about 10 minutes, then touched.
@@ -44,13 +50,13 @@ Findings from #10, measured with test page v4 (one-second tick, animation frame 
 
 What this means for the app:
 
-- Timers and the HA connection keep running, so the `version.json` check in #11 can poll on a plain interval.
-- Nothing reloads the page on wake, so a new release only appears if the app reloads itself (#11).
+- Timers and the HA connection keep running, so the `version.json` check can poll on a plain interval.
+- Nothing reloads the page on wake, so a new release only appears if the app reloads itself (see `src/lib/auto-reload.ts`).
 - Do not rely on `visibilitychange` to detect a wake. Use `focus` if the app needs to react.
 
 ## RPC interface
 
-Findings from #41, measured from Home Assistant at `http://<display-ip>/rpc/`.
+Findings from the RPC spike, measured from Home Assistant at `http://<display-ip>/rpc/`.
 
 - `Shelly.ListMethods` answers without authentication from the HA host and lists 192 methods.
 - None of them reloads the page, so nothing in the release pull depends on one.
@@ -85,12 +91,12 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 
 ## Burn-in
 
-Decision for #31. The panel type is not confirmed, so the app shifts as cheap insurance rather than waiting.
+Decision on burn-in. The panel type is not confirmed, so the app shifts as cheap insurance rather than waiting.
 
 - `src/hooks/use-pixel-shift.ts` moves the tile grid with a CSS `transform`, up to 4 px from centre, one step every 5 minutes, gliding over 60 seconds. A transform never triggers layout, so nothing reflows. The offset comes from the wall clock, so it survives reloads with no stored state.
 - The page edge padding (1.6rem) is not shifted, so tiles stay clear of the system-gesture zone. Overlays (banner, diagnostics) are not shifted.
-- Not in the Lovable prototype; added here.
-- Still to do for #31's acceptance: a multi-hour run on the display.
+- Not part of the original design; added here.
+- Still to do: a multi-hour run on the display.
 
 ## Night mode
 
