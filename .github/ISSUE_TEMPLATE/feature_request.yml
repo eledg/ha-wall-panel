@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a tile, a setting or another improvement.
+labels: ['type:feature']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do?
+      description: The problem or the use, before the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to see
+    validations:
+      required: false
+  - type: input
+    id: display
+    attributes:
+      label: Your display
+      description: The model, if it matters for the idea.
+    validations:
+      required: false

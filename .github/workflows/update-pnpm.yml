@@ -13,6 +13,8 @@ permissions:
 
 jobs:
   update-pnpm:
+    # Needs this repository's PR_PAT_TOKEN secret, which forks do not have.
+    if: github.repository == 'eledg/ha-wall-panel'
     runs-on: ubuntu-latest
     name: Update pnpm
     steps:
@@ -20,4 +22,4 @@ jobs:
       - uses: eledg/github-actions/update-pnpm@v1
         with:
           github-token: ${{ secrets.PR_PAT_TOKEN }}
-          assignees: eledg
+          assignees: ${{ github.repository_owner }}

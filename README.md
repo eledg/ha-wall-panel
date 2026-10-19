@@ -102,10 +102,15 @@ build or in `config.json`. The display signs in to Home Assistant through the
 
 Deployment to Home Assistant is described in [docs/deploy.md](docs/deploy.md).
 
+## License
+
+[MIT](LICENSE). To report a security problem, see [SECURITY.md](SECURITY.md).
+
 ## Contributing
 
-Commit messages and PR titles drive versioning, so they must follow the
-convention in [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Commit
+messages and PR titles drive versioning, so they must follow the convention
+there.
 
 ## Docs
 
