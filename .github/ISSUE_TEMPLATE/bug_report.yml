@@ -1,0 +1,51 @@
+name: Bug report
+description: Something does not work or looks wrong on the display.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Panel version
+      description: Tap the version in the bottom right corner of the dashboard (Diagnostics), for example v2.1.1.
+    validations:
+      required: true
+  - type: input
+    id: display
+    attributes:
+      label: Display and browser
+      description: The display model, for example Shelly Wall Display X2i, or the browser if you are testing on a computer.
+    validations:
+      required: true
+  - type: input
+    id: ha
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: false
+  - type: textarea
+    id: config
+    attributes:
+      label: Your config.json
+      description: Entity IDs only. Remove anything private. Never paste a token.
+      render: json
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+    validations:
+      required: false

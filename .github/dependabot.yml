@@ -16,9 +16,6 @@ updates:
     commit-message:
       prefix: chore
       include: scope
-    labels:
-      - 'type:chore'
-      - 'domain:platform'
     groups:
       # One PR for all minor/patch bumps; majors arrive as separate PRs.
       npm-minor-patch:
@@ -38,9 +35,6 @@ updates:
     commit-message:
       prefix: ci
       include: scope
-    labels:
-      - 'type:ci'
-      - 'domain:platform'
     groups:
       github-actions:
         patterns:

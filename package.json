@@ -1,6 +1,21 @@
 {
   "name": "ha-wall-panel",
   "private": true,
+  "description": "A touch-friendly Home Assistant wall dashboard for Android wall displays.",
+  "license": "MIT",
+  "author": "Elliot Ledger",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eledg/ha-wall-panel.git"
+  },
+  "homepage": "https://github.com/eledg/ha-wall-panel#readme",
+  "bugs": "https://github.com/eledg/ha-wall-panel/issues",
+  "keywords": [
+    "home-assistant",
+    "dashboard",
+    "wall-display",
+    "preact"
+  ],
   "version": "0.0.0",
   "type": "module",
   "packageManager": "pnpm@12.11.2+sha512.25a51652a196785af5f28bda6dfe8dc582ebefa4ac1d180221ce1390231c5fb76637822ea4b6e4633ce74acdcb0a77f725af11bad38177fdeddaee818a955cb9",

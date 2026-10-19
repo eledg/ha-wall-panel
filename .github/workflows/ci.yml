@@ -20,7 +20,7 @@ jobs:
     name: prettier
     steps:
       - uses: actions/checkout@v7
-      - uses: eledg/github-actions/setup-pnpm@v1
+      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
       - run: pnpm prettier
 
   lint:
@@ -29,7 +29,7 @@ jobs:
     name: lint
     steps:
       - uses: actions/checkout@v7
-      - uses: eledg/github-actions/setup-pnpm@v1
+      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
       - run: pnpm lint
 
   typecheck:
@@ -38,7 +38,7 @@ jobs:
     name: type check
     steps:
       - uses: actions/checkout@v7
-      - uses: eledg/github-actions/setup-pnpm@v1
+      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
       - run: pnpm typecheck
 
   test:
@@ -47,7 +47,7 @@ jobs:
     name: test
     steps:
       - uses: actions/checkout@v7
-      - uses: eledg/github-actions/setup-pnpm@v1
+      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
       - run: pnpm test
 
   e2e:
@@ -59,7 +59,7 @@ jobs:
     container: mcr.microsoft.com/playwright:v1.64.0-noble
     steps:
       - uses: actions/checkout@v7
-      - uses: eledg/github-actions/setup-pnpm@v1
+      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
       - run: pnpm test:e2e
       # Holds the diff images on failure, and the rendered screenshots so a
       # baseline can be taken from CI (see docs/e2e.md).
@@ -78,5 +78,5 @@ jobs:
     name: build
     steps:
       - uses: actions/checkout@v7
-      - uses: eledg/github-actions/setup-pnpm@v1
+      - uses: eledg/github-actions/setup-pnpm@c2683b33f7a342f113284c78d0f31a4506c8a35e # v1
       - run: pnpm build
