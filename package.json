@@ -40,7 +40,7 @@
     "eslint-plugin-prefer-arrow": "^1.2.3",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.1",
     "prettier": "^3.9.10",
     "semantic-release": "^25.0.9",
     "tailwindcss": "^4.3.3",
