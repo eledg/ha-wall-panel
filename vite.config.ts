@@ -12,12 +12,11 @@ import { devHaPlugin } from './dev-ha.ts';
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  // Folder under HA's /config/www/ that this build is served from.
-  // Override with WALL_BASE_PATH to target another display.
-  const base = env.WALL_BASE_PATH || '/local/wall-panel/';
 
   return {
-    base,
+    // Relative asset URLs, so one build works from any folder under HA's
+    // /config/www/ (the page URL must end in index.html or a slash).
+    base: './',
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
@@ -26,7 +25,7 @@ export default defineConfig(({ mode }) => {
       preact(),
       buildInfoPlugin(resolveBuildInfo(env)),
       bundleBudgetPlugin(),
-      devHaPlugin(env, base),
+      devHaPlugin(env),
     ],
     // Fail rather than drift to another port, so `pnpm dev` is never mistaken
     // for a `pnpm dev:mock` server still running on the usual one.

@@ -53,7 +53,8 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 The release holds no entity IDs. The app reads them from a `config.json` that
 you keep on the HA box (see the README, Configuration). The deploy swaps the
 whole `www/<folder>/` directory, so the file lives **beside** it and survives
-every deploy: for a build served from `/local/<folder>/` it is
+every deploy. The build has no fixed folder: the app works out its folder from
+the page's address, so for a page at `/local/<folder>/index.html` the file is
 `/config/www/<folder>.config.json`, at `/local/<folder>.config.json`. Create it
 once, before the first deploy of a build that needs it. A missing or invalid file
 shows a banner on the display instead of the tiles' data.

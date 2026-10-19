@@ -99,7 +99,7 @@ describe('production build', () => {
   const out = mkdtempSync(join(tmpdir(), 'wall-build-'));
   afterEach(() => rmSync(out, { recursive: true, force: true }));
 
-  it('does not contain the dev token', async () => {
+  it('does not contain the dev token, and uses relative URLs', async () => {
     // Vitest sets NODE_ENV=test, which would build the larger development bundle.
     const nodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
@@ -131,6 +131,11 @@ describe('production build', () => {
       expect(text, file).not.toContain('HA flips light');
       expect(text, file).not.toContain('mock-overlay');
     }
+
+    // One build serves from any folder, so no asset URL may be absolute.
+    const html = readFileSync(join(out, 'index.html'), 'utf8');
+    expect(html).toContain('src="./assets/');
+    expect(html).not.toMatch(/(?:src|href)="\//);
   }, 30_000);
 });
 
@@ -145,11 +150,7 @@ describe('dev-ha plugin, config.json', () => {
   };
 
   /** Mounts the plugin on a fake dev server and returns what it serves where. */
-  const mount = (
-    mode: string,
-    settings: Record<string, string>,
-    base = '/local/wall/',
-  ) => {
+  const mount = (mode: string, settings: Record<string, string>) => {
     const mounted: { path: string; handler: Handler }[] = [];
     const server = {
       config: { mode },
@@ -158,9 +159,7 @@ describe('dev-ha plugin, config.json', () => {
           mounted.push({ path, handler }),
       },
     };
-    (devHaPlugin(settings, base).configureServer as (s: unknown) => void)(
-      server,
-    );
+    (devHaPlugin(settings).configureServer as (s: unknown) => void)(server);
     return mounted;
   };
 
@@ -189,7 +188,7 @@ describe('dev-ha plugin, config.json', () => {
     const [route] = mount('development', { HA_DEV_CONFIG: file });
     const res = await request(route!.handler);
 
-    expect(route!.path).toBe('/local/wall.config.json');
+    expect(route!.path).toBe('/config.json');
     expect(res.headers['content-type']).toBe('application/json');
     expect(res.body).toBe('{"entities":{}}');
   });
