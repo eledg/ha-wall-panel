@@ -41,7 +41,7 @@ runs:
       run: |
         mkdir -p "$HOME/.sonar/scanner"
         url="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${{ inputs.scanner-version }}.zip"
-        curl -fsSLo /tmp/sonar-scanner.zip "$url"
+        curl --proto '=https' --tlsv1.2 -fsSLo /tmp/sonar-scanner.zip "$url"
         unzip -q /tmp/sonar-scanner.zip -d /tmp/sonar-extract
         mv /tmp/sonar-extract/sonar-scanner-*/* "$HOME/.sonar/scanner/"
         chmod +x "$HOME/.sonar/scanner/bin/sonar-scanner"
