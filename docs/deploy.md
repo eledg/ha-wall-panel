@@ -24,7 +24,7 @@ is left as it was. Everything except `www/office-wall-display/` lives under
 ## Setup
 
 1. Create a fine-grained personal access token on GitHub: resource owner is the
-   account that owns the repo, repository access is only `ha-wall-dashboard`,
+   account that owns the repo, repository access is only `ha-wall-panel`,
    permission is **Contents: Read-only**. Set an expiry and note the date; the
    pull fails with HTTP 401 once it lapses.
 2. Add it to Home Assistant's `secrets.yaml` as `github_ha_wall_display_pat`.
@@ -48,12 +48,22 @@ is left as it was. Everything except `www/office-wall-display/` lives under
    notification with ID `office_wall_display_deploy` containing `deploy.stderr`;
    otherwise dismiss that notification.
 
+## The config file
+
+The release holds no entity IDs. The app reads them from a `config.json` that
+you keep on the HA box (see the README, Configuration). The deploy swaps the
+whole `www/<folder>/` directory, so the file lives **beside** it and survives
+every deploy: for a build served from `/local/<folder>/` it is
+`/config/www/<folder>.config.json`, at `/local/<folder>.config.json`. Create it
+once, before the first deploy of a build that needs it. A missing or invalid file
+shows a banner on the display instead of the tiles' data.
+
 ## Signing in to HA
 
 The app talks to HA over its websocket and needs credentials. `/local/` is
 served without login, so no secret can ship in a release. Instead HA signs the
 display in by its address, using the `trusted_networks` provider, and the app
-keeps the resulting tokens in `localStorage` (key `ha-wall-dashboard:auth`).
+keeps the resulting tokens in `localStorage` (key `ha-wall-panel:auth`).
 
 1. Create a dedicated non-admin user for the display (Settings, People). With
    Advanced mode on, open the user's dialog and copy its ID.

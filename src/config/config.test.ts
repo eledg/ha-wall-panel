@@ -1,6 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { config, placeholder, validateConfig } from './config.ts';
+import { mockConfig } from '@/dev/mock/config.ts';
+
+import {
+  applyConfig,
+  entitiesFrom,
+  entityId,
+  getConfig,
+  markConfigUnavailable,
+  placeholder,
+  validateConfig,
+} from './config.ts';
 
 const withEntities = (
   entities: Record<
@@ -11,9 +21,54 @@ const withEntities = (
   entities,
 });
 
+describe('getConfig and entityId', () => {
+  afterEach(() => applyConfig(mockConfig));
+
+  it('read the config that was applied last', () => {
+    expect(entityId('light')).toBe('switch.wall_light');
+
+    applyConfig({
+      ...mockConfig,
+      entities: entitiesFrom((key) => `sensor.${key.toLowerCase()}`),
+    });
+
+    expect(entityId('light')).toBe('sensor.light');
+    expect(getConfig().entities.weather.id).toBe('sensor.weather');
+    expect(getConfig().entities.weather.domain).toBe('weather');
+  });
+});
+
 describe('validateConfig', () => {
-  it('accepts the shipped config', () => {
-    expect(validateConfig(config)).toEqual([]);
+  it('accepts the fixture config', () => {
+    expect(validateConfig(getConfig())).toEqual([]);
+  });
+
+  it('flags every entity of a config that is all placeholders', () => {
+    const issues = validateConfig({
+      entities: entitiesFrom(placeholder),
+    });
+
+    expect(issues).toHaveLength(Object.keys(mockConfig.entities).length);
+    expect(issues.every((i) => /placeholder/.test(i.message))).toBe(true);
+  });
+
+  it('reports only that config.json is unreadable when it could not be read', () => {
+    markConfigUnavailable('could not read /x: HTTP 404');
+
+    expect(validateConfig()).toEqual([
+      { key: 'config.json', message: 'could not read /x: HTTP 404' },
+    ]);
+    applyConfig(mockConfig);
+    expect(validateConfig()).toEqual([]);
+  });
+
+  it('adds problems found while reading to the live config issues', () => {
+    applyConfig(mockConfig, [{ key: 'night', message: 'must be an object' }]);
+
+    expect(validateConfig()).toEqual([
+      { key: 'night', message: 'must be an object' },
+    ]);
+    applyConfig(mockConfig);
   });
 
   it('flags a placeholder entity', () => {

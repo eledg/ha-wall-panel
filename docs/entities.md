@@ -1,32 +1,33 @@
 # Entity inventory
 
-Entity IDs the dashboard uses, added one milestone at a time.
+The entities the dashboard uses. Each row is a key in the `entities` object of
+`config.json` (see the README, Configuration); you supply the Home Assistant entity
+ID for each, and it must be in the domain shown.
 
-| Entity ID                                                         | Domain          | Attributes read                                                                                                                         | Notes                                                   |
-| ----------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `switch.shellywallx2i_office`                                     | `switch`        | `state`                                                                                                                                 | Office room light, via the display's relay. No dimming. |
-| `weather.met_office_london`                                       | `weather`       | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Met Office, London. See [Weather](#weather).            |
-| `calendar.family`                                                 | `calendar`      | `state`; events via REST                                                                                                                | Shared family calendar. See [Calendars](#calendars).    |
-| `calendar.f1`                                                     | `calendar`      | `state`; events via REST                                                                                                                | Formula 1 race weekends.                                |
-| `calendar.birthdays`                                              | `calendar`      | `state`; events via REST                                                                                                                | Yearly all-day birthdays.                               |
-| `climate.office_climate_air_conditioning_office`                  | `climate`       | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | Office AC. See [Air conditioning](#air-conditioning).   |
-| `switch.office_climate_air_conditioning_office_powerful`          | `switch`        | `state`                                                                                                                                 | AC Powerful boost.                                      |
-| `switch.office_climate_air_conditioning_office_economy_mode`      | `switch`        | `state`                                                                                                                                 | AC economy mode.                                        |
-| `switch.office_climate_air_conditioning_office_quiet_fan`         | `switch`        | `state`                                                                                                                                 | AC quiet fan.                                           |
-| `sensor.blu_ht_office_temperature`                                | `sensor`        | `state`                                                                                                                                 | Office temperature. See [Office](#office-temperature).  |
-| `sensor.blu_ht_office_humidity`                                   | `sensor`        | `state`                                                                                                                                 | Office humidity.                                        |
-| `sensor.blu_ht_office_battery`                                    | `sensor`        | `state`                                                                                                                                 | Office sensor battery; diagnostics only.                |
-| `climate.wireless_temperature_sensor_x`                           | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating (Tado). See [Heating](#heating).        |
-| `switch.living_room_schedule`                                     | `switch`        | `state`                                                                                                                                 | Heating control: on follows the schedule.               |
-| `binary_sensor.tado_home_heating_demand`                          | `binary_sensor` | `state`                                                                                                                                 | Boiler demand, whole house.                             |
-| `binary_sensor.tado_temperature_sensor_x_000000_cloud_connection` | `binary_sensor` | `state`                                                                                                                                 | Tado cloud link; `off` makes the heating unavailable.   |
-| `button.living_room_resume_schedule`                              | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                               |
-| `button.tado_home_boost_all_zones`                                | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                         |
+| Config key          | Domain          | Attributes read                                                                                                                         | Notes                                                   |
+| ------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `light`             | `switch`        | `state`                                                                                                                                 | Office room light, via the display's relay. No dimming. |
+| `weather`           | `weather`       | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Met Office, London. See [Weather](#weather).            |
+| `calendarFamily`    | `calendar`      | `state`; events via REST                                                                                                                | Shared family calendar. See [Calendars](#calendars).    |
+| `calendarF1`        | `calendar`      | `state`; events via REST                                                                                                                | Formula 1 race weekends.                                |
+| `calendarBirthdays` | `calendar`      | `state`; events via REST                                                                                                                | Yearly all-day birthdays.                               |
+| `acClimate`         | `climate`       | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | Office AC. See [Air conditioning](#air-conditioning).   |
+| `acPowerful`        | `switch`        | `state`                                                                                                                                 | AC Powerful boost.                                      |
+| `acEconomy`         | `switch`        | `state`                                                                                                                                 | AC economy mode.                                        |
+| `acQuietFan`        | `switch`        | `state`                                                                                                                                 | AC quiet fan.                                           |
+| `roomTemperature`   | `sensor`        | `state`                                                                                                                                 | Office temperature. See [Office](#office-temperature).  |
+| `roomHumidity`      | `sensor`        | `state`                                                                                                                                 | Office humidity.                                        |
+| `roomBattery`       | `sensor`        | `state`                                                                                                                                 | Office sensor battery; diagnostics only.                |
+| `heatingClimate`    | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating (Tado). See [Heating](#heating).        |
+| `heatingSchedule`   | `switch`        | `state`                                                                                                                                 | Heating control: on follows the schedule.               |
+| `heatingDemand`     | `binary_sensor` | `state`                                                                                                                                 | Boiler demand, whole house.                             |
+| `heatingCloud`      | `binary_sensor` | `state`                                                                                                                                 | Tado cloud link; `off` makes the heating unavailable.   |
+| `heatingResume`     | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                               |
+| `heatingBoost`      | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                         |
 
 ## Calendars
 
-Only the three calendars above are shown. HA also has `calendar.calendar` and
-three `calendar.octopus_energy_*` entities; the dashboard ignores them.
+Only the three calendars above are shown; any other calendar in HA is ignored.
 
 - **State** is `on` while an event is in progress, else `off`. The attributes
   describe a single event (`message`, `all_day`, `start_time`, `end_time`), so
@@ -65,8 +66,9 @@ SINGAPORE GRAND PRIX 2026 - Race`), so the store rewrites them as
 
 ## Weather
 
-`weather.forecast_home` (Met.no) also exists but only supports daily and hourly
-forecasts, and the Met Office entity reports local observations.
+The `weather` entity needs hourly forecast support (see `supported_features`
+below). Tested with the Met Office integration; an integration that offers only
+daily forecasts shows current conditions alone.
 
 - **State** is the condition (`sunny`, `partlycloudy`, `rainy`, `pouring`, ...).
   The tile maps every HA condition onto the design's eight icons.
@@ -76,15 +78,14 @@ forecasts, and the Met Office entity reports local observations.
   `{ type: 'hourly' }`, called with `return_response`. The response is
   `{ [entity_id]: { forecast: [{ datetime, condition, temperature, precipitation_probability, ... }] } }`,
   one item per hour, starting from the current hour, with UTC `datetime`s.
-- **`supported_features`** is a bitmask: 1 daily, 2 hourly, 4 twice-daily. Met Office
-  reports 7. The store skips the forecast call when the hourly bit is unset.
+- **`supported_features`** is a bitmask: 1 daily, 2 hourly, 4 twice-daily. The Met
+  Office integration reports 7. The store skips the forecast call when the hourly bit is unset.
 - HA sends no event when a forecast changes, so the store refetches on entity
   changes, on reconnect, and every 30 minutes.
 
 ## Air conditioning
 
-The office unit is the only one shown; the master bedroom has its own climate
-entity, which the dashboard ignores. The tile (`components/tiles/ac-tile.tsx`) opens a control
+One unit is shown, the `acClimate` entity; any other climate entity is ignored. The tile (`components/tiles/ac-tile.tsx`) opens a control
 sheet (`ac-sheet.tsx`).
 
 - **State** is the HVAC mode: `off`, `cool`, `heat`, `fan_only`, `dry` or `auto`.
@@ -108,49 +109,49 @@ sheet (`ac-sheet.tsx`).
   `..._indoor_led` and outdoor / indoor temperature sensors; the dashboard
   ignores them (the indoor sensor repeats `current_temperature`).
 
-## Office temperature
+## Room temperature
 
-The Office tile (`components/tiles/temperature-tile.tsx`) reads a Shelly BLU H&T sensor:
-`sensor.blu_ht_office_temperature` (shown to one decimal) and
-`sensor.blu_ht_office_humidity` (whole percent, with a droplet, above the
+The room tile (`components/tiles/temperature-tile.tsx`) reads one temperature and humidity sensor (tested with a Shelly BLU H&T):
+`roomTemperature` (shown to one decimal) and
+`roomHumidity` (whole percent, with a droplet, above the
 temperature). A missing, `unavailable` or non-numeric
 temperature shows "— n/a"; an unusable humidity shows "—" and leaves the
-temperature alone. `sensor.blu_ht_office_battery` is subscribed too, but only so the diagnostics
+temperature alone. `roomBattery` is subscribed too, but only so the diagnostics
 screen lists it (`100 %`); no tile shows it.
 
 ## Heating
 
 The Heating tile (`components/tiles/heating-tile.tsx`) and its sheet
-(`heating-sheet.tsx`) show the **whole-house** Tado heating. The tile shows the
-target (or "Off"), with no humidity, as in the design; the sheet shows the living
-room Tado sensor's temperature, the room the heating controls.
+(`heating-sheet.tsx`) show the **whole-house** heating (tested with Tado). The tile shows the
+target (or "Off"), with no humidity, as in the design; the sheet shows the room
+temperature from the `heatingClimate` entity, the room the heating controls.
 
 Two signals, kept separate (`heating-model.ts`):
 
-| State    | Power (`climate.wireless_temperature_sensor_x`) | Control (`switch.living_room_schedule`) |
-| -------- | ----------------------------------------------- | --------------------------------------- |
-| Schedule | `heat`                                          | `on`                                    |
-| Manual   | `heat`                                          | `off`                                   |
-| Off      | `off`                                           | `off`                                   |
-| Paused   | `off`                                           | `on`                                    |
+| State    | Power (`heatingClimate`) | Control (`heatingSchedule`) |
+| -------- | ------------------------ | --------------------------- |
+| Schedule | `heat`                   | `on`                        |
+| Manual   | `heat`                   | `off`                       |
+| Off      | `off`                    | `off`                       |
+| Paused   | `off`                    | `on`                        |
 
 - **Control comes from the schedule switch**, not `sensor.living_room_zone_mode`:
   after switching off by hand the zone mode lags the switch by ~4 s and would show
   a false "Paused".
 - **Paused** is Tado's automatic ~15-minute shut-off (probably open-window
   detection, unconfirmed). The UI says "Paused" and never a cause or countdown.
-- **Demand** (`binary_sensor.tado_home_heating_demand`) is home-wide and drives the
+- **Demand** (`heatingDemand`) is home-wide and drives the
   heat-waves icon alone: filled when `on`, outlined when `off`, in every state. In
   Schedule or Manual the target can be reached with no demand, so a lit tile with
   outlined waves is correct.
 - **Unavailable**: the climate or schedule entity unusable, or
-  `binary_sensor.tado_temperature_sensor_x_000000_cloud_connection` `off`. The cloud
+  `heatingCloud` `off`. The cloud
   link drops without an error, so this is the only signal that the data is stale.
 - **Services**: power is `climate.set_hvac_mode` (`heat` / `off`); the target is
   `climate.set_temperature` (5 to 30, 0.5 steps; the entity has no
   `target_temp_step`), with rapid taps sent as one call. Resume is `button.press`
-  on `button.living_room_resume_schedule` and Boost on
-  `button.tado_home_boost_all_zones`. The buttons stay `unknown` after a press, so
+  on `heatingResume` and Boost on
+  `heatingBoost`. The buttons stay `unknown` after a press, so
   the sheet's pending state is a short local timer, and Boost shows no state.
 - **Resume** is enabled in Manual and Off (`canResume`). Whether Resume from Off
   returns to the schedule is **untested** (`docs/Next steps.md`, open question 1).

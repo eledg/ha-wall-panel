@@ -4,7 +4,7 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config/config.ts';
+import { entityId, getConfig } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
 
@@ -32,11 +32,11 @@ describe('HaDebug', () => {
     await act(async () => {
       await store.start(() => Promise.resolve({} as Auth));
       push({
-        [config.entities.officeLight.id]: {
+        [entityId('light')]: {
           state: 'on',
           attributes: {},
         },
-        [config.entities.calendarFamily.id]: {
+        [entityId('calendarFamily')]: {
           state: 'off',
           attributes: {},
         },
@@ -47,7 +47,9 @@ describe('HaDebug', () => {
     expect(text).not.toContain('Mock');
     expect(text).toContain('on');
     expect(text).toContain('No event now');
-    expect(text).toContain(`${Object.keys(config.entities).length} entities`);
+    expect(text).toContain(
+      `${Object.keys(getConfig().entities).length} entities`,
+    );
   });
 
   it('lists entities alphabetically by ID', async () => {
@@ -69,6 +71,6 @@ describe('HaDebug', () => {
     );
 
     expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)));
-    expect(ids).toHaveLength(Object.keys(config.entities).length);
+    expect(ids).toHaveLength(Object.keys(getConfig().entities).length);
   });
 });

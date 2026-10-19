@@ -5,7 +5,12 @@ import type {
 } from 'home-assistant-js-websocket';
 import { describe, expect, it, vi } from 'vitest';
 
-import { config, placeholder } from '@/config/config.ts';
+import {
+  entityId,
+  getConfig,
+  placeholder,
+  type RuntimeConfig,
+} from '@/config/config.ts';
 
 import { CALENDAR_REFRESH_MS } from './calendar.ts';
 import { createHaStore, FORECAST_REFRESH_MS, retryDelay } from './store.ts';
@@ -49,38 +54,38 @@ describe('createHaStore', () => {
     const { store } = setup();
 
     expect(store.getSnapshot().subscribed).toEqual(
-      Object.values(config.entities).map(({ id }) => id),
+      Object.values(getConfig().entities).map(({ id }) => id),
     );
   });
 
   it('omits entities that fail config validation', () => {
     const bad = {
       entities: {
-        ...config.entities,
-        officeLight: { domain: 'switch', id: placeholder('light') },
+        ...getConfig().entities,
+        light: { domain: 'switch', id: placeholder('light') },
       },
-    } as unknown as typeof config;
+    } as unknown as RuntimeConfig;
 
     const store = createHaStore(undefined, bad);
 
     expect(store.getSnapshot().subscribed).toEqual([
-      config.entities.weather.id,
-      config.entities.calendarFamily.id,
-      config.entities.calendarF1.id,
-      config.entities.calendarBirthdays.id,
-      config.entities.acClimate.id,
-      config.entities.acPowerful.id,
-      config.entities.acEconomy.id,
-      config.entities.officeTemperature.id,
-      config.entities.officeHumidity.id,
-      config.entities.officeBattery.id,
-      config.entities.acQuietFan.id,
-      config.entities.heatingClimate.id,
-      config.entities.heatingSchedule.id,
-      config.entities.heatingDemand.id,
-      config.entities.heatingCloud.id,
-      config.entities.heatingResume.id,
-      config.entities.heatingBoost.id,
+      entityId('weather'),
+      entityId('calendarFamily'),
+      entityId('calendarF1'),
+      entityId('calendarBirthdays'),
+      entityId('acClimate'),
+      entityId('acPowerful'),
+      entityId('acEconomy'),
+      entityId('acQuietFan'),
+      entityId('roomTemperature'),
+      entityId('roomHumidity'),
+      entityId('roomBattery'),
+      entityId('heatingClimate'),
+      entityId('heatingSchedule'),
+      entityId('heatingDemand'),
+      entityId('heatingCloud'),
+      entityId('heatingResume'),
+      entityId('heatingBoost'),
     ]);
   });
 
@@ -89,12 +94,12 @@ describe('createHaStore', () => {
     await store.start(settings);
 
     push({
-      [config.entities.officeLight.id]: entity('light', 'on'),
+      [entityId('light')]: entity('light', 'on'),
       'switch.unrelated': entity('other', 'on'),
     });
 
-    expect(Object.keys(store.getSnapshot().entities)).toEqual(['officeLight']);
-    expect(store.getSnapshot().entities.officeLight?.state).toBe('on');
+    expect(Object.keys(store.getSnapshot().entities)).toEqual(['light']);
+    expect(store.getSnapshot().entities.light?.state).toBe('on');
   });
 
   it('notifies subscribers only when a tracked entity changes', async () => {
@@ -104,8 +109,8 @@ describe('createHaStore', () => {
     store.subscribe(listener);
     const light = entity('light', 'on');
 
-    push({ [config.entities.officeLight.id]: light });
-    push({ [config.entities.officeLight.id]: light, 'switch.other': light });
+    push({ [entityId('light')]: light });
+    push({ [entityId('light')]: light, 'switch.other': light });
 
     expect(listener).toHaveBeenCalledTimes(1);
   });
@@ -207,7 +212,7 @@ describe('createHaStore', () => {
       const { store, listeners, push } = setup();
       await store.start(settings);
       vi.setSystemTime(new Date('2026-03-14T09:45:00Z'));
-      push({ [config.entities.officeLight.id]: entity('light', 'on') });
+      push({ [entityId('light')]: entity('light', 'on') });
       expect(store.getSnapshot().lastUpdate).toBeUndefined();
 
       vi.setSystemTime(new Date('2026-03-14T09:50:00Z'));
@@ -239,21 +244,21 @@ describe('createHaStore', () => {
     const { store, deps, conn } = setup();
     await store.start(settings);
 
-    await store.callService('officeLight', 'toggle');
+    await store.callService('light', 'toggle');
 
     expect(deps.callService).toHaveBeenCalledWith(
       conn,
       'switch',
       'toggle',
       undefined,
-      { entity_id: config.entities.officeLight.id },
+      { entity_id: entityId('light') },
     );
   });
 
   it('rejects a service call while not connected', async () => {
     const { store, deps } = setup();
 
-    await expect(store.callService('officeLight', 'toggle')).rejects.toThrow();
+    await expect(store.callService('light', 'toggle')).rejects.toThrow();
     expect(deps.callService).not.toHaveBeenCalled();
   });
 
@@ -269,7 +274,7 @@ describe('createHaStore', () => {
 
   it('fetches the forecast when a weather entity changes and keeps it on failure', async () => {
     const { store, deps, push } = setup();
-    const id = config.entities.weather.id;
+    const id = entityId('weather');
     const forecast = [{ datetime: '2026-01-05T10:00:00Z', temperature: 9 }];
     deps.callService.mockResolvedValueOnce({
       response: { [id]: { forecast } },
@@ -298,7 +303,7 @@ describe('createHaStore', () => {
   });
 
   describe('forecast refresh', () => {
-    const id = config.entities.weather.id;
+    const id = entityId('weather');
     const forecastCalls = (deps: ReturnType<typeof setup>['deps']) =>
       deps.callService.mock.calls.filter(
         ([, , service]) => service === 'get_forecasts',
@@ -378,9 +383,9 @@ describe('calendars', () => {
         .sort(),
     ).toEqual(
       [
-        config.entities.calendarBirthdays.id,
-        config.entities.calendarF1.id,
-        config.entities.calendarFamily.id,
+        entityId('calendarBirthdays'),
+        entityId('calendarF1'),
+        entityId('calendarFamily'),
       ].sort(),
     );
     const [, , start, end] = calls(deps)[0]!;
@@ -417,10 +422,7 @@ describe('calendars', () => {
     const before = calls(deps).length;
 
     push({
-      [config.entities.calendarF1.id]: entity(
-        config.entities.calendarF1.id,
-        'on',
-      ),
+      [entityId('calendarF1')]: entity(entityId('calendarF1'), 'on'),
     });
 
     expect(calls(deps)).toHaveLength(before + 1);

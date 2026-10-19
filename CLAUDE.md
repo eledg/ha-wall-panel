@@ -1,4 +1,4 @@
-# ha-wall-dashboard
+# ha-wall-panel
 
 See `docs/` for background. UI design reference: `docs/design.md` (the prototype is
 in the git-ignored `.lovable-design/`, which may be absent in a fresh clone). Run `pnpm validate` before committing.

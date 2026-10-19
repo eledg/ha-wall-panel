@@ -14,7 +14,7 @@ import { DeviceTile, Temperature } from './base/device-tile.tsx';
 import { tileState } from './base/tile.tsx';
 
 /**
- * The office AC: the target temperature and mode when on, "Off" when not.
+ * The air conditioning: the target temperature and mode when on, "Off" when not.
  * Tapping opens the `AcSheet` with every control.
  */
 export const AcTile = ({

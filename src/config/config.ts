@@ -1,4 +1,4 @@
-/** Marks an entity ID that hasn't been confirmed yet (see #13). */
+/** Marks an entity ID that hasn't been filled in yet. */
 export const PLACEHOLDER_PREFIX = 'TODO:';
 
 export const placeholder = (what: string) => `${PLACEHOLDER_PREFIX}${what}`;
@@ -12,99 +12,157 @@ export type EntityDomain =
   | 'switch'
   | 'weather';
 
-type EntitySpec = { domain: EntityDomain; id: string };
+export type EntitySpec = { domain: EntityDomain; id: string };
 
-const spec = (domain: EntityDomain, id: string): EntitySpec => ({ domain, id });
+/**
+ * The entities the dashboard needs, and the Home Assistant domain each must be
+ * in. The IDs themselves come from `config.json` (see `load.ts`); the domain is
+ * fixed here because the app calls domain-specific services on them.
+ */
+export const ENTITY_DOMAINS = {
+  /** A room light, a plain switch: no dimming. */
+  light: 'switch',
+  /** Current conditions plus hourly forecast. */
+  weather: 'weather',
+  /** Shared family calendar. */
+  calendarFamily: 'calendar',
+  /** Formula 1 race weekends. */
+  calendarF1: 'calendar',
+  /** Birthdays: yearly all-day events. */
+  calendarBirthdays: 'calendar',
+  /** Air conditioning: mode, target, fan speed and swing. */
+  acClimate: 'climate',
+  /** AC "Powerful" boost. */
+  acPowerful: 'switch',
+  /** AC economy mode. */
+  acEconomy: 'switch',
+  /** AC quiet fan. */
+  acQuietFan: 'switch',
+  /** Room temperature sensor. */
+  roomTemperature: 'sensor',
+  /** Room humidity, from the same sensor. */
+  roomHumidity: 'sensor',
+  /** Battery of the room sensor; shown in the diagnostics screen only. */
+  roomBattery: 'sensor',
+  /** Central heating: power (`heat` / `off`), target and room temperature. */
+  heatingClimate: 'climate',
+  /** Heating control: on follows the schedule, off is manual (or switched off). */
+  heatingSchedule: 'switch',
+  /** Whether the heating is asking the boiler for heat, for the whole house. */
+  heatingDemand: 'binary_sensor',
+  /** Cloud connection of the heating: its data goes stale silently when it drops. */
+  heatingCloud: 'binary_sensor',
+  /** Returns the heating to its schedule. Press-only: the state is never read. */
+  heatingResume: 'button',
+  /** Boosts heating. Press-only: the state is never read. */
+  heatingBoost: 'button',
+} as const satisfies Record<string, EntityDomain>;
 
-/** The entities the dashboard needs; add to this each milestone. */
-export const config = {
-  entities: {
-    /** Office light, via the display's relay. A plain switch: no dimming. */
-    officeLight: spec('switch', 'switch.shellywallx2i_office'),
-    /** Met Office, London: current conditions plus hourly forecast. */
-    weather: spec('weather', 'weather.met_office_london'),
-    /** Shared family calendar. */
-    calendarFamily: spec('calendar', 'calendar.family'),
-    /** Formula 1 race weekends. */
-    calendarF1: spec('calendar', 'calendar.f1'),
-    /** Birthdays: yearly all-day events. */
-    calendarBirthdays: spec('calendar', 'calendar.birthdays'),
-    /** Office air conditioning: mode, target, fan speed and swing. */
-    acClimate: spec(
-      'climate',
-      'climate.office_climate_air_conditioning_office',
-    ),
-    /** AC "Powerful" boost. */
-    acPowerful: spec(
-      'switch',
-      'switch.office_climate_air_conditioning_office_powerful',
-    ),
-    /** AC economy mode. */
-    acEconomy: spec(
-      'switch',
-      'switch.office_climate_air_conditioning_office_economy_mode',
-    ),
-    /** Office room temperature: Shelly BLU H&T sensor. */
-    officeTemperature: spec('sensor', 'sensor.blu_ht_office_temperature'),
-    /** Office humidity: the same Shelly BLU H&T sensor. */
-    officeHumidity: spec('sensor', 'sensor.blu_ht_office_humidity'),
-    /** Battery of the office sensor; shown in the diagnostics screen only. */
-    officeBattery: spec('sensor', 'sensor.blu_ht_office_battery'),
-    /** AC quiet fan. */
-    acQuietFan: spec(
-      'switch',
-      'switch.office_climate_air_conditioning_office_quiet_fan',
-    ),
-    /** Central heating (Tado): power (`heat` / `off`), target and room temperature. */
-    heatingClimate: spec('climate', 'climate.wireless_temperature_sensor_x'),
-    /** Heating control: on follows the schedule, off is manual (or switched off). */
-    heatingSchedule: spec('switch', 'switch.living_room_schedule'),
-    /** Whether Tado is asking the boiler for heat, for the whole house. */
-    heatingDemand: spec(
-      'binary_sensor',
-      'binary_sensor.tado_home_heating_demand',
-    ),
-    /** Tado cloud connection: heating data goes stale silently when it drops. */
-    heatingCloud: spec(
-      'binary_sensor',
-      'binary_sensor.tado_temperature_sensor_x_000000_cloud_connection',
-    ),
-    /** Returns the heating to its schedule. Press-only: the state is never read. */
-    heatingResume: spec('button', 'button.living_room_resume_schedule'),
-    /** Boosts heating. Press-only: the state is never read. */
-    heatingBoost: spec('button', 'button.tado_home_boost_all_zones'),
-  },
-  /**
-   * Night mode (src/lib/night.ts): from `startHour` until `endHour` local time the
-   * palette turns warm and dim. It may span midnight. A tap wakes the display
-   * for `wakeMs`.
-   */
-  night: { startHour: 21, endHour: 7, wakeMs: 15_000 },
-} as const satisfies {
-  entities: Record<string, EntitySpec>;
-  night: NightConfig;
-};
+export type EntityKey = keyof typeof ENTITY_DOMAINS;
 
+export const ENTITY_KEYS = Object.keys(ENTITY_DOMAINS) as EntityKey[];
+
+/**
+ * Night mode (src/lib/night.ts): from `startHour` until `endHour` local time the
+ * palette turns warm and dim. It may span midnight. A tap wakes the display
+ * for `wakeMs`.
+ */
 export type NightConfig = {
   startHour: number;
   endHour: number;
   wakeMs: number;
 };
 
+/** Names shown on the tiles and sheets that stand for one room or device. */
+export type Labels = { light: string; room: string; ac: string };
+
+export const DEFAULT_NIGHT: NightConfig = {
+  startHour: 21,
+  endHour: 7,
+  wakeMs: 15_000,
+};
+
+export const DEFAULT_LABELS: Labels = {
+  light: 'Light',
+  room: 'Room',
+  ac: 'AC',
+};
+
+/** What `validateConfig` accepts; looser than `RuntimeConfig` so tests can pass a few entities. */
 export type Config = {
   entities: Record<string, EntitySpec>;
   night?: NightConfig;
 };
 
+export type RuntimeConfig = {
+  entities: Record<EntityKey, EntitySpec>;
+  night: NightConfig;
+  labels: Labels;
+};
+
 export type ConfigIssue = { key: string; message: string };
+
+/** Every entity set to `value(key)`, in its fixed domain. */
+export const entitiesFrom = (
+  value: (key: EntityKey) => string,
+): RuntimeConfig['entities'] =>
+  Object.fromEntries(
+    ENTITY_KEYS.map((key) => [
+      key,
+      { domain: ENTITY_DOMAINS[key], id: value(key) },
+    ]),
+  ) as RuntimeConfig['entities'];
+
+/**
+ * The live configuration: all placeholders until `applyConfig` replaces it,
+ * once, before the app starts (from `config.json`, or the mock's fixture).
+ * Read it through `getConfig` / `entityId` at the point of use, never at
+ * import time, when it may not be loaded yet.
+ */
+let current: RuntimeConfig = {
+  entities: entitiesFrom(placeholder),
+  night: DEFAULT_NIGHT,
+  labels: DEFAULT_LABELS,
+};
+
+export const getConfig = () => current;
+
+/** The Home Assistant entity ID configured for `key`. */
+export const entityId = (key: EntityKey) => current.entities[key].id;
+
+/** Problems found while reading `config.json`, shown with the live config's own. */
+let loadIssues: ConfigIssue[] = [];
+/** False when `config.json` could not be read at all, so there is nothing to validate. */
+let loaded = true;
+
+export const applyConfig = (
+  next: RuntimeConfig,
+  issues: ConfigIssue[] = [],
+) => {
+  current = next;
+  loadIssues = issues;
+  loaded = true;
+};
+
+/** `config.json` could not be read: the entities stay placeholders. */
+export const markConfigUnavailable = (message: string) => {
+  loadIssues = [{ key: 'config.json', message }];
+  loaded = false;
+};
 
 const ENTITY_ID = /^([a-z_]+)\.([a-z0-9_]+)$/;
 
-/** Returns one issue per missing, placeholder or malformed entity. */
-export const validateConfig = (cfg: Config = config): ConfigIssue[] => [
-  ...validateEntities(cfg),
-  ...validateNight(cfg.night),
-];
+/**
+ * Returns one issue per missing, placeholder or malformed entity. For the live
+ * config it also reports what went wrong reading `config.json`; if that file
+ * could not be read at all, that is the only issue.
+ */
+export const validateConfig = (cfg: Config = current): ConfigIssue[] => {
+  if (cfg !== current)
+    return [...validateEntities(cfg), ...validateNight(cfg.night)];
+  if (!loaded) return loadIssues;
+  return [...loadIssues, ...validateEntities(cfg), ...validateNight(cfg.night)];
+};
 
 const validateNight = (night?: NightConfig): ConfigIssue[] => {
   if (!night) return [];

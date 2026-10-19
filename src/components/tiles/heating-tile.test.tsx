@@ -4,14 +4,14 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 
 import { HeatingTile } from './heating-tile.tsx';
 
-const CLIMATE = config.entities.heatingClimate.id;
-const CLOUD = config.entities.heatingCloud.id;
+const CLIMATE = entityId('heatingClimate');
+const CLOUD = entityId('heatingCloud');
 
 const setup = async (connect = true) => {
   const mock = createMockHa();

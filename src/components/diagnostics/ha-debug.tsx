@@ -1,4 +1,4 @@
-import { config } from '@/config/config.ts';
+import { getConfig } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { EntityKey, HaStore } from '@/services/ha/store.ts';
@@ -12,9 +12,10 @@ const CALENDAR_STATE: Record<string, string> = {
 /** Live state for each configured entity, plus what the store subscribes to. */
 export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
   const { status, error, entities } = useSnapshot(store);
+  const configured = getConfig().entities;
   // Alphabetical by the entity ID shown, not by config order.
-  const keys = (Object.keys(config.entities) as EntityKey[]).sort((a, b) =>
-    config.entities[a].id.localeCompare(config.entities[b].id),
+  const keys = (Object.keys(configured) as EntityKey[]).sort((a, b) =>
+    configured[a].id.localeCompare(configured[b].id),
   );
 
   return (
@@ -30,7 +31,7 @@ export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
           const unit = entity?.attributes.unit_of_measurement;
           const raw = entity?.state;
           const state =
-            config.entities[key].domain === 'calendar' && raw
+            configured[key].domain === 'calendar' && raw
               ? (CALENDAR_STATE[raw] ?? raw)
               : (raw ?? 'no state');
           const suffix = entity && unit ? ` ${unit}` : '';
@@ -42,7 +43,7 @@ export const HaDebug = ({ store = haStore }: { store?: HaStore }) => {
               class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-4"
             >
               <dt class="min-w-0 break-all font-mono text-sm text-fg-dim">
-                {config.entities[key].id}
+                {configured[key].id}
               </dt>
               <dd class="tnum text-sm font-medium text-fg">{value}</dd>
             </div>

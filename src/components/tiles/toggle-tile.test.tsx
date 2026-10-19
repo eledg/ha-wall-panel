@@ -4,13 +4,13 @@ import { act } from 'preact/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 
 import { ToggleTile } from './toggle-tile.tsx';
 
-const id = config.entities.officeLight.id;
+const id = entityId('light');
 
 const setup = async () => {
   const mock = createMockHa();
@@ -20,7 +20,7 @@ const setup = async () => {
     render(
       <HaConnection store={store}>
         <ToggleTile
-          entity="officeLight"
+          entity="light"
           label="Office light"
           area="light"
           store={store}

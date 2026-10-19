@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
-import { config, type NightConfig } from '@/config/config.ts';
+import { getConfig, type NightConfig } from '@/config/config.ts';
 import {
   getNightMode,
   isNight,
@@ -16,7 +16,7 @@ const systemNow = () => new Date();
  */
 export const useNight = (
   now: () => Date = systemNow,
-  { startHour, endHour, wakeMs }: NightConfig = config.night,
+  { startHour, endHour, wakeMs }: NightConfig = getConfig().night,
 ) => {
   const [, setTick] = useState(0);
   const rerender = useCallback(() => setTick((n) => n + 1), []);

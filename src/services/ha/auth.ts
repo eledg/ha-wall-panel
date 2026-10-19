@@ -1,7 +1,7 @@
 import { createLongLivedTokenAuth, getAuth } from 'home-assistant-js-websocket';
 import type { Auth, AuthData } from 'home-assistant-js-websocket';
 
-export const TOKENS_KEY = 'ha-wall-dashboard:auth';
+export const TOKENS_KEY = 'ha-wall-panel:auth';
 
 /** Query parameters HA's sign-in redirect leaves on the URL. */
 const CALLBACK_PARAMS = ['auth_callback', 'code', 'state', 'storeToken'];

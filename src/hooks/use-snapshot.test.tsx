@@ -4,7 +4,7 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
 
@@ -37,7 +37,7 @@ describe('useSnapshot', () => {
     const { store, push } = await setup();
     const renders = vi.fn();
     const Probe = () => {
-      const light = useSnapshot(store, (s) => s.entities.officeLight?.state);
+      const light = useSnapshot(store, (s) => s.entities.light?.state);
       renders(light);
       return <p>{light}</p>;
     };
@@ -45,7 +45,7 @@ describe('useSnapshot', () => {
     renders.mockClear();
 
     await push({
-      [config.entities.officeLight.id]: { state: 'on', attributes: {} },
+      [entityId('light')]: { state: 'on', attributes: {} },
     });
     expect(renders).toHaveBeenCalledTimes(1);
     expect(document.body.textContent).toBe('on');
@@ -53,8 +53,8 @@ describe('useSnapshot', () => {
 
     // A new entity object with the same state, and an unrelated entity.
     await push({
-      [config.entities.officeLight.id]: { state: 'on', attributes: { a: 1 } },
-      [config.entities.weather.id]: { state: 'sunny', attributes: {} },
+      [entityId('light')]: { state: 'on', attributes: { a: 1 } },
+      [entityId('weather')]: { state: 'sunny', attributes: {} },
     });
     expect(renders).not.toHaveBeenCalled();
   });
@@ -63,19 +63,19 @@ describe('useSnapshot', () => {
     const { store, push } = await setup();
     const renders = vi.fn();
     const Probe = () => {
-      const [light] = useSnapshot(store, (s) => [s.entities.officeLight]);
+      const [light] = useSnapshot(store, (s) => [s.entities.light]);
       renders(light);
       return null;
     };
     await act(() => render(<Probe />, document.body));
     // HA keeps the object of an entity that did not change.
     const light = { state: 'on', attributes: {} };
-    await push({ [config.entities.officeLight.id]: light });
+    await push({ [entityId('light')]: light });
     renders.mockClear();
 
     await push({
-      [config.entities.officeLight.id]: light,
-      [config.entities.weather.id]: { state: 'x', attributes: {} },
+      [entityId('light')]: light,
+      [entityId('weather')]: { state: 'x', attributes: {} },
     });
     expect(renders).not.toHaveBeenCalled();
   });

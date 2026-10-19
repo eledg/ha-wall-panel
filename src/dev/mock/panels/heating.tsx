@@ -1,12 +1,8 @@
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { HEATING_STATES } from '@/dev/mock/scenarios/heating.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
-
-const climate = config.entities.heatingClimate.id;
-const demand = config.entities.heatingDemand.id;
-const cloud = config.entities.heatingCloud.id;
 
 const label = (state: string) => state.charAt(0).toUpperCase() + state.slice(1);
 
@@ -15,6 +11,9 @@ export const heatingPanel: MockPanel = {
   title: 'Heating',
   Panel: ({ mock }) => {
     useMockChanges(mock);
+    const climate = entityId('heatingClimate');
+    const demand = entityId('heatingDemand');
+    const cloud = entityId('heatingCloud');
     const state = mock.getState(climate);
     const attrs = state?.attributes ?? {};
     return (

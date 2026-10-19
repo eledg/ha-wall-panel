@@ -4,7 +4,7 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { acAttributes } from '@/dev/mock/scenarios/ac.ts';
 import { SETTLE_MS, TARGET_DEBOUNCE_MS } from '@/hooks/use-climate-commands.ts';
@@ -12,9 +12,9 @@ import { createHaStore } from '@/services/ha/store.ts';
 
 import { AcSheet } from './ac-sheet.tsx';
 
-const AC = config.entities.acClimate.id;
-const POWERFUL = config.entities.acPowerful.id;
-const OFFICE = config.entities.officeTemperature.id;
+const AC = entityId('acClimate');
+const POWERFUL = entityId('acPowerful');
+const OFFICE = entityId('roomTemperature');
 
 const setup = async ({
   on = true,

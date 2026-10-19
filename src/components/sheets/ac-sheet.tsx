@@ -15,6 +15,7 @@ import {
 } from '@/components/climate/climate-controls.tsx';
 import { TargetStepper } from '@/components/climate/target-stepper.tsx';
 import { FanIcon } from '@/components/icons/fan-icon.tsx';
+import { getConfig } from '@/config/config.ts';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import {
   useClimateCommands,
@@ -35,7 +36,7 @@ type Picker = 'mode' | 'fan' | 'swing';
 type SwitchStates = Record<SwitchKey, string | undefined>;
 
 /**
- * Full-screen controls for the office AC, as in the design: power, the room
+ * Full-screen controls for the AC, as in the design: power, the room
  * and target temperature, then mode, fan speed and swing (each opens a picker
  * of the entity's own options) and the Powerful / Economy / Quiet switches.
  *
@@ -55,7 +56,7 @@ export const AcSheet = ({
   idleMs?: number;
 }) => {
   const entity = useSnapshot(store, (s) => s.entities.acClimate);
-  const office = useSnapshot(store, (s) => s.entities.officeTemperature);
+  const room = useSnapshot(store, (s) => s.entities.roomTemperature);
   const switchStates = useSnapshot(store, (s) =>
     SWITCHES.map(({ key }) => s.entities[key]?.state ?? '').join(','),
   );
@@ -67,7 +68,7 @@ export const AcSheet = ({
       switchStates.split(',')[i] || undefined,
     ]),
   ) as SwitchStates;
-  const officeTemp = Number.parseFloat(office?.state ?? '');
+  const roomTemp = Number.parseFloat(room?.state ?? '');
   const state = { view, switches };
   const [picker, setPicker] = useState<Picker>();
   const commands = useClimateCommands(state, { name: 'AC', onClose, idleMs });
@@ -165,7 +166,7 @@ export const AcSheet = ({
       <ClimateSheet
         title={open.label}
         titleId="ac-picker-title"
-        status="Office AC"
+        status={getConfig().labels.ac}
         onClose={onClose}
         onActivity={onActivity}
       >
@@ -184,7 +185,7 @@ export const AcSheet = ({
 
   return (
     <ClimateSheet
-      title="Office AC"
+      title={getConfig().labels.ac}
       titleId="ac-title"
       status={acStatus(view, pending?.power)}
       warning={!view.usable}
@@ -201,9 +202,9 @@ export const AcSheet = ({
           onClick={togglePower}
         />
         <TargetStepper
-          currentLabel="Office now"
+          currentLabel={`${getConfig().labels.room} now`}
           targetLabel="AC target"
-          current={Number.isFinite(officeTemp) ? officeTemp : undefined}
+          current={Number.isFinite(roomTemp) ? roomTemp : undefined}
           target={steps.shown}
           min={view.min}
           max={view.max}

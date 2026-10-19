@@ -7,7 +7,12 @@ import {
 } from 'home-assistant-js-websocket';
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
-import { config, validateConfig } from '@/config/config.ts';
+import { getConfig, validateConfig } from '@/config/config.ts';
+import type {
+  ENTITY_DOMAINS,
+  EntityKey,
+  RuntimeConfig,
+} from '@/config/config.ts';
 
 import {
   CALENDAR_REFRESH_MS,
@@ -20,8 +25,7 @@ import { cancellableDelay } from './delay.ts';
 import { fetchHistory } from './history.ts';
 import type { RawHistoryState } from './history.ts';
 
-type Entities = typeof config.entities;
-export type EntityKey = keyof Entities;
+export type { EntityKey };
 
 /** The services each domain accepts through `callService`. */
 type DomainServices = {
@@ -63,7 +67,7 @@ export type ForecastItem = {
 };
 
 export type ServiceName<K extends EntityKey> =
-  DomainServices[Entities[K]['domain']];
+  DomainServices[(typeof ENTITY_DOMAINS)[K]];
 
 export type HaStatus =
   'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
@@ -125,7 +129,7 @@ const describeError = (err: unknown) => {
 
 export const createHaStore = (
   deps: HaDeps = realDeps,
-  cfg: typeof config = config,
+  cfg: RuntimeConfig = getConfig(),
 ) => {
   const invalid = new Set(validateConfig(cfg).map(({ key }) => key));
   const tracked = (Object.keys(cfg.entities) as EntityKey[]).filter(

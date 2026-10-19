@@ -4,13 +4,13 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 
 import { pickForecast, WeatherTile } from './weather-tile.tsx';
 
-const id = config.entities.weather.id;
+const id = entityId('weather');
 const text = () => document.body.textContent;
 
 afterEach(() => render(null, document.body));
