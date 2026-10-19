@@ -61,7 +61,6 @@ jobs:
         env:
           BUILD_VERSION: ${{ env.TAG }}
           GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
-          WALL_BASE_PATH: ${{ vars.WALL_BASE_PATH }}
       - name: Package
         run: |
           archive="wall-panel-${TAG}.tar.gz"

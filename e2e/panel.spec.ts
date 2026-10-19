@@ -5,7 +5,7 @@ const NOW = new Date('2026-03-14T09:41:00Z');
 
 test.beforeEach(async ({ page }) => {
   await page.clock.install({ time: NOW });
-  await page.goto('/local/wall-panel/');
+  await page.goto('/');
   // The mock controls are a dev aid, not part of the display. The pixel shift
   // moves the grid by a few px, so hold it still: baselines then never depend
   // on the shift path or step (it has its own test below).

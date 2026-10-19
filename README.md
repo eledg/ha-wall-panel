@@ -42,22 +42,15 @@ Run `pnpm validate` before committing.
 
 ## Configuration
 
-Two things are configured, and neither is in the code.
-
-**The build** takes one variable:
-
-| Variable         | Default              | Purpose                                                            |
-| ---------------- | -------------------- | ------------------------------------------------------------------ |
-| `WALL_BASE_PATH` | `/local/wall-panel/` | Public path the build is served from. Must start and end with `/`. |
-
-Home Assistant serves `/config/www/<folder>/` at `/local/<folder>/`, so set
-`WALL_BASE_PATH` to target another display or folder.
+The build takes no settings, and the same release works from any folder. Home
+Assistant serves `/config/www/<folder>/` at `/local/<folder>/`, so pick the
+folder you deploy into and the app works out where it is from its own address.
 
 **Your home** is described in a `config.json` that the app fetches when it
 starts, so one build works for every setup and a release never contains your
 entity IDs. Copy [`config.example.json`](config.example.json), fill in your
-entity IDs, and put it **beside** the app's folder, not inside it (a deploy
-replaces the whole folder): for the default base path that is
+entity IDs, and put it **beside** the app's folder, named after it (a deploy
+replaces the whole folder): for an app in `/config/www/wall-panel/` that is
 `/config/www/wall-panel.config.json`, served at
 `/local/wall-panel.config.json`. The file has:
 
@@ -96,8 +89,7 @@ the build or in `config.json`. The display signs in to Home Assistant through th
 - **Release** (`.github/workflows/release.yml`) runs when CI succeeds on
   `main`. [semantic-release](https://semantic-release.gitbook.io) tags the commit
   with the next version, worked out from the commit messages. When a version
-  is created, the workflow also builds the app (using `WALL_BASE_PATH`, set as a
-  repository variable, or the default) and publishes a GitHub Release with
+  is created, the workflow also builds the app and publishes a GitHub Release with
   `wall-panel-<tag>.tar.gz` and its `.sha256` attached. The archive has
   `index.html` and `version.json` at its root.
 

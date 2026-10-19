@@ -73,7 +73,7 @@ export const parseConfig = (
 
 /** Fetches and applies `config.json`. Never throws: a failure becomes an issue. */
 export const loadConfig = async (
-  url: string = configUrl(import.meta.env.BASE_URL),
+  url: string = configUrl(location.pathname),
   fetchFn: typeof fetch = fetch,
 ) => {
   try {

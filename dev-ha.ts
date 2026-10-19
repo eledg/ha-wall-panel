@@ -10,17 +10,15 @@ import { configUrl } from './src/config/url.ts';
 // client code by itself, and it is defined here only for `vite` (the dev
 // server). Builds and tests get undefined, so a build cannot contain it.
 // __HA_MOCK__ follows the same rule, so the mock can't reach a build either.
-export const devHaPlugin = (
-  env: Record<string, string>,
-  base = '/',
-): Plugin => ({
+export const devHaPlugin = (env: Record<string, string>): Plugin => ({
   name: 'dev-ha',
   // Serves your local config.json (HA_DEV_CONFIG, default ./config.json, git-ignored)
-  // where the app looks for it on HA, so `pnpm dev` loads it like a deploy would.
+  // where the app looks for it from the dev server's root, so `pnpm dev` loads it
+  // like a deploy would.
   configureServer: (server) => {
     if (server.config.mode !== 'development') return;
     const file = resolve(env.HA_DEV_CONFIG || 'config.json');
-    server.middlewares.use(configUrl(base), (_req, res) => {
+    server.middlewares.use(configUrl('/'), (_req, res) => {
       readFile(file, 'utf8').then(
         (text) => {
           res.setHeader('content-type', 'application/json');
