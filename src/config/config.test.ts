@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { mockConfig } from '@/dev/mock/config.ts';
 
 import {
   applyConfig,
-  config,
   entitiesFrom,
+  entityId,
+  getConfig,
   markConfigUnavailable,
   placeholder,
   validateConfig,
@@ -20,9 +21,26 @@ const withEntities = (
   entities,
 });
 
+describe('getConfig and entityId', () => {
+  afterEach(() => applyConfig(mockConfig));
+
+  it('read the config that was applied last', () => {
+    expect(entityId('light')).toBe('switch.wall_light');
+
+    applyConfig({
+      ...mockConfig,
+      entities: entitiesFrom((key) => `sensor.${key.toLowerCase()}`),
+    });
+
+    expect(entityId('light')).toBe('sensor.light');
+    expect(getConfig().entities.weather.id).toBe('sensor.weather');
+    expect(getConfig().entities.weather.domain).toBe('weather');
+  });
+});
+
 describe('validateConfig', () => {
   it('accepts the fixture config', () => {
-    expect(validateConfig(config)).toEqual([]);
+    expect(validateConfig(getConfig())).toEqual([]);
   });
 
   it('flags every entity of a config that is all placeholders', () => {

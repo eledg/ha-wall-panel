@@ -7,8 +7,12 @@ import {
 } from 'home-assistant-js-websocket';
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
-import { config, validateConfig } from '@/config/config.ts';
-import type { ENTITY_DOMAINS, EntityKey } from '@/config/config.ts';
+import { getConfig, validateConfig } from '@/config/config.ts';
+import type {
+  ENTITY_DOMAINS,
+  EntityKey,
+  RuntimeConfig,
+} from '@/config/config.ts';
 
 import {
   CALENDAR_REFRESH_MS,
@@ -125,7 +129,7 @@ const describeError = (err: unknown) => {
 
 export const createHaStore = (
   deps: HaDeps = realDeps,
-  cfg: typeof config = config,
+  cfg: RuntimeConfig = getConfig(),
 ) => {
   const invalid = new Set(validateConfig(cfg).map(({ key }) => key));
   const tracked = (Object.keys(cfg.entities) as EntityKey[]).filter(

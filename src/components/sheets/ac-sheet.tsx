@@ -15,7 +15,7 @@ import {
 } from '@/components/climate/climate-controls.tsx';
 import { TargetStepper } from '@/components/climate/target-stepper.tsx';
 import { FanIcon } from '@/components/icons/fan-icon.tsx';
-import { config } from '@/config/config.ts';
+import { getConfig } from '@/config/config.ts';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import {
   useClimateCommands,
@@ -166,7 +166,7 @@ export const AcSheet = ({
       <ClimateSheet
         title={open.label}
         titleId="ac-picker-title"
-        status={config.labels.ac}
+        status={getConfig().labels.ac}
         onClose={onClose}
         onActivity={onActivity}
       >
@@ -185,7 +185,7 @@ export const AcSheet = ({
 
   return (
     <ClimateSheet
-      title={config.labels.ac}
+      title={getConfig().labels.ac}
       titleId="ac-title"
       status={acStatus(view, pending?.power)}
       warning={!view.usable}
@@ -202,7 +202,7 @@ export const AcSheet = ({
           onClick={togglePower}
         />
         <TargetStepper
-          currentLabel={`${config.labels.room} now`}
+          currentLabel={`${getConfig().labels.room} now`}
           targetLabel="AC target"
           current={Number.isFinite(roomTemp) ? roomTemp : undefined}
           target={steps.shown}

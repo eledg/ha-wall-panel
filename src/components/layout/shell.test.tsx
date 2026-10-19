@@ -3,7 +3,7 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config/config.ts';
+import { getConfig } from '@/config/config.ts';
 import { SHIFT_STEP_MS } from '@/lib/pixel-shift.ts';
 
 import { Shell } from './shell.tsx';
@@ -75,7 +75,7 @@ describe('Shell night mode', () => {
     );
 
     act(() => {
-      vi.advanceTimersByTime(config.night.wakeMs);
+      vi.advanceTimersByTime(getConfig().night.wakeMs);
     });
     expect(main.querySelector('button')).not.toBeNull();
   });

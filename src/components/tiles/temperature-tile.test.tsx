@@ -4,14 +4,14 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 
 import { TemperatureTile } from './temperature-tile.tsx';
 
-const TEMP = config.entities.roomTemperature.id;
-const HUMIDITY = config.entities.roomHumidity.id;
+const TEMP = entityId('roomTemperature');
+const HUMIDITY = entityId('roomHumidity');
 
 const setup = async (connect = true) => {
   const mock = createMockHa();

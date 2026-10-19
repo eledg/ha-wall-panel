@@ -3,7 +3,7 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 
 import { createMockHa } from './engine.ts';
@@ -77,7 +77,7 @@ describe('Overlay', () => {
 
   it('switches weather, entity and connection state', async () => {
     const { store, press } = await setup();
-    const id = config.entities.weather.id;
+    const id = entityId('weather');
     await press('Mock');
 
     await press('Snow');
@@ -100,7 +100,7 @@ describe('Overlay', () => {
 
   it('drives the light from the same overlay', async () => {
     const { mock, press } = await setup();
-    const light = config.entities.light.id;
+    const light = entityId('light');
     await press('Mock');
 
     await press('HA flips light');

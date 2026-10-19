@@ -1,6 +1,6 @@
 import { DropletIcon } from '@/components/icons/droplet-icon.tsx';
 import { ThermoIcon } from '@/components/icons/thermo-icon.tsx';
-import { config } from '@/config/config.ts';
+import { getConfig } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { readTemperature } from '@/lib/climate/temperature-model.ts';
 import { formatHumidity, formatTemp } from '@/lib/format.ts';
@@ -32,11 +32,11 @@ export const TemperatureTile = ({
       area={area}
       state={tileState([temperatureEntity])}
       icon={<ThermoIcon class="size-4" />}
-      label={config.labels.room}
+      label={getConfig().labels.room}
       status={
         <span
           class="tnum flex items-center gap-0.5 text-xs text-fg-dim"
-          aria-label={`${config.labels.room} humidity`}
+          aria-label={`${getConfig().labels.room} humidity`}
         >
           <DropletIcon class="size-3" />
           {percent === undefined ? '—' : formatHumidity(percent)}

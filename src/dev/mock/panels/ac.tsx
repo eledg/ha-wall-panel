@@ -1,14 +1,8 @@
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
 
-const ac = config.entities.acClimate.id;
-const switches = [
-  ['Powerful', config.entities.acPowerful.id],
-  ['Economy', config.entities.acEconomy.id],
-  ['Quiet', config.entities.acQuietFan.id],
-] as const;
 const modes = ['off', 'cool', 'heat', 'fan_only', 'dry', 'auto'];
 
 export const acPanel: MockPanel = {
@@ -16,6 +10,12 @@ export const acPanel: MockPanel = {
   title: 'AC',
   Panel: ({ mock }) => {
     useMockChanges(mock);
+    const ac = entityId('acClimate');
+    const switches = [
+      ['Powerful', entityId('acPowerful')],
+      ['Economy', entityId('acEconomy')],
+      ['Quiet', entityId('acQuietFan')],
+    ] as const;
     const state = mock.getState(ac);
     const attrs = state?.attributes ?? {};
     return (

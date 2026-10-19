@@ -114,16 +114,21 @@ export const entitiesFrom = (
   ) as RuntimeConfig['entities'];
 
 /**
- * The live configuration. It starts as all placeholders and is replaced once,
- * before the app starts, by `applyConfig` (from `config.json`, or the mock's
- * fixture), so code reads `config.entities.x.id` at the point of use rather
- * than at import time.
+ * The live configuration: all placeholders until `applyConfig` replaces it,
+ * once, before the app starts (from `config.json`, or the mock's fixture).
+ * Read it through `getConfig` / `entityId` at the point of use, never at
+ * import time, when it may not be loaded yet.
  */
-export const config: RuntimeConfig = {
+let current: RuntimeConfig = {
   entities: entitiesFrom(placeholder),
   night: DEFAULT_NIGHT,
   labels: DEFAULT_LABELS,
 };
+
+export const getConfig = () => current;
+
+/** The Home Assistant entity ID configured for `key`. */
+export const entityId = (key: EntityKey) => current.entities[key].id;
 
 /** Problems found while reading `config.json`, shown with the live config's own. */
 let loadIssues: ConfigIssue[] = [];
@@ -134,9 +139,7 @@ export const applyConfig = (
   next: RuntimeConfig,
   issues: ConfigIssue[] = [],
 ) => {
-  config.entities = next.entities;
-  config.night = next.night;
-  config.labels = next.labels;
+  current = next;
   loadIssues = issues;
   loaded = true;
 };
@@ -154,8 +157,8 @@ const ENTITY_ID = /^([a-z_]+)\.([a-z0-9_]+)$/;
  * config it also reports what went wrong reading `config.json`; if that file
  * could not be read at all, that is the only issue.
  */
-export const validateConfig = (cfg: Config = config): ConfigIssue[] => {
-  if (cfg !== config)
+export const validateConfig = (cfg: Config = current): ConfigIssue[] => {
+  if (cfg !== current)
     return [...validateEntities(cfg), ...validateNight(cfg.night)];
   if (!loaded) return loadIssues;
   return [...loadIssues, ...validateEntities(cfg), ...validateNight(cfg.night)];

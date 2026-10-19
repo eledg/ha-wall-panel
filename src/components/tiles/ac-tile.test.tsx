@@ -4,13 +4,13 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 
 import { AcTile } from './ac-tile.tsx';
 
-const AC = config.entities.acClimate.id;
+const AC = entityId('acClimate');
 
 const setup = async (connect = true) => {
   const mock = createMockHa();

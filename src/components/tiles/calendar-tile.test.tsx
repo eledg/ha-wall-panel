@@ -4,7 +4,7 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { dayLabel, shortDay } from '@/lib/calendar-labels.ts';
 import { CALENDAR_STALE_MS } from '@/services/ha/calendar.ts';
@@ -193,12 +193,8 @@ describe('CalendarTile', () => {
     await vi.waitFor(() => expect(text()).toContain('Calendar unavailable'));
   });
 
-  const family = config.entities.calendarFamily.id;
-  const all = [
-    family,
-    config.entities.calendarF1.id,
-    config.entities.calendarBirthdays.id,
-  ];
+  const family = entityId('calendarFamily');
+  const all = [family, entityId('calendarF1'), entityId('calendarBirthdays')];
 
   it('leaves out a calendar whose entity is missing, and restores it', async () => {
     const { mock } = await setup();

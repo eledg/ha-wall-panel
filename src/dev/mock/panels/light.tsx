@@ -1,15 +1,14 @@
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
-
-const light = config.entities.light.id;
 
 export const lightPanel: MockPanel = {
   id: 'light',
   title: 'Light',
   Panel: ({ mock }) => {
     useMockChanges(mock);
+    const light = entityId('light');
     const on = mock.getState(light)?.state === 'on';
     return (
       <>

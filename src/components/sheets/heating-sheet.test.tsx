@@ -4,7 +4,7 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { config } from '@/config/config.ts';
+import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import type { MockHeatingState } from '@/dev/mock/scenarios/heating.ts';
 import { TARGET_DEBOUNCE_MS } from '@/hooks/use-climate-commands.ts';
@@ -12,8 +12,8 @@ import { createHaStore } from '@/services/ha/store.ts';
 
 import { HeatingSheet, PRESS_MS } from './heating-sheet.tsx';
 
-const CLIMATE = config.entities.heatingClimate.id;
-const SCHEDULE = config.entities.heatingSchedule.id;
+const CLIMATE = entityId('heatingClimate');
+const SCHEDULE = entityId('heatingSchedule');
 
 const setup = async ({
   state = 'schedule',

@@ -1,6 +1,6 @@
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
-import { config } from '@/config/config.ts';
+import { getConfig, type RuntimeConfig } from '@/config/config.ts';
 import {
   AC_DEFAULT_MODE,
   acAttributes,
@@ -91,7 +91,7 @@ export type MockControls = {
 
 const SWITCH_SERVICES = ['turn_on', 'turn_off', 'toggle'];
 
-export const createMockHa = (cfg: typeof config = config) => {
+export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   const entities = new Map<string, HassEntity>();
   const subscribers = new Set<(all: Record<string, HassEntity>) => void>();
   let connected = true;

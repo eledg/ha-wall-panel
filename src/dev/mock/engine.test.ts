@@ -1,23 +1,23 @@
 import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config/config.ts';
+import { entityId, getConfig } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 
 import { createMockHa, UNRELATED_ID } from './engine.ts';
 
-const LIGHT = config.entities.light.id;
-const WEATHER = config.entities.weather.id;
-const AC = config.entities.acClimate.id;
+const LIGHT = entityId('light');
+const WEATHER = entityId('weather');
+const AC = entityId('acClimate');
 const AC_SWITCHES = [
-  config.entities.acPowerful.id,
-  config.entities.acEconomy.id,
-  config.entities.acQuietFan.id,
+  entityId('acPowerful'),
+  entityId('acEconomy'),
+  entityId('acQuietFan'),
 ];
 const CALENDARS = [
-  config.entities.calendarFamily,
-  config.entities.calendarF1,
-  config.entities.calendarBirthdays,
+  getConfig().entities.calendarFamily,
+  getConfig().entities.calendarF1,
+  getConfig().entities.calendarBirthdays,
 ];
 
 const connect = async () => {
@@ -47,15 +47,15 @@ describe('createMockHa', () => {
         WEATHER,
         AC,
         ...AC_SWITCHES,
-        config.entities.roomTemperature.id,
-        config.entities.roomHumidity.id,
-        config.entities.roomBattery.id,
-        config.entities.heatingClimate.id,
-        config.entities.heatingSchedule.id,
-        config.entities.heatingDemand.id,
-        config.entities.heatingCloud.id,
-        config.entities.heatingResume.id,
-        config.entities.heatingBoost.id,
+        entityId('roomTemperature'),
+        entityId('roomHumidity'),
+        entityId('roomBattery'),
+        entityId('heatingClimate'),
+        entityId('heatingSchedule'),
+        entityId('heatingDemand'),
+        entityId('heatingCloud'),
+        entityId('heatingResume'),
+        entityId('heatingBoost'),
         ...CALENDARS.map(({ id }) => id),
         UNRELATED_ID,
       ].sort(),
@@ -365,9 +365,9 @@ describe('mock weather controls', () => {
 });
 
 describe('mock heating', () => {
-  const climate = config.entities.heatingClimate.id;
-  const schedule = config.entities.heatingSchedule.id;
-  const demand = config.entities.heatingDemand.id;
+  const climate = entityId('heatingClimate');
+  const schedule = entityId('heatingSchedule');
+  const demand = entityId('heatingDemand');
   const call = (
     mock: ReturnType<typeof createMockHa>,
     domain: string,
@@ -435,8 +435,8 @@ describe('mock heating', () => {
 
   it('Resume returns to the schedule from Manual and Off; Boost sets 30', async () => {
     const mock = createMockHa();
-    const resume = config.entities.heatingResume.id;
-    const boost = config.entities.heatingBoost.id;
+    const resume = entityId('heatingResume');
+    const boost = entityId('heatingBoost');
 
     mock.controls.setHeating('off');
     await call(mock, 'button', 'press', resume);

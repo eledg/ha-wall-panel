@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockConfig } from '@/dev/mock/config.ts';
 
-import { applyConfig, config, validateConfig } from './config.ts';
+import { applyConfig, entityId, getConfig, validateConfig } from './config.ts';
 import type * as Load from './load.ts';
 
 // The test setup stubs `loadConfig` for the app; these tests need the real one.
@@ -89,8 +89,8 @@ describe('loadConfig', () => {
     expect(fetchFn).toHaveBeenCalledWith('/local/wall.config.json', {
       cache: 'no-store',
     });
-    expect(config.entities.light.id).toBe('switch.desk_lamp');
-    expect(config.labels.light).toBe('Desk lamp');
+    expect(entityId('light')).toBe('switch.desk_lamp');
+    expect(getConfig().labels.light).toBe('Desk lamp');
     expect(validateConfig()).toEqual([]);
   });
 
