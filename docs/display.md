@@ -74,15 +74,16 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - Opaque utility backgrounds do apply (the tile's `bg-accent` computed correctly). Give every button an opaque background that matches what is behind it, such as `bg-bg` on the page or `bg-surface` in the dialog. Do not "simplify" these back to transparent.
 - `appearance: none` on buttons made no visible difference.
 - The full-screen "Wake display" overlay was a background-less `<button>` and lit the whole screen grey when night mode dimmed, which looked like the dimming had failed (the opacity change in #41 was not the cause). It is now a `div role="button"` in `Shell`; it cannot have an opaque background because it sits over the dashboard. Keep it a `div`.
+- The overlay is `z-40` so it sits above the diagnostics dialog and the sheets (`z-10` to `z-20`). At `z-10` the diagnostics dialog covered it, so a dimmed display could not be woken by tapping while diagnostics was open. Keep it above any full-screen layer.
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
 ### Inherited text stays day-bright at night
 
-- `body` sets `text-fg`, which resolves with the day palette; the night and dimmed tokens live on `<main>`, so text with no colour class of its own (the clock time) inherited the day colour. `Shell` now sets `text-fg` on `<main>` so inherited text follows the active palette. Keep it there.
+- `body` sets `text-fg`, which resolves with the day palette; the night and dimmed tokens used to live on `<main>`, so text with no colour class of its own (the clock time) inherited the day colour, and so did the diagnostics, config warning and disconnected banner, which render outside `<main>`. `Shell` now sets `data-night` and `data-dimmed` on `<html>`, so every element, and `body`'s inherited `text-fg`, follows the active palette. Keep the attributes on the root; `color` inherits as a resolved value, so tokens defined below `body` do not reach inherited text. Not yet measured on the device.
 
 ### Button text may render white
 
-- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. `Shell` sets `text-fg` on `<main>` so buttons inherit the active palette. Where a button's colour comes in through `className` (`ClimateButton`, `Tile`), do not add a default `text-fg` to the base classes: it can beat `text-accent-fg` or `text-warn` depending on CSS order. Not measured on the device.
+- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. Buttons inherit `body`'s `text-fg`, which follows the active palette now that the night tokens are on `<html>`. Where a button's colour comes in through `className` (`ClimateButton`, `Tile`), do not add a default `text-fg` to the base classes: it can beat `text-accent-fg` or `text-warn` depending on CSS order. Not measured on the device.
 
 ### Emoji in calendar titles are glaring
 

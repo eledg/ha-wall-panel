@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useRef } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 
 import { useNight } from '@/hooks/use-night.ts';
 import { usePixelShift } from '@/hooks/use-pixel-shift.ts';
@@ -16,12 +16,23 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
   const grid = useRef<HTMLDivElement>(null);
   usePixelShift(grid);
   const { night, dimmed, wake } = useNight();
+  // On <html>, not <main>: the diagnostics, config warning and disconnected
+  // banner render outside <main>, and inherited text (`body` sets `text-fg`)
+  // only follows the palette if the tokens are defined at or above `body`.
+  useEffect(() => {
+    const { dataset } = document.documentElement;
+    const state = { night, dimmed };
+    for (const key of ['night', 'dimmed'] as const) {
+      if (state[key]) dataset[key] = 'true';
+      else delete dataset[key];
+    }
+    return () => {
+      delete dataset.night;
+      delete dataset.dimmed;
+    };
+  }, [night, dimmed]);
   return (
-    <main
-      class="relative box-border h-dvh p-edge text-fg"
-      data-night={night ? 'true' : undefined}
-      data-dimmed={dimmed ? 'true' : undefined}
-    >
+    <main class="relative box-border h-dvh p-edge">
       <div
         ref={grid}
         class="dash-grid h-full"
@@ -40,7 +51,7 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
           role="button"
           tabIndex={0}
           aria-label="Wake display"
-          class="absolute inset-0 z-10"
+          class="absolute inset-0 z-40"
           onClick={wake}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') wake();
