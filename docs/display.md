@@ -75,6 +75,14 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - `appearance: none` on buttons made no visible difference.
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
+### Inherited text stays day-bright at night
+
+- `body` sets `text-fg`, which resolves with the day palette; the night and dimmed tokens live on `<main>`, so text with no colour class of its own (the clock time) inherited the day colour. `Shell` now sets `text-fg` on `<main>` so inherited text follows the active palette. Keep it there.
+
+### Button text may render white
+
+- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. Give every button an explicit `text-*` colour so the night and dimmed palettes apply. Not measured on the device.
+
 ### Empty flex items in buttons collapse
 
 - The calendar tile's coloured stripe was an empty `<span class="w-1.5 shrink-0">` inside a `<button class="flex">`, relying on `align-items: stretch` for its height. It rendered fine in dev but was missing on the display (the cause is inferred, not measured on the device).

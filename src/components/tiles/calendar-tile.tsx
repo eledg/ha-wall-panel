@@ -211,7 +211,7 @@ export const CalendarTile = ({
           {next ? (
             <button
               type="button"
-              class="tap relative block w-full rounded-xl bg-surface-2 py-3 pr-3 pl-[1.875rem] text-left"
+              class="tap relative block w-full rounded-xl bg-surface-2 py-3 pr-3 pl-[1.875rem] text-left text-fg"
               onClick={() => setOpen(next)}
             >
               {/* Absolutely placed: the display left an empty stretched flex item in a
@@ -247,7 +247,7 @@ export const CalendarTile = ({
                 >
                   <button
                     type="button"
-                    class="tap flex w-full min-w-0 items-center gap-2.5 rounded-lg bg-surface text-left text-base"
+                    class="tap flex w-full min-w-0 items-center gap-2.5 rounded-lg bg-surface text-left text-base text-fg"
                     onClick={() => setOpen(event)}
                   >
                     <span

@@ -112,7 +112,7 @@ export const EventSheet = ({
           <button
             type="button"
             aria-label="Close"
-            class="tap grid size-14 shrink-0 place-items-center rounded-full bg-surface-2"
+            class="tap grid size-14 shrink-0 place-items-center rounded-full bg-surface-2 text-fg"
             onClick={onClose}
           >
             <XIcon class="size-7" />

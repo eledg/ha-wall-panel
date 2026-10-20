@@ -18,7 +18,7 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
   const { night, dimmed, wake } = useNight();
   return (
     <main
-      class="relative box-border h-dvh p-edge"
+      class="relative box-border h-dvh p-edge text-fg"
       data-night={night ? 'true' : undefined}
       data-dimmed={dimmed ? 'true' : undefined}
     >

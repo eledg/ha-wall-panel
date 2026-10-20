@@ -58,7 +58,7 @@ export const Tile = ({
   const offline = useOffline();
   const state = requested === 'normal' && offline ? 'stale' : requested;
   const stale = state === 'stale';
-  const base = `tile-place relative min-w-0 overflow-hidden rounded-tile border p-4 text-left transition-colors duration-150 ${
+  const base = `tile-place relative min-w-0 overflow-hidden rounded-tile border p-4 text-left text-fg transition-colors duration-150 ${
     flash ? 'border-warn bg-warn-soft' : 'border-line bg-surface'
   } ${className}`;
   const body =

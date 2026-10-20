@@ -130,7 +130,7 @@ export const Diagnostics = ({
             <button
               type="button"
               aria-label="Close diagnostics"
-              class="tap flex size-14 shrink-0 items-center justify-center rounded-full bg-surface-2"
+              class="tap flex size-14 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg"
               onClick={() => setOpen(false)}
             >
               <XIcon />
