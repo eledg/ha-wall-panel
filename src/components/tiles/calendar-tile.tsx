@@ -45,25 +45,33 @@ export const buildAgenda = (events: CalendarEvent[], now: Date) => {
   return { next, rest };
 };
 
-/** What the tile shows, from which calendars exist, loaded, healthy and fresh. */
+/** What the tile shows, from which calendars exist, have loaded, are healthy and are fresh. */
 const calendarTileState = ({
-  old,
-  offline,
-  loaded,
-  failed,
-  present,
-  healthy,
+  hasStaleEvents,
+  isOffline,
+  hasLoadedEvents,
+  lastFetchFailed,
+  presentCalendars,
+  anyCalendarHealthy,
 }: {
-  old: boolean;
-  offline: boolean;
-  loaded: boolean;
-  failed: boolean;
-  present: number;
-  healthy: boolean;
+  /** Some calendar's cached events are older than `CALENDAR_STALE_MS`. */
+  hasStaleEvents: boolean;
+  /** The connection to HA is down. */
+  isOffline: boolean;
+  /** At least one present calendar has events (possibly cached). */
+  hasLoadedEvents: boolean;
+  /** The last events fetch failed. */
+  lastFetchFailed: boolean;
+  /** How many configured calendars have an entity in HA. */
+  presentCalendars: number;
+  /** At least one present calendar is neither `unavailable` nor `unknown`. */
+  anyCalendarHealthy: boolean;
 }): TileState => {
-  if (present === 0) return offline ? 'loading' : 'unavailable';
-  if (!loaded) return failed || !healthy ? 'unavailable' : 'loading';
-  return old ? 'stale' : 'normal'; // Tile also turns it stale while offline
+  if (presentCalendars === 0) return isOffline ? 'loading' : 'unavailable';
+  if (!hasLoadedEvents) {
+    return lastFetchFailed || !anyCalendarHealthy ? 'unavailable' : 'loading';
+  }
+  return hasStaleEvents ? 'stale' : 'normal'; // Tile also turns it stale while offline
 };
 
 /**
@@ -122,12 +130,12 @@ export const CalendarTile = ({
   });
 
   const state = calendarTileState({
-    old,
-    offline,
-    loaded,
-    failed: calendarFailed,
-    present: present.length,
-    healthy: present.some(healthy),
+    hasStaleEvents: old,
+    isOffline: offline,
+    hasLoadedEvents: loaded,
+    lastFetchFailed: calendarFailed,
+    presentCalendars: present.length,
+    anyCalendarHealthy: present.some(healthy),
   });
 
   // Beside the tile, not inside it, so the tile's stale dimming and clipping
