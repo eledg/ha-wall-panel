@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 
 import { XIcon } from '@/components/icons/x-icon.tsx';
+import { EmojiText } from '@/components/tiles/emoji-text.tsx';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
 import { dayLabel } from '@/lib/calendar-labels.ts';
@@ -107,7 +108,7 @@ export const EventSheet = ({
       <div class="flex h-full flex-col rounded-tile border border-line bg-surface p-5">
         <div class="mb-4 flex items-center justify-between gap-4">
           <h2 class="min-w-0 text-2xl leading-snug font-semibold">
-            {event.fullSummary}
+            <EmojiText text={event.fullSummary} />
           </h2>
           <button
             type="button"

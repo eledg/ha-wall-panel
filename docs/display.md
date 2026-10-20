@@ -83,6 +83,10 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 
 - A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. `Shell` sets `text-fg` on `<main>` so buttons inherit the active palette. Where a button's colour comes in through `className` (`ClimateButton`, `Tile`), do not add a default `text-fg` to the base classes: it can beat `text-accent-fg` or `text-warn` depending on CSS order. Not measured on the device.
 
+### Emoji in calendar titles are glaring
+
+- Colour emoji ignore `color`, so they stayed full brightness at night, which stood out against the night palette. `EmojiText` wraps them in `.emoji`, which applies a `filter` (saturate and brightness) only under `[data-night]`, darker again under `[data-dimmed]`; day is untouched. A filter darkens; opacity would not on this display. Not yet measured on the device.
+
 ### Empty flex items in buttons collapse
 
 - The calendar tile's coloured stripe was an empty `<span class="w-1.5 shrink-0">` inside a `<button class="flex">`, relying on `align-items: stretch` for its height. It rendered fine in dev but was missing on the display (the cause is inferred, not measured on the device).

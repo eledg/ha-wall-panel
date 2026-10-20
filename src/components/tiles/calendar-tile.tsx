@@ -3,6 +3,7 @@ import { useCallback, useState } from 'preact/hooks';
 
 import { AlertIcon } from '@/components/icons/alert-icon.tsx';
 import { EventSheet } from '@/components/sheets/event-sheet.tsx';
+import { EmojiText } from '@/components/tiles/emoji-text.tsx';
 import type { TileConfig } from '@/config/config.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
@@ -227,7 +228,7 @@ export const CalendarTile = ({
                   </span>
                 </div>
                 <div class="line-clamp-2 text-lg leading-snug">
-                  {next.summary}
+                  <EmojiText text={next.summary} />
                 </div>
               </div>
             </button>
@@ -257,7 +258,9 @@ export const CalendarTile = ({
                       {label === 'Today' ? '' : `${shortDay(label)} `}
                       {event.allDay ? 'all day' : formatTime(start)}
                     </span>
-                    <span class="min-w-0 truncate">{event.summary}</span>
+                    <span class="min-w-0 truncate">
+                      <EmojiText text={event.summary} />
+                    </span>
                   </button>
                 </li>
               );

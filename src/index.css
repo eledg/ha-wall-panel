@@ -104,6 +104,19 @@
   }
 }
 
+/*
+ * Colour emoji ignore the text colour, so tone them with a filter (not opacity,
+ * which the display renders lighter). Night only: day is untouched, and dimmed is darker still.
+ */
+@utility emoji {
+  [data-night='true'] & {
+    filter: saturate(0.5) brightness(0.55);
+  }
+  [data-dimmed='true'] & {
+    filter: saturate(0.4) brightness(0.35);
+  }
+}
+
 @utility tnum {
   font-variant-numeric: tabular-nums;
 }
