@@ -20,16 +20,15 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
   // banner render outside <main>, and inherited text (`body` sets `text-fg`)
   // only follows the palette if the tokens are defined at or above `body`.
   useEffect(() => {
-    const root = document.documentElement;
-    const set = (name: 'night' | 'dimmed', on: boolean) => {
-      if (on) root.dataset[name] = 'true';
-      else delete root.dataset[name];
-    };
-    set('night', night);
-    set('dimmed', dimmed);
+    const { dataset } = document.documentElement;
+    const state = { night, dimmed };
+    for (const key of ['night', 'dimmed'] as const) {
+      if (state[key]) dataset[key] = 'true';
+      else delete dataset[key];
+    }
     return () => {
-      set('night', false);
-      set('dimmed', false);
+      delete dataset.night;
+      delete dataset.dimmed;
     };
   }, [night, dimmed]);
   return (
