@@ -79,5 +79,5 @@
 
   setInterval(check, POLL_MS);
   window.addEventListener('focus', check);
-  check();
+  void check();
 })();
