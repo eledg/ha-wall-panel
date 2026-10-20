@@ -84,8 +84,8 @@ describe('durationLabel', () => {
 describe('EventSheet', () => {
   const FAMILY = {
     label: 'Family',
-    bar: 'bg-cal-family',
-    text: 'text-cal-family',
+    bar: 'bg-cal-yellow',
+    text: 'text-cal-yellow',
   };
 
   const show = async (e: CalendarEvent, onClose = vi.fn(), idleMs?: number) => {

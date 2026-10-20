@@ -7,9 +7,9 @@ export const COLOR_CLASSES: Record<
   CalendarColor,
   Omit<CalendarMeta, 'label'>
 > = {
-  yellow: { bar: 'bg-cal-family', text: 'text-cal-family' },
-  blue: { bar: 'bg-cal-birthdays', text: 'text-cal-birthdays' },
-  green: { bar: 'bg-cal-f1', text: 'text-cal-f1' },
+  yellow: { bar: 'bg-cal-yellow', text: 'text-cal-yellow' },
+  blue: { bar: 'bg-cal-blue', text: 'text-cal-blue' },
+  green: { bar: 'bg-cal-green', text: 'text-cal-green' },
 };
 
 export const FALLBACK: CalendarMeta = {
