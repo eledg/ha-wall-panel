@@ -55,8 +55,9 @@ The file is JSON that allows `//` and block comments, so you can annotate your o
 copy as the example does. Trailing commas are not allowed. A comment marker inside
 a string, such as a URL, is not a comment.
 
-- **`tiles`** (required): the tiles on the display, in the order they stack in
-  portrait. See [Tiles](#tiles).
+- **`tiles`** (required): the tiles on the display, each with its position. The
+  order of the list only matters if the display is turned to portrait. See
+  [Tiles](#tiles).
 - **`night`** (optional): from `startHour` until `endHour` (local time, 0 to 23,
   may span midnight) the palette turns warm and dim. A tap wakes the display for
   `wakeMs` milliseconds. Defaults: 21, 7 and 15000.
@@ -76,35 +77,20 @@ with different entities are two independent lights.
 | `label`    | Optional name shown on the tile. Default: "Light" for a toggle, "Room", "Heating", "AC", "Weather".    |
 | _entities_ | The Home Assistant entity IDs the tile reads, named per type. See the [entity reference](entities.md). |
 
-Tiles may not overlap, and a cell with no tile stays empty. In portrait the grid
-becomes two columns: tiles stack in the order they are listed, a tile wider than
-one column takes both, and `row`, `col` and `h` are ignored.
+Tiles may not overlap, and a cell with no tile stays empty.
+
+**Portrait.** If the display is turned so it is taller than wide, the 6 x 3 grid
+is replaced by two columns, and `col`, `row` and `h` are ignored. The tiles are
+placed one after another from the top, in the order they appear in `tiles`. A
+tile with `w` of 2 or more takes the full width; a tile with `w` of 1 takes half,
+so two of them sit side by side. Put the tiles in the order you want to read them
+down the screen. In landscape the order of the list makes no difference.
 
 A `calendar` tile lists its calendars instead of a single entity. Each has an
 `entity`, an optional `label` (shown in the legend) and `color` (`yellow`, `blue`
 or `green`; by default the three are used in turn), and an optional `kind`:
 `f1` shortens Formula 1 race titles and hides their notes, `birthdays` adds the
 age from a "Born 1977" note.
-
-### Moving from the old format
-
-Earlier versions used a flat `entities` object (and `labels`), with a fixed layout.
-The app now shows a banner if it finds `entities`. To move over, add a tile for
-each thing you want on the display and copy the entity IDs across:
-
-| Old key                                                                                               | Now                                                                                                             |
-| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `light`, `labels.light`                                                                               | a `toggle` tile: `entity`, `label`                                                                              |
-| `weather`                                                                                             | a `weather` tile: `entity`                                                                                      |
-| `calendarFamily`, `calendarBirthdays`, `calendarF1`                                                   | `calendars` of a `calendar` tile (`kind`: `birthdays`, `f1`)                                                    |
-| `roomTemperature`, `roomHumidity`, `roomBattery`, `labels.room`                                       | a `temperature` tile: `temperature`, `humidity`, `battery`, `label`                                             |
-| `heatingClimate`, `heatingSchedule`, `heatingDemand`, `heatingCloud`, `heatingResume`, `heatingBoost` | a `heating` tile: `climate`, `schedule`, `demand`, `cloud`, `resume`, `boost`                                   |
-| `acClimate`, `acPowerful`, `acEconomy`, `acQuietFan`, `labels.ac`                                     | an `ac` tile: `climate`, `powerful`, `economy`, `quietFan`, `label`; `room` for the room sensor the sheet shows |
-
-The old layout was: clock at column 1 row 1 spanning 3 columns, weather at column
-1 row 2 spanning 3, calendar at column 4 spanning 3 columns and 2 rows, then light
-(columns 1 to 2), room, heating and AC along row 3. `config.example.jsonc` is that
-layout.
 
 ## When something is wrong
 
