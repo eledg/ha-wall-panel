@@ -80,4 +80,30 @@ describe('Shell night mode', () => {
     });
     expect(main.querySelector('[role=button]')).not.toBeNull();
   });
+
+  it('wakes from the keyboard on Enter or Space, but not other keys', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 14, 22, 0, 0));
+    render(<Shell />, document.body);
+    const main = document.querySelector('main')!;
+    const overlay = () => main.querySelector<HTMLElement>('[role=button]')!;
+    const press = (key: string) =>
+      act(() => {
+        overlay().dispatchEvent(
+          new KeyboardEvent('keydown', { key, bubbles: true }),
+        );
+      });
+
+    press('a');
+    expect(main.dataset.dimmed).toBe('true');
+
+    press('Enter');
+    expect(main.dataset.dimmed).toBeUndefined();
+
+    act(() => {
+      vi.advanceTimersByTime(getConfig().night.wakeMs);
+    });
+    press(' ');
+    expect(main.dataset.dimmed).toBeUndefined();
+  });
 });
