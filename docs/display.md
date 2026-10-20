@@ -73,33 +73,33 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - `color-mix()` and cascade layers are supported, so this is not a missing feature. The `background-color: transparent` in Tailwind's base-layer reset is not applied to buttons, and `bg-transparent` did not fix it either.
 - Opaque utility backgrounds do apply (the tile's `bg-accent` computed correctly). Give every button an opaque background that matches what is behind it, such as `bg-bg` on the page or `bg-surface` in the dialog. Do not "simplify" these back to transparent.
 - `appearance: none` on buttons made no visible difference.
-- The full-screen "Wake display" overlay was a background-less `<button>` and lit the whole screen grey when night mode dimmed, which looked like the dimming had failed (the opacity change in #41 was not the cause). It is now a `div role="button"` in `Shell`; it cannot have an opaque background because it sits over the dashboard. Keep it a `div`.
-- The overlay is `z-40` so it sits above the diagnostics dialog and the sheets (`z-10` to `z-20`). At `z-10` the diagnostics dialog covered it, so a dimmed display could not be woken by tapping while diagnostics was open. Keep it above any full-screen layer.
+- The full-screen "Wake display" overlay was a background-less `<button>` and lit the whole screen grey when night mode dimmed, which looked like the dimming had failed. The opacity change in #41 did not fix it; making the overlay a `div role="button"` in `Shell` (#45) did, confirmed on the display on 2026-10-20. It cannot have an opaque background because it sits over the dashboard. Keep it a `div`.
+- The overlay is `z-40` so it sits above the diagnostics dialog and the sheets (`z-10` to `z-20`). At `z-10` the diagnostics dialog covered it, so a dimmed display could not be woken by tapping while diagnostics was open. Keep it above any full-screen layer. Tapping to wake with diagnostics open is confirmed on the display (2026-10-20).
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
 ### Inherited text stays day-bright at night
 
-- `body` sets `text-fg`, which resolves with the day palette; the night and dimmed tokens used to live on `<main>`, so text with no colour class of its own (the clock time) inherited the day colour, and so did the diagnostics, config warning and disconnected banner, which render outside `<main>`. `Shell` now sets `data-night` and `data-dimmed` on `<html>`, so every element, and `body`'s inherited `text-fg`, follows the active palette. Keep the attributes on the root; `color` inherits as a resolved value, so tokens defined below `body` do not reach inherited text. Not yet measured on the device.
+- `body` sets `text-fg`, which resolves with the day palette; the night and dimmed tokens used to live on `<main>`, so text with no colour class of its own (the clock time) inherited the day colour, and so did the diagnostics, config warning and disconnected banner, which render outside `<main>`. `Shell` now sets `data-night` and `data-dimmed` on `<html>`, so every element, and `body`'s inherited `text-fg`, follows the active palette. Keep the attributes on the root; `color` inherits as a resolved value, so tokens defined below `body` do not reach inherited text. Confirmed on the display (2026-10-20): the diagnostics text now matches the clock at night and dimmed.
 
 ### Button text may render white
 
-- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. Buttons inherit `body`'s `text-fg`, which follows the active palette now that the night tokens are on `<html>`. Where a button's colour comes in through `className` (`ClimateButton`, `Tile`), do not add a default `text-fg` to the base classes: it can beat `text-accent-fg` or `text-warn` depending on CSS order. Not measured on the device.
+- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. Buttons inherit `body`'s `text-fg`, which follows the active palette now that the night tokens are on `<html>`. Where a button's colour comes in through `className` (`ClimateButton`, `Tile`), do not add a default `text-fg` to the base classes: it can beat `text-accent-fg` or `text-warn` depending on CSS order. Confirmed on the display (2026-10-20): button text follows the night palette.
 
 ### Emoji in calendar titles are glaring
 
-- Colour emoji ignore `color`, so they stayed full brightness at night, which stood out against the night palette. `EmojiText` wraps them in `.emoji`, which applies a `filter` (saturate and brightness) only under `[data-night]`, darker again under `[data-dimmed]`; day is untouched. A filter darkens; opacity would not on this display. Not yet measured on the device.
+- Colour emoji ignore `color`, so they stayed full brightness at night, which stood out against the night palette. `EmojiText` wraps them in `.emoji`, which applies a `filter` (saturate and brightness) only under `[data-night]`, darker again under `[data-dimmed]`; day is untouched. A filter darkens; opacity would not on this display. Confirmed on the display (2026-10-20): the emoji are no longer glaring at night.
 
 ### Empty flex items in buttons collapse
 
 - The calendar tile's coloured stripe was an empty `<span class="w-1.5 shrink-0">` inside a `<button class="flex">`, relying on `align-items: stretch` for its height. It rendered fine in dev but was missing on the display (the cause is inferred, not measured on the device).
 - It is now absolutely positioned (`inset-y-3 left-3`) in a `relative` button. Prefer that over stretch for decorative bars inside buttons.
 
-### Opacity may make content lighter, not darker (unconfirmed)
+### Opacity on the display: not shown to be a problem
 
-- Night-mode dimming used `opacity-60` on the tile grid, and on the Shelly Wall Display X2i the dimmed state looked lighter than the awake night state (issue #21). The computed `opacity` and composited colours have **not** been measured; this was a hypothesis.
-- The likelier cause was the grey "Wake display" overlay (see "Buttons get a default grey background"). Replacing `opacity-60` with a `[data-dimmed]` palette in `src/index.css` (the night tokens at lower lightness, all opaque) did not change what the display showed; fixing the overlay is what should. So opacity itself is not shown to be a problem.
-- The palette stays, as it gives direct control of the dimmed colours. If opacity is ever suspected again, measure first: check the computed `opacity` and the dimmed colours with the probe below, and judge by eye rather than photos.
-- Other uses of opacity, left as they are: stale tiles (`opacity-60`), locked or disabled controls (`opacity-50`, `opacity-30`), `bg-bg/90` sheet backdrops and the `pending-pulse` border.
+- Night-mode dimming used `opacity-60` on the tile grid, and on the Shelly Wall Display X2i the dimmed state looked lighter than the awake night state (issue #21). The suspicion was that the display renders translucent content lighter. That was never measured.
+- The cause was the grey "Wake display" overlay (see "Buttons get a default grey background"). #41 removed `opacity-60` first and the screen still looked light; fixing the overlay in #45 cured it.
+- So opacity is neither supported nor ruled out: it was gone before the overlay was fixed, and its effect was not measured. The `[data-dimmed]` palette in `src/index.css` (the night tokens at lower lightness, all opaque) stays, as it gives direct control of the dimmed colours.
+- Other uses of opacity are unchanged: stale tiles (`opacity-60`), locked or disabled controls (`opacity-50`, `opacity-30`), `bg-bg/90` sheet backdrops and the `pending-pulse` border. If one looks wrong on the display, measure the computed `opacity` and colours with the probe below before changing it, and judge by eye rather than photos.
 
 ### Unexplained
 
