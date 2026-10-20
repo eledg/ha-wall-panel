@@ -1,10 +1,9 @@
 import { DropletIcon } from '@/components/icons/droplet-icon.tsx';
 import { ThermoIcon } from '@/components/icons/thermo-icon.tsx';
-import { getConfig } from '@/config/config.ts';
+import type { TileConfig } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { readTemperature } from '@/lib/climate/temperature-model.ts';
 import { formatHumidity, formatTemp } from '@/lib/format.ts';
-import type { GridArea } from '@/lib/grid.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
@@ -13,30 +12,33 @@ import { tileState } from './base/tile.tsx';
 
 /** The room temperature and humidity, from one sensor. */
 export const TemperatureTile = ({
-  area,
+  tile,
   store = haStore,
 }: {
-  area: GridArea;
+  tile: TileConfig<'temperature'>;
   store?: HaStore;
 }) => {
   const temperatureEntity = useSnapshot(
     store,
-    (s) => s.entities.roomTemperature,
+    (s) => s.entities[tile.entities.temperature],
   );
-  const humidityEntity = useSnapshot(store, (s) => s.entities.roomHumidity);
+  const humidityEntity = useSnapshot(
+    store,
+    (s) => s.entities[tile.entities.humidity],
+  );
   const { value } = readTemperature(temperatureEntity);
   const { value: percent } = readTemperature(humidityEntity);
 
   return (
     <DeviceTile
-      area={area}
+      place={tile}
       state={tileState([temperatureEntity])}
       icon={<ThermoIcon class="size-4" />}
-      label={getConfig().labels.room}
+      label={tile.label}
       status={
         <span
           class="tnum flex items-center gap-0.5 text-xs text-fg-dim"
-          aria-label={`${getConfig().labels.room} humidity`}
+          aria-label={`${tile.label} humidity`}
         >
           <DropletIcon class="size-3" />
           {percent === undefined ? '—' : formatHumidity(percent)}

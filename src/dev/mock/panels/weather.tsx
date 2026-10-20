@@ -1,4 +1,4 @@
-import { entityId } from '@/config/config.ts';
+import { entitiesOf } from '@/dev/mock/entities.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
@@ -8,7 +8,7 @@ export const weatherPanel: MockPanel = {
   title: 'Weather',
   Panel: ({ mock }) => {
     useMockChanges(mock);
-    const id = entityId('weather');
+    const id = entitiesOf('weather').entity;
     const scenario = mock.getWeatherScenario();
     const failing = mock.isForecastFailing();
     return (

@@ -1,21 +1,33 @@
 import {
   applyConfig,
-  DEFAULT_LABELS,
+  CALENDAR_COLORS,
+  CALENDAR_KINDS,
+  DEFAULT_LABEL,
   DEFAULT_NIGHT,
-  entitiesFrom,
-  ENTITY_DOMAINS,
+  DEFAULT_ROOM_LABEL,
   markConfigUnavailable,
+  TILE_ROLES,
+  TILE_TYPES,
 } from './config.ts';
 import type {
+  CalendarSource,
   ConfigIssue,
-  Labels,
   NightConfig,
   RuntimeConfig,
+  TileConfig,
+  TileType,
 } from './config.ts';
+import { stripJsonComments } from './jsonc.ts';
 import { configUrl } from './url.ts';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const MIGRATION =
+  'was replaced by "tiles": list each tile with its type, position and entities (see docs/configuration.md)';
+
+const PLACEMENT_KEYS = ['col', 'row', 'w', 'h'] as const;
+const COMMON_KEYS = ['id', 'type', 'label', ...PLACEMENT_KEYS];
 
 /**
  * Turns the parsed `config.json` into a config. Anything missing or of the
@@ -31,18 +43,18 @@ export const parseConfig = (
 
   const root = isRecord(json) ? json : {};
   if (!isRecord(json)) problem('config.json', 'must be a JSON object');
+  if (root.entities !== undefined) problem('entities', MIGRATION);
+  if (root.labels !== undefined)
+    problem('labels', 'was replaced by a "label" on each tile');
 
-  const rawEntities = isRecord(root.entities) ? root.entities : {};
-  if (root.entities !== undefined && !isRecord(root.entities))
-    problem('entities', 'must be an object of entity IDs');
-  for (const key of Object.keys(rawEntities)) {
-    if (!(key in ENTITY_DOMAINS)) problem(key, 'is not an entity the app uses');
-  }
-  const entities = entitiesFrom((key) => {
-    const id = rawEntities[key];
-    if (id !== undefined && typeof id !== 'string')
-      problem(key, 'entity ID must be a string');
-    return typeof id === 'string' ? id : '';
+  const counts = new Map<TileType, number>();
+  const tiles: TileConfig[] = [];
+  const rawTiles = Array.isArray(root.tiles) ? root.tiles : [];
+  if (root.tiles !== undefined && !Array.isArray(root.tiles))
+    problem('tiles', 'must be a list of tiles');
+  rawTiles.forEach((raw: unknown, index) => {
+    const tile = parseTile(raw, `tiles[${index}]`, counts, problem);
+    if (tile) tiles.push(tile);
   });
 
   const night = { ...DEFAULT_NIGHT };
@@ -56,19 +68,192 @@ export const parseConfig = (
     else problem('night', `${key} must be a number`);
   }
 
-  const labels = { ...DEFAULT_LABELS };
-  if (root.labels !== undefined && !isRecord(root.labels))
-    problem('labels', 'must be an object');
-  const rawLabels = isRecord(root.labels) ? root.labels : {};
-  for (const key of Object.keys(DEFAULT_LABELS) as (keyof Labels)[]) {
-    const value = rawLabels[key];
-    if (value === undefined) continue;
-    if (typeof value === 'string' && value.trim() !== '')
-      labels[key] = value.trim();
-    else problem('labels', `${key} must be a non-empty string`);
+  return { config: { tiles, night }, issues };
+};
+
+type Problem = (key: string, message: string) => void;
+
+/** The member of `options` that `value` equals; otherwise `undefined`, reported unless unset. */
+const oneOf = <T extends string>(
+  options: readonly T[],
+  value: unknown,
+  path: string,
+  problem: Problem,
+): T | undefined => {
+  if (value === undefined) return undefined;
+  const found = options.find((option) => option === value);
+  if (!found) problem(path, `must be one of ${options.join(', ')}`);
+  return found;
+};
+
+/** A setting that must be a non-empty string, trimmed; `fallback` when unset or wrong. */
+const nonEmpty = (
+  raw: Record<string, unknown>,
+  key: string,
+  at: string,
+  fallback: string,
+  problem: Problem,
+) => {
+  const value = raw[key];
+  if (value === undefined) return fallback;
+  if (typeof value === 'string' && value.trim() !== '') return value.trim();
+  problem(`${at}.${key}`, 'must be a non-empty string');
+  return fallback;
+};
+
+/** Settings beyond the common ones and the entity roles, for the types that have them. */
+const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
+  calendar: ['calendars'],
+  heating: ['roomLabel'],
+  ac: ['roomLabel'],
+};
+
+/** The type-specific settings of a tile: a calendar's sources, a climate tile's room name. */
+const parseExtras = (
+  raw: Record<string, unknown>,
+  type: TileType,
+  at: string,
+  problem: Problem,
+) => {
+  if (type === 'calendar')
+    return { calendars: parseCalendars(raw.calendars, at, problem) };
+  if (type === 'heating' || type === 'ac')
+    return {
+      roomLabel: nonEmpty(raw, 'roomLabel', at, DEFAULT_ROOM_LABEL, problem),
+    };
+  return {};
+};
+
+/** Reports settings that are not part of a tile of this type. */
+const checkKnownKeys = (
+  raw: Record<string, unknown>,
+  type: TileType,
+  at: string,
+  problem: Problem,
+) => {
+  const known = new Set<string>([
+    ...COMMON_KEYS,
+    ...Object.keys(TILE_ROLES[type]),
+    ...(EXTRA_KEYS[type] ?? []),
+  ]);
+  for (const key of Object.keys(raw)) {
+    if (!known.has(key))
+      problem(`${at}.${key}`, `is not a setting of a ${type} tile`);
+  }
+};
+
+/** The entity IDs by role. A missing required one becomes '' so `validateConfig` reports it. */
+const parseEntities = (
+  raw: Record<string, unknown>,
+  type: TileType,
+  at: string,
+  problem: Problem,
+) => {
+  const specs = TILE_ROLES[type] as Record<string, { optional?: true }>;
+  const entities: Record<string, string> = {};
+  for (const [role, spec] of Object.entries(specs)) {
+    const value = raw[role];
+    if (typeof value === 'string') entities[role] = value;
+    else if (value !== undefined)
+      problem(`${at}.${role}`, 'entity ID must be a string');
+    if (entities[role] === undefined && !spec.optional) entities[role] = '';
+  }
+  return entities;
+};
+
+const parsePlacement = (
+  raw: Record<string, unknown>,
+  at: string,
+  problem: Problem,
+) => {
+  const number = (key: (typeof PLACEMENT_KEYS)[number], fallback: number) => {
+    const value = raw[key];
+    if (typeof value === 'number') return value;
+    if (value !== undefined) problem(`${at}.${key}`, 'must be a number');
+    // Position has no default: a tile without one cannot be placed.
+    else if (key === 'col' || key === 'row')
+      problem(`${at}.${key}`, 'is missing');
+    return fallback;
+  };
+  return {
+    col: number('col', 0),
+    row: number('row', 0),
+    w: number('w', 1),
+    h: number('h', 1),
+  };
+};
+
+const parseTile = (
+  raw: unknown,
+  at: string,
+  counts: Map<TileType, number>,
+  problem: Problem,
+): TileConfig | undefined => {
+  if (!isRecord(raw)) {
+    problem(at, 'must be an object');
+    return undefined;
+  }
+  const type = TILE_TYPES.find((t) => t === raw.type);
+  if (!type) {
+    problem(
+      `${at}.type`,
+      `must be one of ${TILE_TYPES.join(', ')} (got ${JSON.stringify(raw.type)})`,
+    );
+    return undefined;
   }
 
-  return { config: { entities, night, labels }, issues };
+  checkKnownKeys(raw, type, at, problem);
+  const count = (counts.get(type) ?? 0) + 1;
+  counts.set(type, count);
+  const tile = {
+    id: nonEmpty(raw, 'id', at, `${type}-${count}`, problem),
+    type,
+    label: nonEmpty(raw, 'label', at, DEFAULT_LABEL[type], problem),
+    entities: parseEntities(raw, type, at, problem),
+    ...parsePlacement(raw, at, problem),
+    ...parseExtras(raw, type, at, problem),
+  };
+  return tile as TileConfig;
+};
+
+const parseCalendar = (
+  item: Record<string, unknown>,
+  path: string,
+  n: number,
+  problem: Problem,
+): CalendarSource => {
+  if (item.entity !== undefined && typeof item.entity !== 'string')
+    problem(`${path}.entity`, 'entity ID must be a string');
+  if (item.label !== undefined && typeof item.label !== 'string')
+    problem(`${path}.label`, 'must be a string');
+
+  const color =
+    oneOf(CALENDAR_COLORS, item.color, `${path}.color`, problem) ??
+    CALENDAR_COLORS[n % CALENDAR_COLORS.length]!;
+  const kind = oneOf(CALENDAR_KINDS, item.kind, `${path}.kind`, problem);
+  return {
+    entity: typeof item.entity === 'string' ? item.entity : '',
+    label: typeof item.label === 'string' ? item.label.trim() : '',
+    color,
+    ...(kind && { kind }),
+  };
+};
+
+const parseCalendars = (
+  raw: unknown,
+  at: string,
+  problem: Problem,
+): CalendarSource[] => {
+  if (!Array.isArray(raw)) {
+    problem(`${at}.calendars`, 'must be a list of calendars');
+    return [];
+  }
+  return raw.map((item: unknown, n): CalendarSource => {
+    const path = `${at}.calendars[${n}]`;
+    if (isRecord(item)) return parseCalendar(item, path, n, problem);
+    problem(path, 'must be an object with an "entity"');
+    return { entity: '', label: '', color: CALENDAR_COLORS[0] };
+  });
 };
 
 /** Fetches and applies `config.json`. Never throws: a failure becomes an issue. */
@@ -80,7 +265,9 @@ export const loadConfig = async (
     // HA serves /local/ with long cache headers; an edited config must show at once.
     const response = await fetchFn(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const { config, issues } = parseConfig(await response.json());
+    const { config, issues } = parseConfig(
+      JSON.parse(stripJsonComments(await response.text())),
+    );
     applyConfig(config, issues);
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);

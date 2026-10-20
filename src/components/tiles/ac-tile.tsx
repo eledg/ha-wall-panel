@@ -3,10 +3,10 @@ import { useState } from 'preact/hooks';
 import { ModeIcon } from '@/components/climate/ac-controls.tsx';
 import { SnowflakeIcon } from '@/components/icons/snowflake-icon.tsx';
 import { AcSheet } from '@/components/sheets/ac-sheet.tsx';
+import type { TileConfig } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { modeLabel, readAc } from '@/lib/climate/ac-model.ts';
 import { formatTemp } from '@/lib/format.ts';
-import type { GridArea } from '@/lib/grid.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
@@ -18,13 +18,13 @@ import { tileState } from './base/tile.tsx';
  * Tapping opens the `AcSheet` with every control.
  */
 export const AcTile = ({
-  area,
+  tile,
   store = haStore,
 }: {
-  area: GridArea;
+  tile: TileConfig<'ac'>;
   store?: HaStore;
 }) => {
-  const entity = useSnapshot(store, (s) => s.entities.acClimate);
+  const entity = useSnapshot(store, (s) => s.entities[tile.entities.climate]);
   const [open, setOpen] = useState(false);
   const view = readAc(entity);
   const state = tileState([entity], view.usable);
@@ -32,12 +32,12 @@ export const AcTile = ({
   return (
     <>
       <DeviceTile
-        area={area}
+        place={tile}
         state={state}
         onTap={state === 'unavailable' ? undefined : () => setOpen(true)}
         tone={view.on ? 'accent' : 'neutral'}
         icon={<SnowflakeIcon class="size-4" />}
-        label="AC"
+        label={tile.label}
         right={
           view.on && view.mode ? (
             <span
@@ -60,7 +60,9 @@ export const AcTile = ({
           )
         }
       />
-      {open && <AcSheet store={store} onClose={() => setOpen(false)} />}
+      {open && (
+        <AcSheet tile={tile} store={store} onClose={() => setOpen(false)} />
+      )}
     </>
   );
 };

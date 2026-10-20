@@ -3,7 +3,8 @@ import { useEffect, useState } from 'preact/hooks';
 import { XIcon } from '@/components/icons/x-icon.tsx';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
-import { CALENDARS, dayLabel } from '@/lib/calendar-labels.ts';
+import { dayLabel } from '@/lib/calendar-labels.ts';
+import type { CalendarMeta } from '@/lib/calendar-labels.ts';
 import { formatTime } from '@/lib/format.ts';
 import type { CalendarEvent } from '@/services/ha/calendar.ts';
 
@@ -62,11 +63,14 @@ const Field = ({ label, text }: { label: string; text: string }) => (
  */
 export const EventSheet = ({
   event,
+  calendar,
   onClose,
   now,
   idleMs = IDLE_CLOSE_MS,
 }: {
   event: CalendarEvent;
+  /** The label and colour of the calendar the event came from. */
+  calendar?: CalendarMeta;
   onClose: () => void;
   now?: () => Date;
   idleMs?: number;
@@ -87,7 +91,6 @@ export const EventSheet = ({
 
   const start = new Date(event.start);
   const end = new Date(event.end);
-  const calendar = CALENDARS[event.calendar];
   const duration = durationLabel(event);
   const when =
     dayLabel(start, current) === 'Today' ? 'Today' : date.format(start);

@@ -4,11 +4,11 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { acAttributes } from '@/dev/mock/scenarios/ac.ts';
 import { SETTLE_MS, TARGET_DEBOUNCE_MS } from '@/hooks/use-climate-commands.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { AcSheet } from './ac-sheet.tsx';
 
@@ -20,6 +20,7 @@ const setup = async ({
   on = true,
   onClose = vi.fn(),
   idleMs = 30_000,
+  roomLabel = tileOf('ac').roomLabel,
 } = {}) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
@@ -29,7 +30,12 @@ const setup = async ({
     if (on) mock.controls.setState(AC, 'heat', acAttributes());
     render(
       <HaConnection store={store}>
-        <AcSheet store={store} onClose={onClose} idleMs={idleMs} />
+        <AcSheet
+          tile={{ ...tileOf('ac'), label: 'Office AC', roomLabel }}
+          store={store}
+          onClose={onClose}
+          idleMs={idleMs}
+        />
       </HaConnection>,
       document.body,
     );
@@ -64,11 +70,18 @@ describe('AcSheet', () => {
     }
   });
 
+  it('names the room in the current-temperature caption', async () => {
+    await setup({ roomLabel: 'Study' });
+
+    expect(document.body.textContent).toContain('Study now');
+    expect(document.body.textContent).not.toContain('Room now');
+  });
+
   it('shows the office sensor as the current temperature', async () => {
     const { mock } = await setup();
     await act(() => mock.controls.setState(OFFICE, '22.2', {}));
 
-    expect(document.body.textContent).toContain('Office now');
+    expect(document.body.textContent).toContain('Room now');
     expect(document.body.textContent).toContain('22.2°');
     expect(document.body.textContent).not.toContain('24.0° ');
   });
@@ -79,7 +92,7 @@ describe('AcSheet', () => {
     spy.mockReturnValueOnce(new Promise<void>((r) => (resolve = r)));
 
     await press('On');
-    expect(spy).toHaveBeenLastCalledWith('acClimate', 'turn_off');
+    expect(spy).toHaveBeenLastCalledWith('climate', AC, 'turn_off');
     expect(onClose).not.toHaveBeenCalled();
 
     await act(async () => resolve());
@@ -90,7 +103,7 @@ describe('AcSheet', () => {
     const { spy, press, onClose } = await setup({ on: false });
 
     await press('Off');
-    expect(spy).toHaveBeenLastCalledWith('acClimate', 'turn_on');
+    expect(spy).toHaveBeenLastCalledWith('climate', AC, 'turn_on');
     expect(onClose).not.toHaveBeenCalled();
   });
 
@@ -113,7 +126,7 @@ describe('AcSheet', () => {
     expect(options).toEqual(['Cool', 'Heat', 'Fan', 'Dry', 'Auto']);
 
     await press('Cool');
-    expect(spy).toHaveBeenLastCalledWith('acClimate', 'set_hvac_mode', {
+    expect(spy).toHaveBeenLastCalledWith('climate', AC, 'set_hvac_mode', {
       hvac_mode: 'cool',
     });
     expect(document.body.textContent).toContain('Office AC');
@@ -125,7 +138,7 @@ describe('AcSheet', () => {
     await press('Fan speed');
     await press('Quiet');
 
-    expect(spy).toHaveBeenLastCalledWith('acClimate', 'set_fan_mode', {
+    expect(spy).toHaveBeenLastCalledWith('climate', AC, 'set_fan_mode', {
       fan_mode: 'Quiet',
     });
   });
@@ -136,7 +149,7 @@ describe('AcSheet', () => {
     await press('Swing');
     await press('Lowest');
 
-    expect(spy).toHaveBeenLastCalledWith('acClimate', 'set_swing_mode', {
+    expect(spy).toHaveBeenLastCalledWith('climate', AC, 'set_swing_mode', {
       swing_mode: 'Lowest',
     });
   });
@@ -156,7 +169,7 @@ describe('AcSheet', () => {
 
     await press('Powerful');
 
-    expect(spy).toHaveBeenLastCalledWith('acPowerful', 'toggle');
+    expect(spy).toHaveBeenLastCalledWith('switch', POWERFUL, 'toggle');
     expect(mock.controls.getState(POWERFUL)?.state).toBe('on');
     expect(button('Powerful').getAttribute('aria-pressed')).toBe('true');
   });
@@ -201,7 +214,7 @@ describe('AcSheet', () => {
       });
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(spy).toHaveBeenCalledWith('acClimate', 'set_temperature', {
+      expect(spy).toHaveBeenCalledWith('climate', AC, 'set_temperature', {
         temperature: 24.5,
       });
     });

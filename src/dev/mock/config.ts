@@ -1,30 +1,112 @@
-import { DEFAULT_NIGHT, entitiesFrom } from '@/config/config.ts';
-import type { EntityKey, RuntimeConfig } from '@/config/config.ts';
+import { DEFAULT_NIGHT } from '@/config/config.ts';
+import type { RuntimeConfig } from '@/config/config.ts';
 
-/** Fixture entity IDs, standing in for a real `config.json` in the mock and in tests. */
-const IDS: Record<EntityKey, string> = {
-  light: 'switch.wall_light',
-  weather: 'weather.home',
-  calendarFamily: 'calendar.family',
-  calendarF1: 'calendar.f1',
-  calendarBirthdays: 'calendar.birthdays',
-  acClimate: 'climate.ac',
-  acPowerful: 'switch.ac_powerful',
-  acEconomy: 'switch.ac_economy',
-  acQuietFan: 'switch.ac_quiet_fan',
-  roomTemperature: 'sensor.room_temperature',
-  roomHumidity: 'sensor.room_humidity',
-  roomBattery: 'sensor.room_battery',
-  heatingClimate: 'climate.heating',
-  heatingSchedule: 'switch.heating_schedule',
-  heatingDemand: 'binary_sensor.heating_demand',
-  heatingCloud: 'binary_sensor.heating_cloud_connection',
-  heatingResume: 'button.heating_resume_schedule',
-  heatingBoost: 'button.heating_boost',
-};
-
+/**
+ * Fixture tiles, standing in for a real `config.json` in the mock and in tests.
+ * The layout matches the one the dashboard shipped with, and the e2e baselines
+ * depend on it. The mock's controls act on the first tile of each type.
+ */
 export const mockConfig: RuntimeConfig = {
-  entities: entitiesFrom((key) => IDS[key]),
+  tiles: [
+    {
+      id: 'clock',
+      type: 'clock',
+      label: '',
+      col: 1,
+      row: 1,
+      w: 3,
+      h: 1,
+      entities: {},
+    },
+    {
+      id: 'weather',
+      type: 'weather',
+      label: 'Weather',
+      col: 1,
+      row: 2,
+      w: 3,
+      h: 1,
+      entities: { entity: 'weather.home' },
+    },
+    {
+      id: 'calendar',
+      type: 'calendar',
+      label: 'Calendar',
+      col: 4,
+      row: 1,
+      w: 3,
+      h: 2,
+      entities: {},
+      calendars: [
+        { entity: 'calendar.family', label: 'Family', color: 'yellow' },
+        {
+          entity: 'calendar.birthdays',
+          label: 'Birthdays',
+          color: 'blue',
+          kind: 'birthdays',
+        },
+        { entity: 'calendar.f1', label: 'F1', color: 'green', kind: 'f1' },
+      ],
+    },
+    {
+      id: 'light',
+      type: 'toggle',
+      label: 'Office light',
+      col: 1,
+      row: 3,
+      w: 2,
+      h: 1,
+      entities: { entity: 'switch.wall_light' },
+    },
+    {
+      id: 'room',
+      type: 'temperature',
+      label: 'Office',
+      col: 3,
+      row: 3,
+      w: 1,
+      h: 1,
+      entities: {
+        temperature: 'sensor.room_temperature',
+        humidity: 'sensor.room_humidity',
+        battery: 'sensor.room_battery',
+      },
+    },
+    {
+      id: 'heating',
+      type: 'heating',
+      label: 'Heating',
+      roomLabel: 'Living room',
+      col: 4,
+      row: 3,
+      w: 1,
+      h: 1,
+      entities: {
+        climate: 'climate.heating',
+        schedule: 'switch.heating_schedule',
+        demand: 'binary_sensor.heating_demand',
+        cloud: 'binary_sensor.heating_cloud_connection',
+        resume: 'button.heating_resume_schedule',
+        boost: 'button.heating_boost',
+      },
+    },
+    {
+      id: 'ac',
+      type: 'ac',
+      label: 'AC',
+      roomLabel: 'Room',
+      col: 5,
+      row: 3,
+      w: 1,
+      h: 1,
+      entities: {
+        climate: 'climate.ac',
+        powerful: 'switch.ac_powerful',
+        economy: 'switch.ac_economy',
+        quietFan: 'switch.ac_quiet_fan',
+        room: 'sensor.room_temperature',
+      },
+    },
+  ],
   night: DEFAULT_NIGHT,
-  labels: { light: 'Office light', room: 'Office', ac: 'Office AC' },
 };

@@ -28,36 +28,80 @@ Under `pnpm dev` the dev server serves `./config.json` from the repo root
 
 ## The file
 
-Start from [`config.example.json`](../config.example.json):
+Start from [`config.example.jsonc`](../config.example.jsonc), which documents every setting
+in comments. It lists the tiles to
+show, where each sits and which Home Assistant entities it reads:
 
 ```json
 {
-  "entities": {
-    "light": "switch.living_room_light",
-    "weather": "weather.home"
-  },
-  "night": { "startHour": 21, "endHour": 7, "wakeMs": 15000 },
-  "labels": { "light": "Light", "room": "Room", "ac": "AC" }
+  "tiles": [
+    { "type": "clock", "col": 1, "row": 1, "w": 3 },
+    {
+      "type": "toggle",
+      "label": "Light",
+      "col": 1,
+      "row": 3,
+      "w": 2,
+      "entity": "switch.living_room_light"
+    }
+  ],
+  "night": { "startHour": 21, "endHour": 7, "wakeMs": 15000 }
 }
 ```
 
-(The real file lists every key in `entities`; the example above is shortened.)
+(The real file has more tiles; the example above is shortened.)
 
-- **`entities`** (required): the Home Assistant entity ID for each key. Every key
-  is required and has a fixed domain, so a `light` ID must start `switch.`. The
-  [entity reference](entities.md) lists each key, its domain and what the app
-  reads from it.
+The file is JSON that allows `//` and block comments, so you can annotate your own
+copy as the example does. Trailing commas are not allowed. A comment marker inside
+a string, such as a URL, is not a comment.
+
+- **`tiles`** (required): the tiles on the display, each with its position. The
+  order of the list only matters if the display is turned to portrait. See
+  [Tiles](#tiles).
 - **`night`** (optional): from `startHour` until `endHour` (local time, 0 to 23,
   may span midnight) the palette turns warm and dim. A tap wakes the display for
   `wakeMs` milliseconds. Defaults: 21, 7 and 15000.
-- **`labels`** (optional): the names shown on the `light`, `room` and `ac` tiles.
-  Defaults: "Light", "Room" and "AC".
+
+### Tiles
+
+Every tile has a `type` and a position, and may be repeated: two `toggle` tiles
+with different entities are two independent lights.
+
+| Setting    | Meaning                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------ |
+| `type`     | `clock`, `weather`, `calendar`, `toggle`, `temperature`, `heating` or `ac`.                            |
+| `col`      | Left column, 1 to 6. Required.                                                                         |
+| `row`      | Top row, 1 to 3. Required.                                                                             |
+| `w`, `h`   | Columns and rows the tile spans. Default 1. The tile must stay inside the 6 x 3 grid.                  |
+| `id`       | Optional name, unique across the file. Default: the type and a count (`toggle-1`).                     |
+| `label`    | Optional name shown on the tile. Default: "Light" for a toggle, "Room", "Heating", "AC", "Weather".    |
+| _entities_ | The Home Assistant entity IDs the tile reads, named per type. See the [entity reference](entities.md). |
+
+Tiles may not overlap, and a cell with no tile stays empty.
+
+A `heating` or `ac` tile may also set `roomLabel`, the room named in the caption
+above its current temperature on the controls screen ("Living room now"). Default:
+"Room".
+
+**Portrait.** If the display is turned so it is taller than wide, the 6 x 3 grid
+is replaced by two columns, and `col`, `row` and `h` are ignored. The tiles are
+placed one after another from the top, in the order they appear in `tiles`. A
+tile with `w` of 2 or more takes the full width; a tile with `w` of 1 takes half,
+so two of them sit side by side. Put the tiles in the order you want to read them
+down the screen. In landscape the order of the list makes no difference.
+
+A `calendar` tile lists its calendars instead of a single entity. Each has an
+`entity`, an optional `label` (shown in the legend) and `color` (`yellow`, `blue`
+or `green`; by default the three are used in turn), and an optional `kind`:
+`f1` shortens Formula 1 race titles and hides their notes, `birthdays` adds the
+age from a "Born 1977" note.
 
 ## When something is wrong
 
 The app never fails silently. If the file is missing or isn't valid JSON, or an
-entity is missing, unknown, of the wrong type, in the wrong domain or still a
-placeholder (`TODO:...`), the dashboard shows a banner saying what is the matter. Edits show on the next load: the app asks for the file without caching it.
+entity is missing, of the wrong type, in the wrong domain or still a
+placeholder (`TODO:...`), or a tile is outside the grid, overlaps another, or
+has an unknown type or setting, the dashboard shows a banner saying what is the matter. Edits show on the next load: the app asks for the file without caching it.
 
 The Diagnostics screen (tap the version, bottom right) shows the build (version,
 commit, when it was built), the live state of every configured entity, and a

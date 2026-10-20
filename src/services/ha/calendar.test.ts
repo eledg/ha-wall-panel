@@ -11,7 +11,7 @@ import {
 
 describe('normaliseEvent', () => {
   it('reads a timed event and parses its offset', () => {
-    const event = normaliseEvent('calendarFamily', {
+    const event = normaliseEvent('calendar.family', {
       summary: 'Dentist',
       location: 'High Street',
       description: 'Check in early',
@@ -20,7 +20,7 @@ describe('normaliseEvent', () => {
     });
 
     expect(event).toEqual({
-      calendar: 'calendarFamily',
+      calendar: 'calendar.family',
       summary: 'Dentist',
       fullSummary: 'Dentist',
       location: 'High Street',
@@ -34,7 +34,7 @@ describe('normaliseEvent', () => {
   it.each([undefined, null, '', '   '])(
     'leaves out a location and description of %j',
     (empty) => {
-      const event = normaliseEvent('calendarFamily', {
+      const event = normaliseEvent('calendar.family', {
         summary: 'Dentist',
         location: empty,
         description: empty,
@@ -48,7 +48,7 @@ describe('normaliseEvent', () => {
   );
 
   it('trims the location and description', () => {
-    const event = normaliseEvent('calendarFamily', {
+    const event = normaliseEvent('calendar.family', {
       summary: 'Dentist',
       location: '  High Street ',
       description: '\nCheck in early\n',
@@ -61,26 +61,38 @@ describe('normaliseEvent', () => {
   });
 
   it('reads events with differing offsets as the same instant', () => {
-    const a = normaliseEvent('calendarF1', {
-      summary: 'a',
-      start: { dateTime: '2026-10-25T20:00:00+00:00' },
-      end: { dateTime: '2026-10-25T21:00:00+00:00' },
-    });
-    const b = normaliseEvent('calendarF1', {
-      summary: 'b',
-      start: { dateTime: '2026-10-25T21:00:00+01:00' },
-      end: { dateTime: '2026-10-25T22:00:00+01:00' },
-    });
+    const a = normaliseEvent(
+      'calendar.f1',
+      {
+        summary: 'a',
+        start: { dateTime: '2026-10-25T20:00:00+00:00' },
+        end: { dateTime: '2026-10-25T21:00:00+00:00' },
+      },
+      'f1',
+    );
+    const b = normaliseEvent(
+      'calendar.f1',
+      {
+        summary: 'b',
+        start: { dateTime: '2026-10-25T21:00:00+01:00' },
+        end: { dateTime: '2026-10-25T22:00:00+01:00' },
+      },
+      'f1',
+    );
 
     expect(a?.start).toBe(b?.start);
   });
 
   it('reads an all-day event as local midnight to local midnight', () => {
-    const event = normaliseEvent('calendarBirthdays', {
-      summary: 'Birthday',
-      start: { date: '2026-10-12' },
-      end: { date: '2026-10-13' },
-    });
+    const event = normaliseEvent(
+      'calendar.birthdays',
+      {
+        summary: 'Birthday',
+        start: { date: '2026-10-12' },
+        end: { date: '2026-10-13' },
+      },
+      'birthdays',
+    );
 
     expect(event?.allDay).toBe(true);
     expect(new Date(event!.start)).toEqual(new Date(2026, 9, 12));
@@ -89,12 +101,16 @@ describe('normaliseEvent', () => {
 
   it('adds the age to a birthday when the description gives a birth year', () => {
     const birthday = (summary: string, description: string) =>
-      normaliseEvent('calendarBirthdays', {
-        summary,
-        description,
-        start: { date: '2026-10-14' },
-        end: { date: '2026-10-15' },
-      });
+      normaliseEvent(
+        'calendar.birthdays',
+        {
+          summary,
+          description,
+          start: { date: '2026-10-14' },
+          end: { date: '2026-10-15' },
+        },
+        'birthdays',
+      );
 
     expect(birthday("Alex Example's Birthday", 'Born 1977')?.summary).toBe(
       "Alex Example's 49th Birthday",
@@ -139,20 +155,20 @@ describe('normaliseEvent', () => {
 
   it('names an event without a summary and drops one without times', () => {
     expect(
-      normaliseEvent('calendarFamily', {
+      normaliseEvent('calendar.family', {
         start: { date: '2026-10-12' },
         end: { date: '2026-10-13' },
       })?.summary,
     ).toBe('Untitled');
     expect(
-      normaliseEvent('calendarFamily', { summary: 'x', start: {}, end: {} }),
+      normaliseEvent('calendar.family', { summary: 'x', start: {}, end: {} }),
     ).toBeUndefined();
   });
 });
 
 describe('normaliseEvents', () => {
   it('drops items with no usable times and keeps the rest', () => {
-    const events = normaliseEvents('calendarFamily', [
+    const events = normaliseEvents('calendar.family', [
       { summary: 'bad', start: {}, end: {} },
       {
         summary: 'Dentist',
@@ -249,7 +265,7 @@ describe('normaliseEvent, F1 titles', () => {
   };
 
   it('keeps the full title for the detail view, and the location', () => {
-    const event = normaliseEvent('calendarF1', raw);
+    const event = normaliseEvent('calendar.f1', raw, 'f1');
 
     expect(event?.fullSummary).toBe(raw.summary);
     expect(event?.location).toBe('Singapore');
@@ -258,18 +274,18 @@ describe('normaliseEvent, F1 titles', () => {
   it('drops the F1 promotional description but not other calendars', () => {
     const withNotes = { ...raw, description: 'Follow all the action on F1 TV' };
 
-    expect(normaliseEvent('calendarF1', withNotes)).not.toHaveProperty(
+    expect(normaliseEvent('calendar.f1', withNotes, 'f1')).not.toHaveProperty(
       'description',
     );
-    expect(normaliseEvent('calendarFamily', withNotes)?.description).toBe(
+    expect(normaliseEvent('calendar.family', withNotes)?.description).toBe(
       'Follow all the action on F1 TV',
     );
   });
 
   it('shortens titles on the F1 calendar only', () => {
-    expect(normaliseEvent('calendarF1', raw)?.summary).toBe(
+    expect(normaliseEvent('calendar.f1', raw, 'f1')?.summary).toBe(
       '🏁 F1 Singapore - Race',
     );
-    expect(normaliseEvent('calendarFamily', raw)?.summary).toBe(raw.summary);
+    expect(normaliseEvent('calendar.family', raw)?.summary).toBe(raw.summary);
   });
 });

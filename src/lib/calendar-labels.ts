@@ -1,24 +1,30 @@
-import type { EntityKey } from '@/services/ha/store.ts';
+import type { CalendarColor, CalendarSource } from '@/config/config.ts';
 
-/** Label and colour classes per calendar, as the design's `CAL_COLOR` / `CAL_TEXT`. */
-export const CALENDARS: Partial<
-  Record<EntityKey, { label: string; bar: string; text: string }>
+export type CalendarMeta = { label: string; bar: string; text: string };
+
+/** Colour classes per palette name, as the design's `CAL_COLOR` / `CAL_TEXT`. */
+export const COLOR_CLASSES: Record<
+  CalendarColor,
+  Omit<CalendarMeta, 'label'>
 > = {
-  calendarFamily: {
-    label: 'Family',
-    bar: 'bg-cal-family',
-    text: 'text-cal-family',
-  },
-  calendarBirthdays: {
-    label: 'Birthdays',
-    bar: 'bg-cal-birthdays',
-    text: 'text-cal-birthdays',
-  },
-  calendarF1: { label: 'F1', bar: 'bg-cal-f1', text: 'text-cal-f1' },
+  yellow: { bar: 'bg-cal-yellow', text: 'text-cal-yellow' },
+  blue: { bar: 'bg-cal-blue', text: 'text-cal-blue' },
+  green: { bar: 'bg-cal-green', text: 'text-cal-green' },
 };
 
-export const FALLBACK = { label: '', bar: 'bg-fg-faint', text: 'text-fg-dim' };
-export const meta = (key: EntityKey) => CALENDARS[key] ?? FALLBACK;
+export const FALLBACK: CalendarMeta = {
+  label: '',
+  bar: 'bg-fg-faint',
+  text: 'text-fg-dim',
+};
+
+/** The label and colour classes of the calendar with entity ID `id`. */
+export const meta = (sources: CalendarSource[], id: string): CalendarMeta => {
+  const source = sources.find((s) => s.entity === id);
+  return source
+    ? { label: source.label, ...COLOR_CLASSES[source.color] }
+    : FALLBACK;
+};
 
 const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' });
 

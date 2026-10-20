@@ -6,23 +6,32 @@ import { describe, expect, it, vi } from 'vitest';
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { PLACE } from '@/tests/ids.ts';
 
 import { Tile } from './tile.tsx';
 
 const mount = (ui: preact.ComponentChildren) => render(ui, document.body);
 
 describe('Tile', () => {
-  it('places itself in its grid area', () => {
-    mount(<Tile area="clock">content</Tile>);
+  it('places itself on the grid from its placement', () => {
+    mount(<Tile place={{ col: 2, row: 1, w: 3, h: 2 }}>content</Tile>);
     const el = document.body.firstElementChild as HTMLElement;
-    expect(el.style.gridArea).toBe('clock');
+    const get = (name: string) => el.style.getPropertyValue(name);
+    expect([get('--col'), get('--row'), get('--w'), get('--h')]).toEqual([
+      '2',
+      '1',
+      '3',
+      '2',
+    ]);
+    expect(get('--nw')).toBe('2');
+    expect(el.className).toContain('tile-place');
     expect(el.tagName).toBe('DIV');
   });
 
   it('renders a button that taps when given a handler', () => {
     const onTap = vi.fn();
     mount(
-      <Tile area="light" onTap={onTap} pressed>
+      <Tile place={PLACE} onTap={onTap} pressed>
         x
       </Tile>,
     );
@@ -34,7 +43,7 @@ describe('Tile', () => {
 
   it('shows a skeleton instead of content while loading', () => {
     mount(
-      <Tile area="light" state="loading">
+      <Tile place={PLACE} state="loading">
         secret
       </Tile>,
     );
@@ -43,7 +52,7 @@ describe('Tile', () => {
 
   it('badges stale content and warnings', () => {
     mount(
-      <Tile area="light" state="stale" warn="entity missing">
+      <Tile place={PLACE} state="stale" warn="entity missing">
         body
       </Tile>,
     );
@@ -60,7 +69,7 @@ describe('Tile', () => {
       await store.start(mock.getAuth);
       mount(
         <HaConnection store={store}>
-          <Tile area="light" onTap={onTap}>
+          <Tile place={PLACE} onTap={onTap}>
             x
           </Tile>
         </HaConnection>,

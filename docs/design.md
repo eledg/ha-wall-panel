@@ -28,9 +28,10 @@ them.
   `accent-fg`, `accent-soft`, `warn`, `warn-soft` and `cal-*`. Colours are oklch,
   which needs Chromium 111 or newer. A second block swaps in a dimmer, warmer
   palette at night.
-- **Grid** is in `src/lib/grid.ts`: 6 columns by 3 rows of named areas. A tile
-  places itself with its `area`; areas without a tile stay empty. Portrait falls
-  back to two columns.
+- **Grid** is in `src/lib/grid.ts`: 6 columns by 3 rows. A tile places itself from
+  its config (`col`, `row`, `w`, `h`, see `placeStyle` and the `tile-place` class
+  in `src/index.css`); cells without a tile stay empty. Portrait falls back to
+  two columns, filled in the order the tiles are listed.
 - **Tile shell** is `src/components/tiles/base/tile.tsx`. Tile states are `loading`, `normal`,
   `unavailable` and `stale`.
 

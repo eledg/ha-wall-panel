@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import type { CalendarEvent } from '@/services/ha/calendar.ts';
+import { entityId } from '@/tests/ids.ts';
 
 import { durationLabel, EventSheet, untilLabel } from './event-sheet.tsx';
 
@@ -13,7 +14,7 @@ const at = (day: number, hour: number, minute = 0) =>
   new Date(2026, 9, day, hour, minute);
 
 const event = (patch: Partial<CalendarEvent> = {}): CalendarEvent => ({
-  calendar: 'calendarFamily',
+  calendar: entityId('calendarFamily'),
   summary: 'Dentist',
   fullSummary: 'Dentist',
   start: at(10, 15).toISOString(),
@@ -81,11 +82,18 @@ describe('durationLabel', () => {
 });
 
 describe('EventSheet', () => {
+  const FAMILY = {
+    label: 'Family',
+    bar: 'bg-cal-yellow',
+    text: 'text-cal-yellow',
+  };
+
   const show = async (e: CalendarEvent, onClose = vi.fn(), idleMs?: number) => {
     await act(() => {
       render(
         <EventSheet
           event={e}
+          calendar={FAMILY}
           onClose={onClose}
           now={() => NOW}
           {...(idleMs !== undefined && { idleMs })}
@@ -121,7 +129,7 @@ describe('EventSheet', () => {
       '🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race';
     await show(
       event({
-        calendar: 'calendarF1',
+        calendar: entityId('calendarF1'),
         summary: '🏁 F1 Singapore - Race',
         fullSummary: full,
       }),

@@ -4,9 +4,9 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { AcTile } from './ac-tile.tsx';
 
@@ -19,7 +19,7 @@ const setup = async (connect = true) => {
     if (connect) await store.start(mock.getAuth);
     render(
       <HaConnection store={store}>
-        <AcTile area="ac" store={store} />
+        <AcTile tile={{ ...tileOf('ac'), label: 'Office AC' }} store={store} />
       </HaConnection>,
       document.body,
     );

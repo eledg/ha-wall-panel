@@ -1,18 +1,13 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 
 import { BulbIcon } from '@/components/icons/bulb-icon.tsx';
+import type { TileConfig } from '@/config/config.ts';
 import { useOffline } from '@/hooks/use-offline.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
-import type { GridArea } from '@/lib/grid.ts';
 import { haStore } from '@/services/ha/instance.ts';
-import type { EntityKey, HaStore, ServiceName } from '@/services/ha/store.ts';
+import type { HaStore } from '@/services/ha/store.ts';
 
 import { Tile, Unavailable } from './base/tile.tsx';
-
-/** Config keys whose domain accepts `toggle` (a `switch` today, a `light` later). */
-export type ToggleKey = {
-  [K in EntityKey]: 'toggle' extends ServiceName<K> ? K : never;
-}[EntityKey];
 
 /** How long the tile flashes after a rolled-back toggle (the design's 900 ms). */
 const FLASH_MS = 900;
@@ -20,24 +15,20 @@ const FLASH_MS = 900;
 const SETTLE_MS = 5000;
 
 /**
- * A tile that shows an entity's on/off state and calls `toggle` on tap. The
- * domain comes from the config, so pointing the key at a `light.*` entity
- * needs no change here.
+ * A tile that shows an entity's on/off state and calls `toggle` on tap.
  *
  * A tap flips the tile at once (optimistic). If the service call fails the
  * tile reverts to HA's state and flashes in the warning colours.
  */
 export const ToggleTile = ({
-  entity,
-  label,
-  area,
+  tile,
   store = haStore,
 }: {
-  entity: ToggleKey;
-  label: string;
-  area: GridArea;
+  tile: TileConfig<'toggle'>;
   store?: HaStore;
 }) => {
+  const { label, entities } = tile;
+  const entity = entities.entity;
   const state = useSnapshot(store, (s) => s.entities[entity]?.state);
   const offline = useOffline();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
@@ -65,7 +56,7 @@ export const ToggleTile = ({
     setFailed(false);
     setOptimistic(!on);
     store
-      .callService(entity, 'toggle' as ServiceName<typeof entity>)
+      .callService('switch', entity, 'toggle')
       .catch((err: unknown) => {
         console.error(`Toggle ${label} failed`, err);
         setOptimistic(null);
@@ -78,7 +69,7 @@ export const ToggleTile = ({
 
   return (
     <Tile
-      area={area}
+      place={tile}
       state={state === undefined ? 'loading' : offline ? 'stale' : 'normal'}
       pressed={on}
       flash={failed}

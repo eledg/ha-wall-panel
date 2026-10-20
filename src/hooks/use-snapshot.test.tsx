@@ -4,9 +4,9 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { entityId } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
+import { entityId } from '@/tests/ids.ts';
 
 import { shallowEqual, useSnapshot } from './use-snapshot.ts';
 
@@ -37,7 +37,10 @@ describe('useSnapshot', () => {
     const { store, push } = await setup();
     const renders = vi.fn();
     const Probe = () => {
-      const light = useSnapshot(store, (s) => s.entities.light?.state);
+      const light = useSnapshot(
+        store,
+        (s) => s.entities[entityId('light')]?.state,
+      );
       renders(light);
       return <p>{light}</p>;
     };
@@ -63,7 +66,9 @@ describe('useSnapshot', () => {
     const { store, push } = await setup();
     const renders = vi.fn();
     const Probe = () => {
-      const [light] = useSnapshot(store, (s) => [s.entities.light]);
+      const [light] = useSnapshot(store, (s) => [
+        s.entities[entityId('light')],
+      ]);
       renders(light);
       return null;
     };

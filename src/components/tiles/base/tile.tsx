@@ -1,8 +1,9 @@
 import type { ComponentChildren } from 'preact';
 
 import { AlertIcon } from '@/components/icons/alert-icon.tsx';
+import type { Placement } from '@/config/config.ts';
 import { useOffline } from '@/hooks/use-offline.ts';
-import type { GridArea } from '@/lib/grid.ts';
+import { placeStyle } from '@/lib/grid.ts';
 
 export type TileState = 'loading' | 'normal' | 'unavailable' | 'stale';
 
@@ -35,7 +36,7 @@ export const Unavailable = ({ label = 'Unavailable' }: { label?: string }) => (
  * background (the display paints bare buttons grey, see docs/display.md).
  */
 export const Tile = ({
-  area,
+  place,
   state: requested = 'normal',
   onTap,
   disabled = false,
@@ -45,7 +46,7 @@ export const Tile = ({
   class: className = '',
   children,
 }: {
-  area: GridArea;
+  place: Placement;
   state?: TileState;
   onTap?: () => void;
   disabled?: boolean;
@@ -59,7 +60,7 @@ export const Tile = ({
   const offline = useOffline();
   const state = requested === 'normal' && offline ? 'stale' : requested;
   const stale = state === 'stale';
-  const base = `relative min-w-0 overflow-hidden rounded-tile border p-4 text-left transition-colors duration-150 ${
+  const base = `tile-place relative min-w-0 overflow-hidden rounded-tile border p-4 text-left transition-colors duration-150 ${
     flash ? 'border-warn bg-warn-soft' : 'border-line bg-surface'
   } ${className}`;
   const body =
@@ -91,7 +92,7 @@ export const Tile = ({
     return (
       <button
         type="button"
-        style={{ gridArea: area }}
+        style={placeStyle(place)}
         class={`${base} tap min-h-14 ${stale ? '' : 'disabled:opacity-50'}`}
         aria-pressed={pressed}
         disabled={disabled || offline}
@@ -103,7 +104,7 @@ export const Tile = ({
     );
   }
   return (
-    <div style={{ gridArea: area }} class={base}>
+    <div style={placeStyle(place)} class={base}>
       {body}
       {badges}
     </div>

@@ -4,9 +4,9 @@ import { act } from 'preact/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { entityId } from '@/config/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { ToggleTile } from './toggle-tile.tsx';
 
@@ -19,12 +19,7 @@ const setup = async () => {
     await store.start(mock.getAuth);
     render(
       <HaConnection store={store}>
-        <ToggleTile
-          entity="light"
-          label="Office light"
-          area="light"
-          store={store}
-        />
+        <ToggleTile tile={tileOf('toggle')} store={store} />
       </HaConnection>,
       document.body,
     );

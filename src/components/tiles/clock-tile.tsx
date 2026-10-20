@@ -1,6 +1,7 @@
+import type { Placement } from '@/config/config.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
 import { formatTime } from '@/lib/format.ts';
-import type { GridArea } from '@/lib/grid.ts';
+import { placeStyle } from '@/lib/grid.ts';
 
 const date = new Intl.DateTimeFormat('en-GB', {
   weekday: 'long',
@@ -10,17 +11,17 @@ const date = new Intl.DateTimeFormat('en-GB', {
 
 /** Large time and UK-format date. No tile chrome, as in the design. */
 export const ClockTile = ({
-  area,
+  place,
   now,
 }: {
-  area: GridArea;
+  place: Placement;
   now?: () => Date;
 }) => {
   const current = useMinute(now);
   return (
     <div
-      style={{ gridArea: area }}
-      class="flex min-w-0 flex-col justify-center px-2"
+      style={placeStyle(place)}
+      class="tile-place flex min-w-0 flex-col justify-center px-2"
     >
       <div class="tnum text-[88px] leading-none font-semibold tracking-tight">
         {formatTime(current)}

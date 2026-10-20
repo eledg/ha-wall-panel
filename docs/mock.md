@@ -11,6 +11,10 @@ part of a build, and `pnpm dev` does not load it (a build test checks).
 - `__HA_MOCK__` (a Vite `define`, true only for `vite --mode mock`) gates one
   dynamic import in `src/services/ha/instance.ts`. That is the app's only link to the mock.
 - The overlay renders on its own Preact root (`#mock-overlay`), not inside `App`.
+- The tiles come from `src/dev/mock/config.ts`, the fixture the tests and e2e baselines use. The
+  overlay's panels and scenarios act on the first tile of each type; a further tile
+  of a type gets a plain default state (`off`, `0`, `on`) from its domain. The mock needs one tile of
+  each type to run.
 
 ## The overlay
 

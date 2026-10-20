@@ -6,11 +6,12 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  entityId,
+  entityRefs,
   getConfig,
   placeholder,
   type RuntimeConfig,
 } from '@/config/config.ts';
+import { entityId } from '@/tests/ids.ts';
 
 import { CALENDAR_REFRESH_MS } from './calendar.ts';
 import { createHaStore, FORECAST_REFRESH_MS, retryDelay } from './store.ts';
@@ -53,40 +54,28 @@ describe('createHaStore', () => {
   it('subscribes to exactly the configured entities', () => {
     const { store } = setup();
 
-    expect(store.getSnapshot().subscribed).toEqual(
-      Object.values(getConfig().entities).map(({ id }) => id),
-    );
+    expect(store.getSnapshot().subscribed).toEqual([
+      ...new Set(entityRefs().map(({ id }) => id)),
+    ]);
   });
 
   it('omits entities that fail config validation', () => {
-    const bad = {
-      entities: {
-        ...getConfig().entities,
-        light: { domain: 'switch', id: placeholder('light') },
-      },
-    } as unknown as RuntimeConfig;
+    const bad: RuntimeConfig = {
+      ...getConfig(),
+      tiles: getConfig().tiles.map((tile) =>
+        tile.type === 'toggle'
+          ? { ...tile, entities: { entity: placeholder('light') } }
+          : tile,
+      ),
+    };
 
     const store = createHaStore(undefined, bad);
 
-    expect(store.getSnapshot().subscribed).toEqual([
-      entityId('weather'),
-      entityId('calendarFamily'),
-      entityId('calendarF1'),
-      entityId('calendarBirthdays'),
-      entityId('acClimate'),
-      entityId('acPowerful'),
-      entityId('acEconomy'),
-      entityId('acQuietFan'),
-      entityId('roomTemperature'),
-      entityId('roomHumidity'),
-      entityId('roomBattery'),
-      entityId('heatingClimate'),
-      entityId('heatingSchedule'),
-      entityId('heatingDemand'),
-      entityId('heatingCloud'),
-      entityId('heatingResume'),
-      entityId('heatingBoost'),
-    ]);
+    expect(store.getSnapshot().subscribed).toEqual(
+      [...new Set(entityRefs().map(({ id }) => id))].filter(
+        (id) => id !== entityId('light'),
+      ),
+    );
   });
 
   it('keeps only configured entities from the full state', async () => {
@@ -98,8 +87,10 @@ describe('createHaStore', () => {
       'switch.unrelated': entity('other', 'on'),
     });
 
-    expect(Object.keys(store.getSnapshot().entities)).toEqual(['light']);
-    expect(store.getSnapshot().entities.light?.state).toBe('on');
+    expect(Object.keys(store.getSnapshot().entities)).toEqual([
+      entityId('light'),
+    ]);
+    expect(store.getSnapshot().entities[entityId('light')]?.state).toBe('on');
   });
 
   it('notifies subscribers only when a tracked entity changes', async () => {
@@ -244,7 +235,7 @@ describe('createHaStore', () => {
     const { store, deps, conn } = setup();
     await store.start(settings);
 
-    await store.callService('light', 'toggle');
+    await store.callService('switch', entityId('light'), 'toggle');
 
     expect(deps.callService).toHaveBeenCalledWith(
       conn,
@@ -258,7 +249,9 @@ describe('createHaStore', () => {
   it('rejects a service call while not connected', async () => {
     const { store, deps } = setup();
 
-    await expect(store.callService('light', 'toggle')).rejects.toThrow();
+    await expect(
+      store.callService('switch', entityId('light'), 'toggle'),
+    ).rejects.toThrow();
     expect(deps.callService).not.toHaveBeenCalled();
   });
 
@@ -283,7 +276,9 @@ describe('createHaStore', () => {
 
     await vi.waitFor(() => {
       push({ [id]: entity(id, 'sunny') });
-      expect(store.getSnapshot().forecasts.weather).toEqual(forecast);
+      expect(store.getSnapshot().forecasts[entityId('weather')]).toEqual(
+        forecast,
+      );
     });
     expect(deps.callService).toHaveBeenCalledWith(
       expect.anything(),
@@ -298,7 +293,9 @@ describe('createHaStore', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     push({ [id]: entity(id, 'rainy') });
     await vi.waitFor(() => expect(error).toHaveBeenCalled());
-    expect(store.getSnapshot().forecasts.weather).toEqual(forecast);
+    expect(store.getSnapshot().forecasts[entityId('weather')]).toEqual(
+      forecast,
+    );
     error.mockRestore();
   });
 
@@ -371,11 +368,13 @@ describe('calendars', () => {
     await store.start(settings);
 
     await vi.waitFor(() =>
-      expect(Object.keys(store.getSnapshot().calendars).sort()).toEqual([
-        'calendarBirthdays',
-        'calendarF1',
-        'calendarFamily',
-      ]),
+      expect(Object.keys(store.getSnapshot().calendars).sort()).toEqual(
+        [
+          entityId('calendarBirthdays'),
+          entityId('calendarF1'),
+          entityId('calendarFamily'),
+        ].sort(),
+      ),
     );
     expect(
       calls(deps)
@@ -393,9 +392,9 @@ describe('calendars', () => {
     expect(end.getTime() - start.getTime()).toBeGreaterThanOrEqual(
       6.9 * 86_400_000,
     );
-    expect(store.getSnapshot().calendars.calendarFamily?.[0]?.summary).toBe(
-      'Dentist',
-    );
+    expect(
+      store.getSnapshot().calendars[entityId('calendarFamily')]?.[0]?.summary,
+    ).toBe('Dentist');
   });
 
   it('refreshes on an interval and stops with the store', async () => {
@@ -434,14 +433,18 @@ describe('calendars', () => {
     deps.fetchCalendarEvents.mockResolvedValue(raw);
     await store.start(settings);
     await vi.waitFor(() =>
-      expect(store.getSnapshot().calendars.calendarFamily).toHaveLength(1),
+      expect(
+        store.getSnapshot().calendars[entityId('calendarFamily')],
+      ).toHaveLength(1),
     );
 
     deps.fetchCalendarEvents.mockRejectedValue(new Error('boom'));
     listeners.ready!();
     await vi.waitFor(() => expect(console.error).toHaveBeenCalled());
 
-    expect(store.getSnapshot().calendars.calendarFamily).toHaveLength(1);
+    expect(
+      store.getSnapshot().calendars[entityId('calendarFamily')],
+    ).toHaveLength(1);
     expect(store.getSnapshot().calendarFailed).toBe(false);
   });
 
@@ -470,10 +473,12 @@ describe('calendars', () => {
     await store.start(settings);
 
     await vi.waitFor(() =>
-      expect(store.getSnapshot().calendarUpdated.calendarF1).toBeDefined(),
+      expect(
+        store.getSnapshot().calendarUpdated[entityId('calendarF1')],
+      ).toBeDefined(),
     );
     expect(
-      store.getSnapshot().calendarUpdated.calendarF1,
+      store.getSnapshot().calendarUpdated[entityId('calendarF1')],
     ).toBeGreaterThanOrEqual(before);
   });
 
@@ -483,15 +488,19 @@ describe('calendars', () => {
     deps.fetchCalendarEvents.mockResolvedValue(raw);
     await store.start(settings);
     await vi.waitFor(() =>
-      expect(store.getSnapshot().calendarUpdated.calendarF1).toBeDefined(),
+      expect(
+        store.getSnapshot().calendarUpdated[entityId('calendarF1')],
+      ).toBeDefined(),
     );
-    const loaded = store.getSnapshot().calendarUpdated.calendarF1;
+    const loaded = store.getSnapshot().calendarUpdated[entityId('calendarF1')];
 
     deps.fetchCalendarEvents.mockRejectedValue(new Error('boom'));
     listeners.ready!();
     await vi.waitFor(() => expect(console.error).toHaveBeenCalled());
 
-    expect(store.getSnapshot().calendarUpdated.calendarF1).toBe(loaded);
+    expect(store.getSnapshot().calendarUpdated[entityId('calendarF1')]).toBe(
+      loaded,
+    );
   });
 
   it('drops calendars on stop', async () => {
@@ -499,7 +508,9 @@ describe('calendars', () => {
     deps.fetchCalendarEvents.mockResolvedValue(raw);
     await store.start(settings);
     await vi.waitFor(() =>
-      expect(store.getSnapshot().calendars.calendarFamily).toBeDefined(),
+      expect(
+        store.getSnapshot().calendars[entityId('calendarFamily')],
+      ).toBeDefined(),
     );
 
     store.stop();

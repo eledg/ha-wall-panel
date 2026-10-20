@@ -7,7 +7,7 @@ import { GRID } from '@/lib/grid.ts';
 
 /**
  * Page frame: keeps everything out of the edge zone and lays tiles out on the
- * named-area grid in `grid.ts`. Tiles place themselves with their `area`. The
+ * grid in `grid.ts`. Tiles place themselves from their config (`placeStyle`). The
  * grid drifts a few pixels over time to spare the panel from burn-in. At night
  * the palette turns warm and the display dims until a tap wakes it.
  */
@@ -26,8 +26,6 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
         style={{
           '--cols': GRID.cols,
           '--rows': GRID.rows,
-          '--areas': GRID.areas,
-          '--areas-narrow': GRID.areasNarrow,
         }}
       >
         {children}

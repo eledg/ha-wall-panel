@@ -3,10 +3,11 @@ import { useCallback, useState } from 'preact/hooks';
 
 import { AlertIcon } from '@/components/icons/alert-icon.tsx';
 import { EventSheet } from '@/components/sheets/event-sheet.tsx';
+import type { TileConfig } from '@/config/config.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import {
-  CALENDARS,
+  COLOR_CLASSES,
   dayLabel,
   FALLBACK,
   meta,
@@ -14,18 +15,15 @@ import {
   shortDay,
 } from '@/lib/calendar-labels.ts';
 import { formatTime } from '@/lib/format.ts';
-import type { GridArea } from '@/lib/grid.ts';
 import { CALENDAR_STALE_MS } from '@/services/ha/calendar.ts';
 import type { CalendarEvent } from '@/services/ha/calendar.ts';
 import { haStore } from '@/services/ha/instance.ts';
-import type { EntityKey, HaSnapshot, HaStore } from '@/services/ha/store.ts';
+import type { HaSnapshot, HaStore } from '@/services/ha/store.ts';
 
 import { Tile, Unavailable } from './base/tile.tsx';
 import type { TileState } from './base/tile.tsx';
 
 const MAX_ROWS = 4;
-
-const CALENDAR_KEYS = Object.keys(CALENDARS) as EntityKey[];
 
 /**
  * Splits events into the highlighted "next" one and up to four more rows, as
@@ -48,18 +46,20 @@ export const buildAgenda = (events: CalendarEvent[], now: Date) => {
 };
 
 /**
- * Today's next event and what follows, from the Family, F1 and Birthdays
- * calendars. If a refresh fails the last events stay on screen.
+ * Today's next event and what follows, from the tile's calendars. If a refresh
+ * fails the last events stay on screen.
  */
 export const CalendarTile = ({
-  area,
+  tile,
   store = haStore,
   now,
 }: {
-  area: GridArea;
+  tile: TileConfig<'calendar'>;
   store?: HaStore;
   now?: () => Date;
 }) => {
+  const sources = tile.calendars;
+  const ids = sources.map((source) => source.entity);
   // Only the calendar entities, so a light or weather update does not redraw.
   const [status, calendars, calendarUpdated, calendarFailed, ...found] =
     useSnapshot(store, (s) => [
@@ -67,7 +67,7 @@ export const CalendarTile = ({
       s.calendars,
       s.calendarUpdated,
       s.calendarFailed,
-      ...CALENDAR_KEYS.map((key) => s.entities[key]),
+      ...ids.map((id) => s.entities[id]),
     ]) as [
       HaSnapshot['status'],
       HaSnapshot['calendars'],
@@ -76,8 +76,8 @@ export const CalendarTile = ({
       ...(HassEntity | undefined)[],
     ];
   const entities = Object.fromEntries(
-    CALENDAR_KEYS.map((key, i) => [key, found[i]]),
-  ) as Partial<Record<EntityKey, HassEntity>>;
+    ids.map((id, i) => [id, found[i]]),
+  ) as Partial<Record<string, HassEntity>>;
   const current = useMinute(now);
   const [open, setOpen] = useState<CalendarEvent>();
   const close = useCallback(() => setOpen(undefined), []);
@@ -86,9 +86,8 @@ export const CalendarTile = ({
   // A missing entity is a config error, so its calendar is left out. An
   // unavailable one is usually transient (HA reloading an integration), so its
   // cached events stay on screen. Either is flagged in the legend.
-  const keys = CALENDAR_KEYS;
-  const present = keys.filter((key) => entities[key] !== undefined);
-  const healthy = (key: EntityKey) =>
+  const present = ids.filter((id) => entities[id] !== undefined);
+  const healthy = (key: string) =>
     present.includes(key) &&
     entities[key]?.state !== 'unavailable' &&
     entities[key]?.state !== 'unknown';
@@ -112,12 +111,19 @@ export const CalendarTile = ({
 
   // Beside the tile, not inside it, so the tile's stale dimming and clipping
   // never touch the sheet. It keeps the event it was opened with.
-  const sheet = open && <EventSheet event={open} onClose={close} now={now} />;
+  const sheet = open && (
+    <EventSheet
+      event={open}
+      calendar={meta(sources, open.calendar)}
+      onClose={close}
+      now={now}
+    />
+  );
 
   if (state === 'loading') {
     return (
       <>
-        <Tile area={area} state="loading" />
+        <Tile place={tile} state="loading" />
         {sheet}
       </>
     );
@@ -125,7 +131,7 @@ export const CalendarTile = ({
   if (state === 'unavailable') {
     return (
       <>
-        <Tile area={area} state="unavailable">
+        <Tile place={tile} state="unavailable">
           <div class="flex h-full flex-col justify-center gap-1">
             <Unavailable label="Calendar unavailable" />
             <div class="text-sm text-fg-dim">
@@ -142,18 +148,18 @@ export const CalendarTile = ({
 
   const events = present.flatMap((key) => calendars[key] ?? []);
   const { next, rest } = buildAgenda(events, current);
-  const nextMeta = next ? meta(next.calendar) : FALLBACK;
+  const nextMeta = next ? meta(sources, next.calendar) : FALLBACK;
   return (
     <>
-      <Tile area={area} state={state}>
+      <Tile place={tile} state={state}>
         <div class="flex h-full flex-col gap-3">
           <div class="flex items-baseline justify-between">
             <span class="text-sm font-medium tracking-wider text-fg-dim uppercase">
               Today
             </span>
             <div class="flex gap-3">
-              {keys.map((key) => {
-                const { label, bar } = CALENDARS[key]!;
+              {sources.map(({ entity: key, label, color }) => {
+                const { bar } = COLOR_CLASSES[color];
                 const missing = !healthy(key);
                 return (
                   <span
@@ -165,7 +171,7 @@ export const CalendarTile = ({
                     ) : (
                       <span class={`h-2 w-2 rounded-full ${bar}`} />
                     )}
-                    {label}
+                    {label || key}
                   </span>
                 );
               })}
@@ -214,7 +220,7 @@ export const CalendarTile = ({
                     onClick={() => setOpen(event)}
                   >
                     <span
-                      class={`h-2.5 w-2.5 shrink-0 rounded-full ${meta(event.calendar).bar}`}
+                      class={`h-2.5 w-2.5 shrink-0 rounded-full ${meta(sources, event.calendar).bar}`}
                     />
                     <span class="tnum w-[7.5rem] shrink-0 truncate text-fg-dim">
                       {label === 'Today' ? '' : `${shortDay(label)} `}

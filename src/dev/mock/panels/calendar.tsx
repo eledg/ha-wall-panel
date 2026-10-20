@@ -1,4 +1,4 @@
-import { entityId } from '@/config/config.ts';
+import { entityRefs } from '@/config/config.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
@@ -8,11 +8,9 @@ export const calendarPanel: MockPanel = {
   title: 'Calendar',
   Panel: ({ mock }) => {
     useMockChanges(mock);
-    const ids = [
-      entityId('calendarFamily'),
-      entityId('calendarF1'),
-      entityId('calendarBirthdays'),
-    ];
+    const ids = entityRefs()
+      .filter(({ domain }) => domain === 'calendar')
+      .map(({ id }) => id);
     const scenario = mock.getCalendarScenario();
     const failing = mock.isCalendarFailing();
     return (

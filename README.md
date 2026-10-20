@@ -29,7 +29,7 @@ modern WebView should work, but check [docs/display.md](docs/display.md) first.
 - Night mode, burn-in pixel shift, a disconnected banner and automatic reload
   when a new release is deployed
 
-Your entities, night hours and tile names come from a `config.json` you keep on
+Your tiles, where they sit, their entities and night hours come from a `config.json` you keep on
 the HA box, so every release is generic. See [docs/configuration.md](docs/configuration.md).
 
 ## Quick start
@@ -37,7 +37,7 @@ the HA box, so every release is generic. See [docs/configuration.md](docs/config
 1. Download `wall-panel-<tag>.tar.gz` from the
    [latest release](https://github.com/eledg/ha-wall-panel/releases/latest) and
    extract it into `/config/www/<folder>/` on Home Assistant.
-2. Copy [`config.example.json`](config.example.json) to
+2. Copy [`config.example.jsonc`](config.example.jsonc) to
    `/config/www/<folder>.config.json` and fill in your entity IDs.
 3. Open `http://<ha-ip>:8123/local/<folder>/index.html` on the display (on the
    Shelly: the dock icon's Home Assistant URL). The URL must end in `index.html`.
@@ -81,12 +81,12 @@ Run `pnpm validate` before committing.
 The build takes no settings and works from any folder. Your home is described in
 a `config.json` beside the app's folder (a deploy replaces the whole folder, so
 the file lives next to it): for an app in `/config/www/wall-panel/` that is
-`/config/www/wall-panel.config.json`. It lists the entity ID for each tile's
-data, optional night-mode hours and optional tile names. If the file is missing
+`/config/www/wall-panel.config.json`. It lists the tiles to show, where each sits
+on the grid and the entity IDs it reads, plus optional night-mode hours. If the file is missing
 or wrong, the dashboard shows a banner saying what is the matter.
 
 - [docs/configuration.md](docs/configuration.md): the file, its fields and where it goes
-- [docs/entities.md](docs/entities.md): each entity key, its domain and what the app reads
+- [docs/entities.md](docs/entities.md): each tile's entities, their domains and what the app reads
 
 Everything under `/local/` is served without login, so never put secrets in the
 build or in `config.json`. The display signs in to Home Assistant through the

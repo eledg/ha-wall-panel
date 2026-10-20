@@ -3,6 +3,8 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PLACE } from '@/tests/ids.ts';
+
 import { ClockTile } from './clock-tile.tsx';
 
 const text = () => document.body.textContent;
@@ -18,7 +20,7 @@ afterEach(() => {
 describe('ClockTile', () => {
   it('shows 24-hour time and a UK date', () => {
     vi.setSystemTime(new Date(2026, 0, 5, 9, 5, 10));
-    act(() => render(<ClockTile area="clock" />, document.body));
+    act(() => render(<ClockTile place={PLACE} />, document.body));
 
     expect(text()).toContain('09:05');
     expect(text()).toContain('Monday 5 January');
@@ -26,7 +28,7 @@ describe('ClockTile', () => {
 
   it('ticks on the minute and stays aligned when a timer fires late', () => {
     vi.setSystemTime(new Date(2026, 0, 5, 9, 5, 50));
-    act(() => render(<ClockTile area="clock" />, document.body));
+    act(() => render(<ClockTile place={PLACE} />, document.body));
 
     act(() => {
       vi.advanceTimersByTime(9_999);
@@ -46,7 +48,7 @@ describe('ClockTile', () => {
 
   it('rolls the date over at midnight', () => {
     vi.setSystemTime(new Date(2026, 0, 5, 23, 59, 30));
-    act(() => render(<ClockTile area="clock" />, document.body));
+    act(() => render(<ClockTile place={PLACE} />, document.body));
     act(() => {
       vi.advanceTimersByTime(30_000);
     });
@@ -57,7 +59,7 @@ describe('ClockTile', () => {
 
   it('stops ticking when removed', () => {
     vi.setSystemTime(new Date(2026, 0, 5, 9, 5, 50));
-    act(() => render(<ClockTile area="clock" />, document.body));
+    act(() => render(<ClockTile place={PLACE} />, document.body));
     act(() => render(null, document.body));
 
     expect(vi.getTimerCount()).toBe(0);
