@@ -122,11 +122,13 @@
 }
 
 /* Where a tile sits: the --col, --row, --w and --h that placeStyle sets. */
-@utility tile-place {
-  grid-column: var(--col) / span var(--w);
-  grid-row: var(--row) / span var(--h);
-  @media (orientation: portrait) {
-    grid-column: span var(--nw);
-    grid-row: auto;
+@layer components {
+  .tile-place {
+    grid-column: var(--col) / span var(--w);
+    grid-row: var(--row) / span var(--h);
+    @media (orientation: portrait) {
+      grid-column: span var(--nw);
+      grid-row: auto;
+    }
   }
 }
