@@ -2,6 +2,7 @@ import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import {
   type CalendarKind,
+  type EntityDomain,
   entityRefs,
   firstTile,
   getConfig,
@@ -99,6 +100,22 @@ export type MockControls = {
 
 const SWITCH_SERVICES = ['turn_on', 'turn_off', 'toggle'];
 
+/** The state of an entity the mock has no scenario for, by domain. */
+const DEFAULT_STATE: Partial<Record<EntityDomain, string>> = {
+  binary_sensor: 'on',
+  button: 'unknown',
+  sensor: '0',
+};
+
+const plainEntity = (
+  domain: EntityDomain,
+  scenario: { state: string; attributes: Record<string, unknown> },
+) => {
+  if (domain === 'weather') return scenario;
+  if (domain === 'climate') return { state: 'off', attributes: acAttributes() };
+  return { state: DEFAULT_STATE[domain] ?? 'off', attributes: {} };
+};
+
 export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   const entities = new Map<string, HassEntity>();
   const subscribers = new Set<(all: Record<string, HassEntity>) => void>();
@@ -188,30 +205,10 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     entities.set(id, make(id, 'unknown'));
   }
   // Every other entity (the first tile's switches, further tiles) starts plain.
-  const DEFAULT_STATE = {
-    binary_sensor: 'on',
-    button: 'unknown',
-    sensor: '0',
-    weather: scenario.state,
-  } as const;
   for (const { id, domain } of entityRefs(cfg)) {
     if (entities.has(id)) continue;
-    const state =
-      domain in DEFAULT_STATE
-        ? DEFAULT_STATE[domain as keyof typeof DEFAULT_STATE]
-        : 'off';
-    entities.set(
-      id,
-      make(
-        id,
-        state,
-        domain === 'climate'
-          ? acAttributes()
-          : domain === 'weather'
-            ? scenario.attributes
-            : {},
-      ),
-    );
+    const { state, attributes } = plainEntity(domain, scenario);
+    entities.set(id, make(id, state, attributes));
   }
   let historyFails = false;
   // What `climate.turn_on` restores, as the real unit does.

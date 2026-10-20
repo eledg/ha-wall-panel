@@ -9,8 +9,6 @@ import {
   TILE_TYPES,
 } from './config.ts';
 import type {
-  CalendarColor,
-  CalendarKind,
   CalendarSource,
   ConfigIssue,
   NightConfig,
@@ -71,11 +69,100 @@ export const parseConfig = (
   return { config: { tiles, night }, issues };
 };
 
+type Problem = (key: string, message: string) => void;
+
+/** The member of `options` that `value` equals; otherwise `undefined`, reported unless unset. */
+const oneOf = <T extends string>(
+  options: readonly T[],
+  value: unknown,
+  path: string,
+  problem: Problem,
+): T | undefined => {
+  if (value === undefined) return undefined;
+  const found = options.find((option) => option === value);
+  if (!found) problem(path, `must be one of ${options.join(', ')}`);
+  return found;
+};
+
+/** A setting that must be a non-empty string, trimmed; `fallback` when unset or wrong. */
+const nonEmpty = (
+  raw: Record<string, unknown>,
+  key: string,
+  at: string,
+  fallback: string,
+  problem: Problem,
+) => {
+  const value = raw[key];
+  if (value === undefined) return fallback;
+  if (typeof value === 'string' && value.trim() !== '') return value.trim();
+  problem(`${at}.${key}`, 'must be a non-empty string');
+  return fallback;
+};
+
+/** Reports settings that are not part of a tile of this type. */
+const checkKnownKeys = (
+  raw: Record<string, unknown>,
+  type: TileType,
+  at: string,
+  problem: Problem,
+) => {
+  const known = new Set<string>([
+    ...COMMON_KEYS,
+    ...Object.keys(TILE_ROLES[type]),
+    ...(type === 'calendar' ? ['calendars'] : []),
+  ]);
+  for (const key of Object.keys(raw)) {
+    if (!known.has(key))
+      problem(`${at}.${key}`, `is not a setting of a ${type} tile`);
+  }
+};
+
+/** The entity IDs by role. A missing required one becomes '' so `validateConfig` reports it. */
+const parseEntities = (
+  raw: Record<string, unknown>,
+  type: TileType,
+  at: string,
+  problem: Problem,
+) => {
+  const specs = TILE_ROLES[type] as Record<string, { optional?: true }>;
+  const entities: Record<string, string> = {};
+  for (const [role, spec] of Object.entries(specs)) {
+    const value = raw[role];
+    if (typeof value === 'string') entities[role] = value;
+    else if (value !== undefined)
+      problem(`${at}.${role}`, 'entity ID must be a string');
+    if (entities[role] === undefined && !spec.optional) entities[role] = '';
+  }
+  return entities;
+};
+
+const parsePlacement = (
+  raw: Record<string, unknown>,
+  at: string,
+  problem: Problem,
+) => {
+  const number = (key: (typeof PLACEMENT_KEYS)[number], fallback: number) => {
+    const value = raw[key];
+    if (typeof value === 'number') return value;
+    if (value !== undefined) problem(`${at}.${key}`, 'must be a number');
+    // Position has no default: a tile without one cannot be placed.
+    else if (key === 'col' || key === 'row')
+      problem(`${at}.${key}`, 'is missing');
+    return fallback;
+  };
+  return {
+    col: number('col', 0),
+    row: number('row', 0),
+    w: number('w', 1),
+    h: number('h', 1),
+  };
+};
+
 const parseTile = (
   raw: unknown,
   at: string,
   counts: Map<TileType, number>,
-  problem: (key: string, message: string) => void,
+  problem: Problem,
 ): TileConfig | undefined => {
   if (!isRecord(raw)) {
     problem(at, 'must be an object');
@@ -90,67 +177,15 @@ const parseTile = (
     return undefined;
   }
 
-  const roles = Object.keys(TILE_ROLES[type]);
-  const known = [
-    ...COMMON_KEYS,
-    ...roles,
-    ...(type === 'calendar' ? ['calendars'] : []),
-  ];
-  for (const key of Object.keys(raw)) {
-    if (!known.includes(key))
-      problem(`${at}.${key}`, `is not a setting of a ${type} tile`);
-  }
-
+  checkKnownKeys(raw, type, at, problem);
   const count = (counts.get(type) ?? 0) + 1;
   counts.set(type, count);
-  let id = `${type}-${count}`;
-  if (raw.id !== undefined) {
-    if (typeof raw.id === 'string' && raw.id.trim() !== '') id = raw.id.trim();
-    else problem(`${at}.id`, 'must be a non-empty string');
-  }
-
-  let label = DEFAULT_LABEL[type];
-  if (raw.label !== undefined) {
-    if (typeof raw.label === 'string' && raw.label.trim() !== '')
-      label = raw.label.trim();
-    else problem(`${at}.label`, 'must be a non-empty string');
-  }
-
-  const number = (key: (typeof PLACEMENT_KEYS)[number], fallback: number) => {
-    const value = raw[key];
-    if (value === undefined) {
-      // Position has no default: a tile without one cannot be placed.
-      if (key === 'col' || key === 'row') problem(`${at}.${key}`, 'is missing');
-      return fallback;
-    }
-    if (typeof value === 'number') return value;
-    problem(`${at}.${key}`, 'must be a number');
-    return fallback;
-  };
-
-  const entities: Record<string, string> = {};
-  for (const role of roles) {
-    const value = raw[role];
-    if (value === undefined) continue;
-    if (typeof value === 'string') entities[role] = value;
-    else problem(`${at}.${role}`, 'entity ID must be a string');
-  }
-  // A missing required role becomes '' so `validateConfig` reports it.
-  const specs = TILE_ROLES[type] as Record<string, { optional?: true }>;
-  for (const role of roles) {
-    if (entities[role] === undefined && !specs[role]?.optional)
-      entities[role] = '';
-  }
-
   const tile = {
-    id,
+    id: nonEmpty(raw, 'id', at, `${type}-${count}`, problem),
     type,
-    label,
-    col: number('col', 0),
-    row: number('row', 0),
-    w: number('w', 1),
-    h: number('h', 1),
-    entities,
+    label: nonEmpty(raw, 'label', at, DEFAULT_LABEL[type], problem),
+    entities: parseEntities(raw, type, at, problem),
+    ...parsePlacement(raw, at, problem),
     ...(type === 'calendar'
       ? { calendars: parseCalendars(raw.calendars, at, problem) }
       : {}),
@@ -158,10 +193,33 @@ const parseTile = (
   return tile as TileConfig;
 };
 
+const parseCalendar = (
+  item: Record<string, unknown>,
+  path: string,
+  n: number,
+  problem: Problem,
+): CalendarSource => {
+  if (item.entity !== undefined && typeof item.entity !== 'string')
+    problem(`${path}.entity`, 'entity ID must be a string');
+  if (item.label !== undefined && typeof item.label !== 'string')
+    problem(`${path}.label`, 'must be a string');
+
+  const color =
+    oneOf(CALENDAR_COLORS, item.color, `${path}.color`, problem) ??
+    CALENDAR_COLORS[n % CALENDAR_COLORS.length]!;
+  const kind = oneOf(CALENDAR_KINDS, item.kind, `${path}.kind`, problem);
+  return {
+    entity: typeof item.entity === 'string' ? item.entity : '',
+    label: typeof item.label === 'string' ? item.label.trim() : '',
+    color,
+    ...(kind && { kind }),
+  };
+};
+
 const parseCalendars = (
   raw: unknown,
   at: string,
-  problem: (key: string, message: string) => void,
+  problem: Problem,
 ): CalendarSource[] => {
   if (!Array.isArray(raw)) {
     problem(`${at}.calendars`, 'must be a list of calendars');
@@ -169,37 +227,9 @@ const parseCalendars = (
   }
   return raw.map((item: unknown, n): CalendarSource => {
     const path = `${at}.calendars[${n}]`;
-    if (!isRecord(item)) {
-      problem(path, 'must be an object with an "entity"');
-      return { entity: '', label: '', color: CALENDAR_COLORS[0] };
-    }
-    const entity = typeof item.entity === 'string' ? item.entity : '';
-    if (item.entity !== undefined && typeof item.entity !== 'string')
-      problem(`${path}.entity`, 'entity ID must be a string');
-
-    let label = '';
-    if (item.label !== undefined) {
-      if (typeof item.label === 'string') label = item.label.trim();
-      else problem(`${path}.label`, 'must be a string');
-    }
-
-    let color: CalendarColor = CALENDAR_COLORS[n % CALENDAR_COLORS.length]!;
-    if (item.color !== undefined) {
-      const named = CALENDAR_COLORS.find((c) => c === item.color);
-      if (named) color = named;
-      else
-        problem(
-          `${path}.color`,
-          `must be one of ${CALENDAR_COLORS.join(', ')}`,
-        );
-    }
-    let kind: CalendarKind | undefined;
-    if (item.kind !== undefined) {
-      kind = CALENDAR_KINDS.find((k) => k === item.kind);
-      if (!kind)
-        problem(`${path}.kind`, `must be one of ${CALENDAR_KINDS.join(', ')}`);
-    }
-    return { entity, label, color, ...(kind && { kind }) };
+    if (isRecord(item)) return parseCalendar(item, path, n, problem);
+    problem(path, 'must be an object with an "entity"');
+    return { entity: '', label: '', color: CALENDAR_COLORS[0] };
   });
 };
 
