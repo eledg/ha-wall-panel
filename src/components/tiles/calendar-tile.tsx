@@ -110,19 +110,21 @@ export const CalendarTile = ({
   const current = useMinute(now);
   const [open, setOpen] = useState<CalendarEvent>();
   const close = useCallback(() => setOpen(undefined), []);
-  const offline = status !== 'connected';
+  const isOffline = status !== 'connected';
 
   // A missing entity is a config error, so its calendar is left out. An
   // unavailable one is usually transient (HA reloading an integration), so its
   // cached events stay on screen. Either is flagged in the legend.
-  const present = ids.filter((id) => entities[id] !== undefined);
-  const healthy = (key: string) =>
-    present.includes(key) &&
+  const presentIds = ids.filter((id) => entities[id] !== undefined);
+  const isHealthy = (key: string) =>
+    presentIds.includes(key) &&
     entities[key]?.state !== 'unavailable' &&
     entities[key]?.state !== 'unknown';
-  const loaded = present.some((key) => calendars[key] !== undefined);
+  const hasLoadedEvents = presentIds.some(
+    (key) => calendars[key] !== undefined,
+  );
   // Cached events are kept when refreshes fail, so say when they are old.
-  const old = present.some((key) => {
+  const hasStaleEvents = presentIds.some((key) => {
     const updated = calendarUpdated[key];
     return (
       updated !== undefined && current.getTime() - updated > CALENDAR_STALE_MS
@@ -130,12 +132,12 @@ export const CalendarTile = ({
   });
 
   const state = calendarTileState({
-    hasStaleEvents: old,
-    isOffline: offline,
-    hasLoadedEvents: loaded,
+    hasStaleEvents,
+    isOffline,
+    hasLoadedEvents,
     lastFetchFailed: calendarFailed,
-    presentCalendars: present.length,
-    anyCalendarHealthy: present.some(healthy),
+    presentCalendars: presentIds.length,
+    anyCalendarHealthy: presentIds.some(isHealthy),
   });
 
   // Beside the tile, not inside it, so the tile's stale dimming and clipping
@@ -164,7 +166,7 @@ export const CalendarTile = ({
           <div class="flex h-full flex-col justify-center gap-1">
             <Unavailable label="Calendar unavailable" />
             <div class="text-sm text-fg-dim">
-              {present.length === 0
+              {presentIds.length === 0
                 ? 'Check entity config'
                 : 'Will retry automatically'}
             </div>
@@ -175,7 +177,7 @@ export const CalendarTile = ({
     );
   }
 
-  const events = present.flatMap((key) => calendars[key] ?? []);
+  const events = presentIds.flatMap((key) => calendars[key] ?? []);
   const { next, rest } = buildAgenda(events, current);
   const nextMeta = next ? meta(sources, next.calendar) : FALLBACK;
   return (
@@ -189,7 +191,7 @@ export const CalendarTile = ({
             <div class="flex gap-3">
               {sources.map(({ entity: key, label, color }) => {
                 const { bar } = COLOR_CLASSES[color];
-                const missing = !healthy(key);
+                const missing = !isHealthy(key);
                 return (
                   <span
                     key={key}
