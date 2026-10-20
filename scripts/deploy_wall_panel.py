@@ -138,6 +138,15 @@ def download_asset(release, name):
     return body
 
 
+def inside(root, path):
+    """Return the real path of `path`, refusing anything that escapes `root`."""
+    root = os.path.realpath(root)
+    resolved = os.path.realpath(path)
+    if os.path.commonpath([root, resolved]) != root:
+        raise DeployError(f"path escapes {root}: {path}")
+    return resolved
+
+
 def extract(archive, destination):
     """Extract regular files and directories only, refusing anything unsafe."""
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
@@ -152,7 +161,7 @@ def extract(archive, destination):
                 raise DeployError(f"unsafe path in archive: {member.name}")
             if not (member.isreg() or member.isdir()):
                 raise DeployError(f"unsupported entry type in archive: {member.name}")
-            target = os.path.join(destination, name)
+            target = inside(destination, os.path.join(destination, name))
             if member.isdir():
                 os.makedirs(target, mode=0o755, exist_ok=True)
                 continue
@@ -188,8 +197,9 @@ def swap(staging, www, previous, fail_swap):
 
 def deploy(args):
     www_root = os.path.join(args.config_dir, "www")
-    www = os.path.join(www_root, args.target)
-    base = os.path.join(args.config_dir, ".deploy", args.target)
+    www = inside(www_root, os.path.join(www_root, args.target))
+    deploy_root = os.path.join(args.config_dir, ".deploy")
+    base = inside(deploy_root, os.path.join(deploy_root, args.target))
     staging = os.path.join(base, "staging")
     previous = os.path.join(base, "previous")
     os.makedirs(base, exist_ok=True)
