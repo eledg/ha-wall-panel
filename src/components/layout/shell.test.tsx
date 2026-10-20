@@ -54,26 +54,38 @@ describe('Shell night mode', () => {
     vi.useRealTimers();
   });
 
+  it('puts the night and dimmed palettes on the root and removes it on unmount', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 14, 22, 0, 0));
+    act(() => render(<Shell />, document.body));
+    expect(document.documentElement.dataset.night).toBe('true');
+    expect(document.documentElement.dataset.dimmed).toBe('true');
+
+    act(() => render(null, document.body));
+    expect(document.documentElement.dataset.night).toBeUndefined();
+    expect(document.documentElement.dataset.dimmed).toBeUndefined();
+  });
+
   it('dims at night, and a tap wakes it for a while', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 2, 14, 20, 59, 0));
     render(<Shell />, document.body);
     const main = document.querySelector('main')!;
-    expect(main.dataset.night).toBeUndefined();
+    expect(document.documentElement.dataset.night).toBeUndefined();
     expect(main.querySelector('[role=button]')).toBeNull();
 
     act(() => {
       vi.advanceTimersByTime(60_000);
     });
-    expect(main.dataset.night).toBe('true');
-    expect(main.dataset.dimmed).toBe('true');
+    expect(document.documentElement.dataset.night).toBe('true');
+    expect(document.documentElement.dataset.dimmed).toBe('true');
     expect(main.querySelector('.dash-grid')?.className).not.toContain(
       'opacity',
     );
 
     act(() => main.querySelector<HTMLElement>('[role=button]')!.click());
     expect(main.querySelector('[role=button]')).toBeNull();
-    expect(main.dataset.dimmed).toBeUndefined();
+    expect(document.documentElement.dataset.dimmed).toBeUndefined();
 
     act(() => {
       vi.advanceTimersByTime(getConfig().night.wakeMs);
@@ -95,15 +107,15 @@ describe('Shell night mode', () => {
       });
 
     press('a');
-    expect(main.dataset.dimmed).toBe('true');
+    expect(document.documentElement.dataset.dimmed).toBe('true');
 
     press('Enter');
-    expect(main.dataset.dimmed).toBeUndefined();
+    expect(document.documentElement.dataset.dimmed).toBeUndefined();
 
     act(() => {
       vi.advanceTimersByTime(getConfig().night.wakeMs);
     });
     press(' ');
-    expect(main.dataset.dimmed).toBeUndefined();
+    expect(document.documentElement.dataset.dimmed).toBeUndefined();
   });
 });

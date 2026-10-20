@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useRef } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 
 import { useNight } from '@/hooks/use-night.ts';
 import { usePixelShift } from '@/hooks/use-pixel-shift.ts';
@@ -16,12 +16,24 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
   const grid = useRef<HTMLDivElement>(null);
   usePixelShift(grid);
   const { night, dimmed, wake } = useNight();
+  // On <html>, not <main>: the diagnostics, config warning and disconnected
+  // banner render outside <main>, and inherited text (`body` sets `text-fg`)
+  // only follows the palette if the tokens are defined at or above `body`.
+  useEffect(() => {
+    const root = document.documentElement;
+    const set = (name: 'night' | 'dimmed', on: boolean) => {
+      if (on) root.dataset[name] = 'true';
+      else delete root.dataset[name];
+    };
+    set('night', night);
+    set('dimmed', dimmed);
+    return () => {
+      set('night', false);
+      set('dimmed', false);
+    };
+  }, [night, dimmed]);
   return (
-    <main
-      class="relative box-border h-dvh p-edge text-fg"
-      data-night={night ? 'true' : undefined}
-      data-dimmed={dimmed ? 'true' : undefined}
-    >
+    <main class="relative box-border h-dvh p-edge">
       <div
         ref={grid}
         class="dash-grid h-full"
