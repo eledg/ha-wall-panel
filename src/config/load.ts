@@ -57,21 +57,27 @@ export const parseConfig = (
     if (tile) tiles.push(tile);
   });
 
-  const night = { ...DEFAULT_NIGHT };
-  if (root.night !== undefined && !isRecord(root.night))
-    problem('night', 'must be an object');
-  const rawNight = isRecord(root.night) ? root.night : {};
-  for (const key of Object.keys(DEFAULT_NIGHT) as (keyof NightConfig)[]) {
-    const value = rawNight[key];
-    if (value === undefined) continue;
-    if (typeof value === 'number') night[key] = value;
-    else problem('night', `${key} must be a number`);
-  }
+  const night = parseNight(root.night, problem);
 
   return { config: { tiles, night }, issues };
 };
 
 type Problem = (key: string, message: string) => void;
+
+/** The night settings: the defaults, with any number given in `raw` over them. */
+const parseNight = (raw: unknown, problem: Problem): NightConfig => {
+  const night = { ...DEFAULT_NIGHT };
+  if (raw !== undefined && !isRecord(raw))
+    problem('night', 'must be an object');
+  const given = isRecord(raw) ? raw : {};
+  for (const key of Object.keys(DEFAULT_NIGHT) as (keyof NightConfig)[]) {
+    const value = given[key];
+    if (value === undefined) continue;
+    if (typeof value === 'number') night[key] = value;
+    else problem('night', `${key} must be a number`);
+  }
+  return night;
+};
 
 /** The member of `options` that `value` equals; otherwise `undefined`, reported unless unset. */
 const oneOf = <T extends string>(

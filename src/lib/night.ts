@@ -43,5 +43,7 @@ export const setNightMode = (next: NightMode) => {
 
 export const subscribeNightMode = (listener: () => void) => {
   listeners.add(listener);
-  return () => void listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 };

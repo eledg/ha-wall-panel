@@ -45,6 +45,27 @@ export const buildAgenda = (events: CalendarEvent[], now: Date) => {
   return { next, rest };
 };
 
+/** What the tile shows, from which calendars exist, loaded, healthy and fresh. */
+const calendarTileState = ({
+  old,
+  offline,
+  loaded,
+  failed,
+  present,
+  healthy,
+}: {
+  old: boolean;
+  offline: boolean;
+  loaded: boolean;
+  failed: boolean;
+  present: number;
+  healthy: boolean;
+}): TileState => {
+  if (present === 0) return offline ? 'loading' : 'unavailable';
+  if (!loaded) return failed || !healthy ? 'unavailable' : 'loading';
+  return old ? 'stale' : 'normal'; // Tile also turns it stale while offline
+};
+
 /**
  * Today's next event and what follows, from the tile's calendars. If a refresh
  * fails the last events stay on screen.
@@ -100,14 +121,14 @@ export const CalendarTile = ({
     );
   });
 
-  let state: TileState = old ? 'stale' : 'normal'; // Tile also turns it stale while offline
-  if (present.length === 0) state = offline ? 'loading' : 'unavailable';
-  else if (!loaded) {
-    state =
-      calendarFailed || present.every((key) => !healthy(key))
-        ? 'unavailable'
-        : 'loading';
-  }
+  const state = calendarTileState({
+    old,
+    offline,
+    loaded,
+    failed: calendarFailed,
+    present: present.length,
+    healthy: present.some(healthy),
+  });
 
   // Beside the tile, not inside it, so the tile's stale dimming and clipping
   // never touch the sheet. It keeps the event it was opened with.

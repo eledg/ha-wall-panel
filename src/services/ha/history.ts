@@ -54,8 +54,8 @@ export const toIntervals = (
   const intervals: Interval[] = [];
   points.forEach((point, i) => {
     const next = points[i + 1]?.at ?? end;
-    const last = intervals[intervals.length - 1];
-    if (last && last.on === point.on) last.end = next;
+    const last = intervals.at(-1);
+    if (last?.on === point.on) last.end = next;
     else if (next > point.at) {
       intervals.push({ start: point.at, end: next, on: point.on });
     }
