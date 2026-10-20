@@ -9,7 +9,8 @@ import { GRID } from '@/lib/grid.ts';
  * Page frame: keeps everything out of the edge zone and lays tiles out on the
  * grid in `grid.ts`. Tiles place themselves from their config (`placeStyle`). The
  * grid drifts a few pixels over time to spare the panel from burn-in. At night
- * the palette turns warm and the display dims until a tap wakes it.
+ * the palette turns warm and, until a tap wakes it, drops to a darker set of solid
+ * colours (`[data-dimmed]`). Never dim with opacity: see docs/display.md.
  */
 export const Shell = ({ children }: { children?: ComponentChildren }) => {
   const grid = useRef<HTMLDivElement>(null);
@@ -19,10 +20,11 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
     <main
       class="relative box-border h-dvh p-edge"
       data-night={night ? 'true' : undefined}
+      data-dimmed={dimmed ? 'true' : undefined}
     >
       <div
         ref={grid}
-        class={`dash-grid h-full ${dimmed ? 'opacity-60' : ''}`}
+        class="dash-grid h-full"
         style={{
           '--cols': GRID.cols,
           '--rows': GRID.rows,

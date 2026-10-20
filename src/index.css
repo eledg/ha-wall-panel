@@ -66,6 +66,32 @@
   --color-cal-green: oklch(0.52 0.07 140);
 }
 
+/*
+ * Dimmed night palette: the same tokens at lower lightness, all opaque. The
+ * display renders faded (translucent) content lighter, not darker, so dimming
+ * must never use opacity or alpha (docs/display.md, Rendering quirks).
+ */
+[data-dimmed='true'] {
+  --color-surface: oklch(0.08 0 0);
+  --color-surface-2: oklch(0.1 0 0);
+  --color-line: oklch(0.13 0 0);
+  --color-fg: oklch(0.36 0.006 60);
+  --color-fg-dim: oklch(0.26 0.004 60);
+  --color-fg-faint: oklch(0.2 0 0);
+  --color-accent: oklch(0.34 0.055 70);
+  --color-accent-fg: oklch(0.08 0.012 70);
+  --color-accent-soft: oklch(0.13 0.02 70);
+  --color-warn: oklch(0.42 0.11 32);
+  --color-warn-soft: oklch(0.17 0.05 32);
+  --color-heating-manual: oklch(0.38 0.06 22);
+  --color-heating-manual-soft: oklch(0.13 0.04 22);
+  --color-cal-yellow: oklch(0.4 0.07 104);
+  --color-cal-blue: oklch(0.31 0.036 230);
+  --color-cal-green: oklch(0.32 0.042 140);
+  --color-ok: oklch(0.45 0.09 140);
+  --color-ok-soft: oklch(0.17 0.036 140);
+}
+
 @utility tap {
   transition:
     transform 100ms ease-out,
@@ -111,9 +137,7 @@
   grid-template-columns: var(--cols);
   grid-template-rows: var(--rows);
   /* Pixel shift (src/pixel-shift.ts): glide so a step is never seen. */
-  transition:
-    transform 60s linear,
-    opacity 150ms;
+  transition: transform 60s linear;
   @media (orientation: portrait) {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: none;

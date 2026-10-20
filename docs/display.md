@@ -80,6 +80,13 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - The calendar tile's coloured stripe was an empty `<span class="w-1.5 shrink-0">` inside a `<button class="flex">`, relying on `align-items: stretch` for its height. It rendered fine in dev but was missing on the display (the cause is inferred, not measured on the device).
 - It is now absolutely positioned (`inset-y-3 left-3`) in a `relative` button. Prefer that over stretch for decorative bars inside buttons.
 
+### Opacity makes content lighter, not darker
+
+- Night-mode dimming used `opacity-60` on the tile grid, and on the Shelly Wall Display X2i the dimmed state looked lighter than the awake night state (issue #21). The computed `opacity` and composited colours have **not** been measured yet; this is the maintainer's reading of the display.
+- Dimming is now a `[data-dimmed]` palette in `src/index.css`: the night tokens at lower lightness, all opaque. Do not bring `opacity` or alpha colours back for dimming.
+- Still using opacity, to change only if they look wrong on the display: stale tiles (`opacity-60`), locked or disabled controls (`opacity-50`, `opacity-30`), `bg-bg/90` sheet backdrops and the `pending-pulse` border.
+- To verify, use the probe below: check `opacity` and the dimmed colours on the display, and judge by eye rather than photos.
+
 ### Unexplained
 
 - The diagnostics dialog showed a square bottom-right corner on the display despite a 20px radius. It was fixed along with the button backgrounds, but the cause was never confirmed. Hiding the scrollbars and moving the scroll into an inner element did nothing on their own.
@@ -101,8 +108,8 @@ Decision on burn-in. The panel type is not confirmed, so the app shifts as cheap
 ## Night mode
 
 From 21:00 to 07:00 local time (`config.night` in `src/config/config.ts`) the app swaps
-to a dimmer, warmer palette (`[data-night]` in `src/index.css`) and fades the grid
-to 60% opacity. A tap anywhere wakes it for 15 seconds; that first tap is
+to a dimmer, warmer palette (`[data-night]` in `src/index.css`) and, after a
+few idle seconds, dims to a darker set of solid colours (`[data-dimmed]`, no opacity). A tap anywhere wakes it for 15 seconds; that first tap is
 swallowed, so a stray touch changes nothing. This is purely the app's own theme:
 it does not touch the device's brightness or screen-off settings. In
 `pnpm dev:mock`, the "Night mode" panel forces night or day.
