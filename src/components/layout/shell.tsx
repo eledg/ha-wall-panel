@@ -52,7 +52,7 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
           role="button"
           tabIndex={0}
           aria-label="Wake display"
-          class="absolute inset-0 z-10"
+          class="absolute inset-0 z-40"
           onClick={wake}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') wake();

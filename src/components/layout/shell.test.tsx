@@ -118,4 +118,12 @@ describe('Shell night mode', () => {
     press(' ');
     expect(document.documentElement.dataset.dimmed).toBeUndefined();
   });
+
+  it('keeps the wake overlay above the sheets and diagnostics (z-20 and below)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 14, 22, 0, 0));
+    render(<Shell />, document.body);
+    const overlay = document.querySelector<HTMLElement>('[role=button]')!;
+    expect(overlay.className).toContain('z-40');
+  });
 });

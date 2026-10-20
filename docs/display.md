@@ -74,6 +74,7 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - Opaque utility backgrounds do apply (the tile's `bg-accent` computed correctly). Give every button an opaque background that matches what is behind it, such as `bg-bg` on the page or `bg-surface` in the dialog. Do not "simplify" these back to transparent.
 - `appearance: none` on buttons made no visible difference.
 - The full-screen "Wake display" overlay was a background-less `<button>` and lit the whole screen grey when night mode dimmed, which looked like the dimming had failed (the opacity change in #41 was not the cause). It is now a `div role="button"` in `Shell`; it cannot have an opaque background because it sits over the dashboard. Keep it a `div`.
+- The overlay is `z-40` so it sits above the diagnostics dialog and the sheets (`z-10` to `z-20`). At `z-10` the diagnostics dialog covered it, so a dimmed display could not be woken by tapping while diagnostics was open. Keep it above any full-screen layer.
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
 ### Inherited text stays day-bright at night
