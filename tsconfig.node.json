@@ -29,6 +29,8 @@
     "bundle-budget.test.ts",
     "dev-ha.ts",
     "dev-ha.test.ts",
+    "config-schema.test.ts",
+    "scripts/generate-schema.ts",
     "playwright.config.ts",
     "e2e"
   ]

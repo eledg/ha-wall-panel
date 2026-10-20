@@ -80,6 +80,16 @@ export type TileEntities<T extends TileType> = {
   [R in keyof Roles<T> as OptionalRole<T, R> extends true ? R : never]?: string;
 };
 
+/** Settings every tile may have, besides its entity roles. */
+export const COMMON_KEYS = ['id', 'type', 'label', 'col', 'row', 'w', 'h'];
+
+/** Settings beyond the common ones and the entity roles, for the types that have them. */
+export const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
+  calendar: ['calendars'],
+  heating: ['roomLabel'],
+  ac: ['roomLabel'],
+};
+
 /** Calendar colours, named after the palette in `index.css`. */
 export const CALENDAR_COLORS = ['yellow', 'blue', 'green'] as const;
 export type CalendarColor = (typeof CALENDAR_COLORS)[number];

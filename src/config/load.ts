@@ -2,9 +2,11 @@ import {
   applyConfig,
   CALENDAR_COLORS,
   CALENDAR_KINDS,
+  COMMON_KEYS,
   DEFAULT_LABEL,
   DEFAULT_NIGHT,
   DEFAULT_ROOM_LABEL,
+  EXTRA_KEYS,
   markConfigUnavailable,
   TILE_ROLES,
   TILE_TYPES,
@@ -26,8 +28,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const MIGRATION =
   'was replaced by "tiles": list each tile with its type, position and entities (see docs/configuration.md)';
 
-const PLACEMENT_KEYS = ['col', 'row', 'w', 'h'] as const;
-const COMMON_KEYS = ['id', 'type', 'label', ...PLACEMENT_KEYS];
+type PlacementKey = 'col' | 'row' | 'w' | 'h';
 
 /**
  * Turns the parsed `config.json` into a config. Anything missing or of the
@@ -151,13 +152,6 @@ const nonEmpty = (
   return fallback;
 };
 
-/** Settings beyond the common ones and the entity roles, for the types that have them. */
-const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
-  calendar: ['calendars'],
-  heating: ['roomLabel'],
-  ac: ['roomLabel'],
-};
-
 /** The type-specific settings of a tile: a calendar's sources, a climate tile's room name. */
 const parseExtras = (
   raw: Record<string, unknown>,
@@ -216,7 +210,7 @@ const parsePlacement = (
   at: string,
   problem: Problem,
 ) => {
-  const number = (key: (typeof PLACEMENT_KEYS)[number], fallback: number) => {
+  const number = (key: PlacementKey, fallback: number) => {
     const value = raw[key];
     if (typeof value === 'number') return value;
     if (value !== undefined) problem(`${at}.${key}`, 'must be a number');
