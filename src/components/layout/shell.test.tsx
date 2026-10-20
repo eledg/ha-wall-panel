@@ -66,13 +66,14 @@ describe('Shell night mode', () => {
       vi.advanceTimersByTime(60_000);
     });
     expect(main.dataset.night).toBe('true');
-    expect(main.querySelector('.dash-grid')?.className).toContain('opacity-60');
+    expect(main.dataset.dimmed).toBe('true');
+    expect(main.querySelector('.dash-grid')?.className).not.toContain(
+      'opacity',
+    );
 
     act(() => main.querySelector('button')!.click());
     expect(main.querySelector('button')).toBeNull();
-    expect(main.querySelector('.dash-grid')?.className).not.toContain(
-      'opacity-60',
-    );
+    expect(main.dataset.dimmed).toBeUndefined();
 
     act(() => {
       vi.advanceTimersByTime(getConfig().night.wakeMs);

@@ -75,10 +75,29 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - `appearance: none` on buttons made no visible difference.
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
+### Inherited text stays day-bright at night
+
+- `body` sets `text-fg`, which resolves with the day palette; the night and dimmed tokens live on `<main>`, so text with no colour class of its own (the clock time) inherited the day colour. `Shell` now sets `text-fg` on `<main>` so inherited text follows the active palette. Keep it there.
+
+### Button text may render white
+
+- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. `Shell` sets `text-fg` on `<main>` so buttons inherit the active palette. Where a button's colour comes in through `className` (`ClimateButton`, `Tile`), do not add a default `text-fg` to the base classes: it can beat `text-accent-fg` or `text-warn` depending on CSS order. Not measured on the device.
+
+### Emoji in calendar titles are glaring
+
+- Colour emoji ignore `color`, so they stayed full brightness at night, which stood out against the night palette. `EmojiText` wraps them in `.emoji`, which applies a `filter` (saturate and brightness) only under `[data-night]`, darker again under `[data-dimmed]`; day is untouched. A filter darkens; opacity would not on this display. Not yet measured on the device.
+
 ### Empty flex items in buttons collapse
 
 - The calendar tile's coloured stripe was an empty `<span class="w-1.5 shrink-0">` inside a `<button class="flex">`, relying on `align-items: stretch` for its height. It rendered fine in dev but was missing on the display (the cause is inferred, not measured on the device).
 - It is now absolutely positioned (`inset-y-3 left-3`) in a `relative` button. Prefer that over stretch for decorative bars inside buttons.
+
+### Opacity makes content lighter, not darker
+
+- Night-mode dimming used `opacity-60` on the tile grid, and on the Shelly Wall Display X2i the dimmed state looked lighter than the awake night state (issue #21). The computed `opacity` and composited colours have **not** been measured yet; this is the maintainer's reading of the display.
+- Dimming is now a `[data-dimmed]` palette in `src/index.css`: the night tokens at lower lightness, all opaque. Do not bring `opacity` or alpha colours back for dimming.
+- Still using opacity, to change only if they look wrong on the display: stale tiles (`opacity-60`), locked or disabled controls (`opacity-50`, `opacity-30`), `bg-bg/90` sheet backdrops and the `pending-pulse` border.
+- To verify, use the probe below: check `opacity` and the dimmed colours on the display, and judge by eye rather than photos.
 
 ### Unexplained
 
@@ -101,8 +120,8 @@ Decision on burn-in. The panel type is not confirmed, so the app shifts as cheap
 ## Night mode
 
 From 21:00 to 07:00 local time (`config.night` in `src/config/config.ts`) the app swaps
-to a dimmer, warmer palette (`[data-night]` in `src/index.css`) and fades the grid
-to 60% opacity. A tap anywhere wakes it for 15 seconds; that first tap is
+to a dimmer, warmer palette (`[data-night]` in `src/index.css`) and, after a
+few idle seconds, dims to a darker set of solid colours (`[data-dimmed]`, no opacity). A tap anywhere wakes it for 15 seconds; that first tap is
 swallowed, so a stray touch changes nothing. This is purely the app's own theme:
 it does not touch the device's brightness or screen-off settings. In
 `pnpm dev:mock`, the "Night mode" panel forces night or day.
