@@ -24,7 +24,7 @@ const example = JSON.parse(
 ) as { tiles: Record<string, unknown>[] };
 
 describe('config.schema.json', () => {
-  it('is up to date (run `pnpm schema` to regenerate it)', () => {
+  it('is up to date (run `pnpm schema:generate` to regenerate it)', () => {
     expect(committed).toEqual(buildSchema());
   });
 

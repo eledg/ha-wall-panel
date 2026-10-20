@@ -125,7 +125,7 @@ that line in your own copy, or in VS Code map the schema to your file instead:
 ```
 
 The schema is generated from the tile definitions in `src/config/config.ts`. After
-changing them, run `pnpm schema` and commit the result; a test fails if it is stale.
+changing them, run `pnpm schema:generate` and commit the result; a test fails if it is stale.
 
 ## When something is wrong
 
