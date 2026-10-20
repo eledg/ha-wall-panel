@@ -337,6 +337,17 @@ describe('parseConfig', () => {
   });
 });
 
+describe('$schema', () => {
+  it('is accepted at the top level without an issue', () => {
+    const { issues } = parseConfig({
+      $schema: 'https://example.com/config.schema.json',
+      tiles: [toggleTile],
+    });
+
+    expect(issues).toEqual([]);
+  });
+});
+
 describe('config.example.jsonc', () => {
   it('parses and validates with no issues', () => {
     const { config, issues } = parseConfig(

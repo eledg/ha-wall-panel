@@ -37,7 +37,9 @@ the HA box, so every release is generic. See [docs/configuration.md](docs/config
    [latest release](https://github.com/eledg/ha-wall-panel/releases/latest) and
    extract it into `/config/www/<folder>/` on Home Assistant.
 2. Copy [`config.example.jsonc`](config.example.jsonc) to
-   `/config/www/<folder>.config.json` and fill in your entity IDs.
+   `/config/www/<folder>.config.json` and fill in your entity IDs. An editor
+   that reads its `"$schema"` line will autocomplete and flag typos (see
+   [docs/configuration.md](docs/configuration.md#editor-support)).
 3. Open `http://<ha-ip>:8123/local/<folder>/index.html` on the display (on the
    Shelly: the dock icon's Home Assistant URL). The URL must end in `index.html`.
 4. Set up sign-in and, if you want, automatic updates: see

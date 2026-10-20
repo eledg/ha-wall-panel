@@ -1,0 +1,502 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ha-wall-panel config.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tiles"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "tiles": {
+      "type": "array",
+      "description": "The tiles on the display, each with its position.",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row"
+            ],
+            "properties": {
+              "type": {
+                "const": "clock"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row",
+              "entity"
+            ],
+            "properties": {
+              "type": {
+                "const": "weather"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              },
+              "entity": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A weather.* entity ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row",
+              "calendars"
+            ],
+            "properties": {
+              "type": {
+                "const": "calendar"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              },
+              "calendars": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "entity"
+                  ],
+                  "properties": {
+                    "entity": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "A calendar.* entity ID."
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "The name in the legend."
+                    },
+                    "color": {
+                      "enum": [
+                        "yellow",
+                        "blue",
+                        "green"
+                      ],
+                      "description": "By default the colours are used in turn."
+                    },
+                    "kind": {
+                      "enum": [
+                        "f1",
+                        "birthdays"
+                      ],
+                      "description": "\"f1\" shortens race titles and hides their notes; \"birthdays\" adds the age from a \"Born 1977\" note."
+                    }
+                  }
+                },
+                "description": "The calendars merged into the agenda."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row",
+              "entity"
+            ],
+            "properties": {
+              "type": {
+                "const": "toggle"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              },
+              "entity": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A switch.* entity ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row",
+              "temperature",
+              "humidity"
+            ],
+            "properties": {
+              "type": {
+                "const": "temperature"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              },
+              "temperature": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A sensor.* entity ID."
+              },
+              "humidity": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A sensor.* entity ID."
+              },
+              "battery": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A sensor.* entity ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row",
+              "climate",
+              "schedule",
+              "demand",
+              "cloud",
+              "resume",
+              "boost"
+            ],
+            "properties": {
+              "type": {
+                "const": "heating"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              },
+              "climate": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A climate.* entity ID."
+              },
+              "schedule": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A switch.* entity ID."
+              },
+              "demand": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A binary_sensor.* entity ID."
+              },
+              "cloud": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A binary_sensor.* entity ID."
+              },
+              "resume": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A button.* entity ID."
+              },
+              "boost": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A button.* entity ID."
+              },
+              "roomLabel": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The room named in the \"<room> now\" caption."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row",
+              "climate",
+              "powerful",
+              "economy",
+              "quietFan"
+            ],
+            "properties": {
+              "type": {
+                "const": "ac"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              },
+              "climate": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A climate.* entity ID."
+              },
+              "powerful": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A switch.* entity ID."
+              },
+              "economy": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A switch.* entity ID."
+              },
+              "quietFan": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A switch.* entity ID."
+              },
+              "room": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A sensor.* entity ID."
+              },
+              "roomLabel": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The room named in the \"<room> now\" caption."
+              }
+            }
+          }
+        ]
+      }
+    },
+    "night": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Dim warm palette between startHour and endHour.",
+      "properties": {
+        "startHour": {
+          "type": "number",
+          "default": 21
+        },
+        "endHour": {
+          "type": "number",
+          "default": 7
+        },
+        "wakeMs": {
+          "type": "number",
+          "default": 15000
+        }
+      }
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A language tag such as \"en-GB\"."
+    },
+    "timeZone": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An IANA time zone name such as \"Europe/London\"."
+    }
+  }
+}

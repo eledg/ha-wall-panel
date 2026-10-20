@@ -17,6 +17,9 @@
 //
 // Each entity ID must be in the domain shown in the comments below.
 {
+  // Gives your editor autocomplete and inline errors (see docs/configuration.md).
+  "$schema": "https://raw.githubusercontent.com/eledg/ha-wall-panel/main/config.schema.json",
+
   "tiles": [
     // The time and date. No entities.
     { "type": "clock", "col": 1, "row": 1, "w": 3 },

@@ -105,6 +105,28 @@ or `green`; by default the three are used in turn), and an optional `kind`:
 `f1` shortens Formula 1 race titles and hides their notes, `birthdays` adds the
 age from a "Born 1977" note.
 
+## Editor support
+
+[`config.schema.json`](../config.schema.json) is a JSON schema of the file, so an
+editor can suggest settings and underline a misspelled one (`quietfan`) as you type.
+It covers structure only; the app still checks the grid, overlaps, duplicate ids and
+entity domains when it loads.
+
+The example already points at it with a `"$schema"` line, which the app ignores. Keep
+that line in your own copy, or in VS Code map the schema to your file instead:
+
+```json
+"json.schemas": [
+  {
+    "fileMatch": ["*.config.json"],
+    "url": "https://raw.githubusercontent.com/eledg/ha-wall-panel/main/config.schema.json"
+  }
+]
+```
+
+The schema is generated from the tile definitions in `src/config/config.ts`. After
+changing them, run `pnpm schema:generate` and commit the result; a test fails if it is stale.
+
 ## When something is wrong
 
 The app never fails silently. If the file is missing or isn't valid JSON, or an
