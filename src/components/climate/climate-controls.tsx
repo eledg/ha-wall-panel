@@ -24,7 +24,7 @@ export const ClimateButton = ({
   <button
     {...props}
     type={type}
-    class={`tap min-h-14 rounded-lg border border-line bg-surface-2 text-fg disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 ${className}`}
+    class={`tap min-h-14 rounded-lg border border-line bg-surface-2 disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 ${className}`}
   />
 );
 

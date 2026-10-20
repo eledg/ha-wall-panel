@@ -81,7 +81,7 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 
 ### Button text may render white
 
-- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. Give every button an explicit `text-*` colour so the night and dimmed palettes apply. Not measured on the device.
+- A `<button>` with no text colour can fall back to the browser's dark-scheme `buttontext` (white) instead of inheriting `text-fg`, which stands out at night. `Shell` sets `text-fg` on `<main>` so buttons inherit the active palette. Where a button's colour comes in through `className` (`ClimateButton`, `Tile`), do not add a default `text-fg` to the base classes: it can beat `text-accent-fg` or `text-warn` depending on CSS order. Not measured on the device.
 
 ### Empty flex items in buttons collapse
 
