@@ -149,10 +149,19 @@ export const DEFAULT_NIGHT: NightConfig = {
 export type RuntimeConfig = {
   tiles: TileConfig[];
   night: NightConfig;
+  /** BCP 47 tag for dates and times; the display's own when unset. */
+  locale?: string;
+  /** IANA time zone for everything time related; the display's own when unset. */
+  timeZone?: string;
 };
 
 /** What `validateConfig` accepts: a config whose night settings may be left out. */
-export type Config = { tiles: TileConfig[]; night?: NightConfig };
+export type Config = {
+  tiles: TileConfig[];
+  night?: NightConfig;
+  locale?: string;
+  timeZone?: string;
+};
 
 /** `key` says where: a tile path such as `tiles[2].climate`, or a top-level setting. */
 export type ConfigIssue = { key: string; message: string };

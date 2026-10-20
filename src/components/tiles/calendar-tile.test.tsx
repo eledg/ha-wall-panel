@@ -56,8 +56,9 @@ describe('dayLabel', () => {
 
 describe('shortDay', () => {
   it('shortens weekdays but keeps Tmrw whole', () => {
-    expect(shortDay('Tmrw')).toBe('Tmrw');
-    expect(shortDay('Monday')).toBe('Mon');
+    const monday = new Date(2026, 9, 12, 12);
+    expect(shortDay('Tmrw', monday)).toBe('Tmrw');
+    expect(shortDay('Monday', monday)).toBe('Mon');
   });
 });
 

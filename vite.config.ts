@@ -34,6 +34,9 @@ export default defineConfig(({ mode }) => {
       target: 'es2023',
     },
     test: {
+      // Tests build dates in the machine's zone; match the mock config's
+      // `timeZone` so they pass wherever they run (CI is UTC).
+      env: { TZ: 'Europe/London' },
       setupFiles: ['src/tests/setup.ts'],
       // The git-ignored design prototype has its own tests and deps; e2e/ is Playwright's.
       exclude: [...configDefaults.exclude, '.lovable-design/**', 'e2e/**'],

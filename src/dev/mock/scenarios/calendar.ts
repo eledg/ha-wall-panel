@@ -1,3 +1,4 @@
+import { hourOf, zonedInstant, zonedParts } from '@/config/datetime.ts';
 import type { RawCalendarEvent } from '@/services/ha/calendar.ts';
 
 /** Raw events per calendar key (`calendarFamily`, ...), in HA's REST shape. */
@@ -8,10 +9,8 @@ export type CalendarScenario = {
 };
 
 const at = (now: Date, dayOffset: number, hour: number, minute = 0) => {
-  const d = new Date(now);
-  d.setDate(d.getDate() + dayOffset);
-  d.setHours(hour, minute, 0, 0);
-  return d;
+  const { year, month, day } = zonedParts(now);
+  return zonedInstant({ year, month, day: day + dayOffset, hour, minute });
 };
 
 type Detail = { location?: string; description?: string };
@@ -31,11 +30,11 @@ const timed = (
 /** HA's all-day events: plain dates, with the end day exclusive. */
 const allDay = (summary: string, now: Date, dayOffset: number, days = 1) => {
   const date = (offset: number) => {
-    const d = at(now, offset, 12);
+    const { year, month, day } = zonedParts(at(now, offset, 12));
     return [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, '0'),
-      String(d.getDate()).padStart(2, '0'),
+      year,
+      String(month).padStart(2, '0'),
+      String(day).padStart(2, '0'),
     ].join('-');
   };
   return {
@@ -57,7 +56,7 @@ export const calendarScenarios: CalendarScenario[] = [
     id: 'normal',
     label: 'Normal',
     events: (now) => {
-      const later = Math.min(now.getHours() + 2, 22);
+      const later = Math.min(hourOf(now) + 2, 22);
       return {
         calendarFamily: [
           timed('Football practice', at(now, 2, 10), 90, {
@@ -99,7 +98,7 @@ export const calendarScenarios: CalendarScenario[] = [
     id: 'busy',
     label: 'Busy day',
     events: (now) => {
-      const later = Math.min(now.getHours() + 2, 22);
+      const later = Math.min(hourOf(now) + 2, 22);
       return {
         calendarFamily: [
           timed("Parents' evening", at(now, 2, 18), 90),
@@ -142,7 +141,7 @@ export const calendarScenarios: CalendarScenario[] = [
       calendarF1: [
         timed(
           '🏎 FORMULA 1 ETIHAD AIRWAYS ABU DHABI GRAND PRIX 2026 - Practice 1',
-          at(now, 0, Math.min(now.getHours() + 1, 22)),
+          at(now, 0, Math.min(hourOf(now) + 1, 22)),
           60,
           { location: 'United Arab Emirates', description: F1_BLURB },
         ),

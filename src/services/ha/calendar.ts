@@ -1,6 +1,7 @@
 import type { Auth } from 'home-assistant-js-websocket';
 
 import type { CalendarKind } from '@/config/config.ts';
+import { midnightOf, startOfDay } from '@/config/datetime.ts';
 
 /** How often calendar events are re-fetched; HA pushes no event when they change. */
 export const CALENDAR_REFRESH_MS = 5 * 60_000;
@@ -36,9 +37,6 @@ export type RawCalendarEvent = {
   end: { date?: string; dateTime?: string };
 };
 
-/** `YYYY-MM-DD` as local midnight; `new Date('2026-10-10')` would be UTC. */
-const localMidnight = (date: string) => new Date(`${date}T00:00:00`);
-
 /** The leading emoji (which may carry a variation selector), then `FORMULA 1`. */
 const F1_TITLE = /^(\S+)\s+FORMULA 1\s.*\s-\s(.+)$/u;
 
@@ -64,7 +62,8 @@ const NO_NOTES = new Set<CalendarKind>(['f1']);
 /** Trimmed text, or `undefined` when HA sends nothing, `null` or `""`. */
 const textOf = (value?: string | null) => value?.trim() || undefined;
 
-const ordinalRules = new Intl.PluralRules('en-GB', { type: 'ordinal' });
+// The suffixes are English text, so the rules stay English whatever the locale.
+const ordinalRules = new Intl.PluralRules('en', { type: 'ordinal' });
 const ORDINAL_SUFFIX = {
   one: 'st',
   two: 'nd',
@@ -115,10 +114,10 @@ export const normaliseEvent = (
 ): CalendarEvent | undefined => {
   const allDay = raw.start.date !== undefined;
   const start = allDay
-    ? localMidnight(raw.start.date ?? '')
+    ? midnightOf(raw.start.date ?? '')
     : new Date(raw.start.dateTime ?? '');
   const end = allDay
-    ? localMidnight(raw.end.date ?? raw.start.date ?? '')
+    ? midnightOf(raw.end.date ?? raw.start.date ?? '')
     : new Date(raw.end.dateTime ?? raw.start.dateTime ?? '');
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return undefined;
@@ -154,14 +153,11 @@ export const normaliseEvents = (
     .map((item) => normaliseEvent(calendar, item, kind))
     .filter((event): event is CalendarEvent => event !== undefined);
 
-/** Local midnight today until `CALENDAR_DAYS` days later: what the store fetches. */
-export const calendarWindow = (now: Date = new Date()) => {
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + CALENDAR_DAYS);
-  return { start, end };
-};
+/** Midnight today in the configured zone until `CALENDAR_DAYS` days later: what the store fetches. */
+export const calendarWindow = (now: Date = new Date()) => ({
+  start: startOfDay(now),
+  end: startOfDay(now, CALENDAR_DAYS),
+});
 
 /**
  * Events of one calendar between two instants, in HA's REST shape. The URL is

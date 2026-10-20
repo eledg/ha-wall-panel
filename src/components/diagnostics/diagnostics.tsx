@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 
 import { XIcon } from '@/components/icons/x-icon.tsx';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
+import { dateFormat } from '@/config/datetime.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { type CheckNowResult, createManualUpdate } from '@/lib/auto-reload.ts';
 import { haStore } from '@/services/ha/instance.ts';
@@ -16,27 +17,23 @@ const STATUS_LABEL: Record<HaStatus, string> = {
   error: 'Reconnecting',
 };
 
-const BUILT_FORMAT = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  timeZone: 'Europe/London',
-  timeZoneName: 'short',
-});
+const builtFormat = () =>
+  dateFormat({
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZoneName: 'short',
+  });
 
 const formatBuilt = (iso: string) => {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? iso : BUILT_FORMAT.format(date);
+  return Number.isNaN(date.getTime()) ? iso : builtFormat().format(date);
 };
 
-const CHECKED_FORMAT = new Intl.DateTimeFormat('en-GB', {
-  hour: '2-digit',
-  minute: '2-digit',
-  timeZone: 'Europe/London',
-});
+const checkedFormat = () => dateFormat({ hour: '2-digit', minute: '2-digit' });
 
 export type ManualUpdate = {
   checkNow: () => Promise<CheckNowResult>;
@@ -83,7 +80,7 @@ export const Diagnostics = ({
     if (checked === 'checking') return 'Checking for updates…';
     if (checked.status === 'reloading') return 'Update found. Reloading…';
     if (checked.status === 'failed') return "Couldn't check";
-    return `Up to date — ${version} (${commit.slice(0, 7)}) · checked ${CHECKED_FORMAT.format(checked.at)}`;
+    return `Up to date — ${version} (${commit.slice(0, 7)}) · checked ${checkedFormat().format(checked.at)}`;
   };
   const statusText = describeCheck();
 

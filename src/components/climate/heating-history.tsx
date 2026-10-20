@@ -1,18 +1,14 @@
+import { formatTime } from '@/lib/format.ts';
 import type { Interval } from '@/services/ha/history.ts';
 
 /** How far back the history reaches. */
 export const HISTORY_HOURS = 6;
 
-const time = (at: number) =>
-  new Date(at).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+const time = (at: number) => formatTime(at);
 
 /**
  * When the boiler was called for heat over a window: on/off bands (accent for
- * on) with 24h labels. `intervals` is `undefined` while loading and `[]` when
+ * on) with time labels. `intervals` is `undefined` while loading and `[]` when
  * HA has nothing to show; neither draws a blank bar.
  */
 export const HeatingHistory = ({

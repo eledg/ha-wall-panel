@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { applyConfig, getConfig } from '@/config/config.ts';
+import { mockConfig } from '@/dev/mock/config.ts';
 
 import { isNight, msToNextBoundary } from './night.ts';
 
@@ -24,5 +27,22 @@ describe('msToNextBoundary', () => {
     expect(msToNextBoundary(at(20, 30), 21, 7)).toBe(30 * 60_000);
     expect(msToNextBoundary(at(23), 21, 7)).toBe(8 * 3_600_000);
     expect(msToNextBoundary(at(21), 21, 7)).toBe(10 * 3_600_000);
+  });
+});
+
+describe('with a configured time zone', () => {
+  afterEach(() => applyConfig(mockConfig));
+
+  it('judges night by the zone, not the machine', () => {
+    applyConfig({ ...getConfig(), timeZone: 'Asia/Tokyo' });
+    // 12:00 UTC is 21:00 in Tokyo, the start of the night.
+    expect(isNight(new Date(Date.UTC(2026, 2, 14, 12)), 21, 7)).toBe(true);
+    expect(isNight(new Date(Date.UTC(2026, 2, 14, 11, 59)), 21, 7)).toBe(false);
+  });
+
+  it('counts to the boundary in the zone', () => {
+    applyConfig({ ...getConfig(), timeZone: 'Asia/Tokyo' });
+    const now = new Date(Date.UTC(2026, 2, 14, 11, 30)); // 20:30 in Tokyo
+    expect(msToNextBoundary(now, 21, 7)).toBe(30 * 60_000);
   });
 });

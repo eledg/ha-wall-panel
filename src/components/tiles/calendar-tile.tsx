@@ -255,7 +255,7 @@ export const CalendarTile = ({
                       class={`h-2.5 w-2.5 shrink-0 rounded-full ${meta(sources, event.calendar).bar}`}
                     />
                     <span class="tnum w-[7.5rem] shrink-0 truncate text-fg-dim">
-                      {label === 'Today' ? '' : `${shortDay(label)} `}
+                      {label === 'Today' ? '' : `${shortDay(label, start)} `}
                       {event.allDay ? 'all day' : formatTime(start)}
                     </span>
                     <span class="min-w-0 truncate">

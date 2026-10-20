@@ -1,4 +1,5 @@
 import type { CalendarColor, CalendarSource } from '@/config/config.ts';
+import { dateFormat, startOfDay } from '@/config/datetime.ts';
 
 export type CalendarMeta = { label: string; bar: string; text: string };
 
@@ -26,22 +27,18 @@ export const meta = (sources: CalendarSource[], id: string): CalendarMeta => {
     : FALLBACK;
 };
 
-const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long' });
-
-export const midnight = (date: Date, offsetDays = 0) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + offsetDays);
-  return d;
-};
+export const midnight = startOfDay;
 
 /** `Today`, `Tmrw`, then the weekday. A multi-day event under way counts as today. */
 export const dayLabel = (start: Date, now: Date) => {
   if (start < midnight(now, 1)) return 'Today';
   if (start < midnight(now, 2)) return 'Tmrw';
-  return weekday.format(start);
+  return dateFormat({ weekday: 'long' }).format(start);
 };
 
-/** Weekday names shorten to three letters (`Mon`); `Tmrw` is already short. */
-export const shortDay = (label: string) =>
-  label === 'Tmrw' ? label : label.slice(0, 3);
+/**
+ * Weekday names shorten as the locale does it (`Mon`); `Tmrw` is already short.
+ * `start` is the event's start, which `label` was made from.
+ */
+export const shortDay = (label: string, start: Date) =>
+  label === 'Tmrw' ? label : dateFormat({ weekday: 'short' }).format(start);

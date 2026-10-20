@@ -1,15 +1,13 @@
 import type { Placement } from '@/config/config.ts';
+import { dateFormat } from '@/config/datetime.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
 import { formatTime } from '@/lib/format.ts';
 import { placeStyle } from '@/lib/grid.ts';
 
-const date = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-});
+const date = () =>
+  dateFormat({ weekday: 'long', day: 'numeric', month: 'long' });
 
-/** Large time and UK-format date. No tile chrome, as in the design. */
+/** Large time and date, in the configured locale. No tile chrome, as in the design. */
 export const ClockTile = ({
   place,
   now,
@@ -27,7 +25,7 @@ export const ClockTile = ({
         {formatTime(current)}
       </div>
       <div class="mt-2 truncate text-2xl text-fg-dim">
-        {date.format(current)}
+        {date().format(current)}
       </div>
     </div>
   );
