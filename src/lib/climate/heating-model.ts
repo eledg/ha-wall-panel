@@ -46,13 +46,9 @@ export const readHeating = (
     isUsable(climate) && isUsable(schedule) && cloud?.state !== 'off';
   const on = isUsable(climate) && climate!.state !== 'off';
   const following = schedule?.state === 'on';
-  const state: HeatingState = on
-    ? following
-      ? 'schedule'
-      : 'manual'
-    : following
-      ? 'paused'
-      : 'off';
+  let state: HeatingState = 'off';
+  if (on) state = following ? 'schedule' : 'manual';
+  else if (following) state = 'paused';
   return {
     usable,
     on,

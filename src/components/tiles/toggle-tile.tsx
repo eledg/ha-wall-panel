@@ -7,7 +7,7 @@ import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
-import { Tile, Unavailable } from './base/tile.tsx';
+import { Tile, type TileState, Unavailable } from './base/tile.tsx';
 
 /** How long the tile flashes after a rolled-back toggle (the design's 900 ms). */
 const FLASH_MS = 900;
@@ -67,10 +67,14 @@ export const ToggleTile = ({
       });
   };
 
+  let tileStatus: TileState = 'normal';
+  if (state === undefined) tileStatus = 'loading';
+  else if (offline) tileStatus = 'stale';
+
   return (
     <Tile
       place={tile}
-      state={state === undefined ? 'loading' : offline ? 'stale' : 'normal'}
+      state={tileStatus}
       pressed={on}
       flash={failed}
       disabled={!usable}

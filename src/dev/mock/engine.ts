@@ -98,7 +98,7 @@ export type MockControls = {
   subscribe: (listener: () => void) => () => void;
 };
 
-const SWITCH_SERVICES = ['turn_on', 'turn_off', 'toggle'];
+const SWITCH_SERVICES = new Set(['turn_on', 'turn_off', 'toggle']);
 
 /** The state of an entity the mock has no scenario for, by domain. */
 const DEFAULT_STATE: Partial<Record<EntityDomain, string>> = {
@@ -255,17 +255,91 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     addEventListener: (event: string, listener: () => void) => {
       listeners.set(event, (listeners.get(event) ?? new Set()).add(listener));
     },
-    removeEventListener: (event: string, listener: () => void) =>
-      void listeners.get(event)?.delete(listener),
+    removeEventListener: (event: string, listener: () => void) => {
+      listeners.get(event)?.delete(listener);
+    },
     close: () => {},
   } as unknown as Connection;
+
+  const fail = (message: string) =>
+    Promise.reject(new Error(`Mock HA: ${message}`));
+
+  const getForecasts = (id: string) => {
+    if (!entities.has(id)) return fail(`unknown entity ${id}`);
+    if (forecastFails) return fail('forecast failed');
+    const forecast = forecastFor(scenario, Date.now());
+    return Promise.resolve({ response: { [id]: { forecast } } });
+  };
+
+  const pressButton = (id: string) => {
+    if (servicesFail) return fail('service call failed');
+    if (id === heatingEntities.resume) {
+      setHeatingParts('heat', true, SCHEDULED_TARGET);
+    } else if (id === heatingEntities.boost) {
+      setHeatingParts('heat', false, BOOST_TARGET, true);
+    }
+    return Promise.resolve();
+  };
+
+  const callHeating = (
+    entity: HassEntity,
+    service: string,
+    data: Record<string, unknown> | undefined,
+  ) => {
+    if (servicesFail) return fail('service call failed');
+    if (entity.state === 'unavailable') return fail('heating unavailable');
+    try {
+      const next = applyHeatingService(
+        entity.state,
+        entity.attributes,
+        entities.get(heatingSchedule)?.state === 'on',
+        service,
+        data,
+      );
+      // With no heating, nothing is calling for heat.
+      setHeatingParts(
+        next.power,
+        next.scheduleOn,
+        next.target,
+        next.power === 'off' ? false : undefined,
+      );
+      return Promise.resolve();
+    } catch (err) {
+      return Promise.reject(err as Error);
+    }
+  };
+
+  const callClimate = (
+    id: string,
+    entity: HassEntity,
+    service: string,
+    data: Record<string, unknown> | undefined,
+  ) => {
+    if (servicesFail) return fail('service call failed');
+    try {
+      const next = applyClimateService(
+        entity.state,
+        entity.attributes,
+        service,
+        acLastMode,
+        data,
+      );
+      if (next.state !== 'off') acLastMode = next.state;
+      setState(id, next.state, next.attributes);
+      return Promise.resolve();
+    } catch (err) {
+      return Promise.reject(err as Error);
+    }
+  };
 
   const deps = {
     createConnection: () => Promise.resolve(connection),
     subscribeEntities: (_conn, onChange) => {
       subscribers.add(onChange);
       onChange(Object.fromEntries(entities));
-      return () => void subscribers.delete(onChange);
+      return () => {
+        subscribers.delete(onChange);
+      };
     },
     fetchCalendarEvents: (_auth, entityId) => {
       if (!connected) {
@@ -293,90 +367,23 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       );
     },
     callService: (_conn, domain, service, data, target) => {
-      if (!connected) {
-        return Promise.reject(new Error('Mock HA: connection lost'));
-      }
+      if (!connected) return fail('connection lost');
       if (domain === 'weather' && service === 'get_forecasts') {
-        const id = (target as { entity_id: string }).entity_id;
-        if (!entities.has(id)) {
-          return Promise.reject(new Error(`Mock HA: unknown entity ${id}`));
-        }
-        if (forecastFails) {
-          return Promise.reject(new Error('Mock HA: forecast failed'));
-        }
-        const forecast = forecastFor(scenario, Date.now());
-        return Promise.resolve({ response: { [id]: { forecast } } });
+        return getForecasts((target as { entity_id: string }).entity_id);
       }
       const id = (target as { entity_id?: string } | undefined)?.entity_id;
       const entity = id ? entities.get(id) : undefined;
-      if (!id || !entity) {
-        return Promise.reject(new Error(`Mock HA: unknown entity ${id}`));
-      }
-      if (domain === 'button' && service === 'press') {
-        if (servicesFail) {
-          return Promise.reject(new Error('Mock HA: service call failed'));
-        }
-        if (id === heatingEntities.resume) {
-          setHeatingParts('heat', true, SCHEDULED_TARGET);
-        } else if (id === heatingEntities.boost) {
-          setHeatingParts('heat', false, BOOST_TARGET, true);
-        }
-        return Promise.resolve();
-      }
+      if (!id || !entity) return fail(`unknown entity ${id}`);
+      const input = data as Record<string, unknown> | undefined;
+      if (domain === 'button' && service === 'press') return pressButton(id);
       if (domain === 'climate' && id === heating) {
-        if (servicesFail) {
-          return Promise.reject(new Error('Mock HA: service call failed'));
-        }
-        if (entity.state === 'unavailable') {
-          return Promise.reject(new Error('Mock HA: heating unavailable'));
-        }
-        try {
-          const next = applyHeatingService(
-            entity.state,
-            entity.attributes,
-            entities.get(heatingSchedule)?.state === 'on',
-            service,
-            data as Record<string, unknown> | undefined,
-          );
-          // With no heating, nothing is calling for heat.
-          setHeatingParts(
-            next.power,
-            next.scheduleOn,
-            next.target,
-            next.power === 'off' ? false : undefined,
-          );
-          return Promise.resolve();
-        } catch (err) {
-          return Promise.reject(err as Error);
-        }
+        return callHeating(entity, service, input);
       }
-      if (domain === 'climate') {
-        if (servicesFail) {
-          return Promise.reject(new Error('Mock HA: service call failed'));
-        }
-        try {
-          const next = applyClimateService(
-            entity.state,
-            entity.attributes,
-            service,
-            data as Record<string, unknown> | undefined,
-            acLastMode,
-          );
-          if (next.state !== 'off') acLastMode = next.state;
-          setState(id, next.state, next.attributes);
-          return Promise.resolve();
-        } catch (err) {
-          return Promise.reject(err as Error);
-        }
+      if (domain === 'climate') return callClimate(id, entity, service, input);
+      if (domain !== 'switch' || !SWITCH_SERVICES.has(service)) {
+        return fail(`no service ${domain}.${service}`);
       }
-      if (domain !== 'switch' || !SWITCH_SERVICES.includes(service)) {
-        return Promise.reject(
-          new Error(`Mock HA: no service ${domain}.${service}`),
-        );
-      }
-      if (servicesFail) {
-        return Promise.reject(new Error('Mock HA: service call failed'));
-      }
+      if (servicesFail) return fail('service call failed');
       const on =
         service === 'toggle' ? entity.state !== 'on' : service === 'turn_on';
       setState(id, on ? 'on' : 'off');
@@ -464,7 +471,9 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     weatherScenarios: scenarios.map(({ id, label }) => ({ id, label })),
     subscribe: (listener) => {
       watchers.add(listener);
-      return () => void watchers.delete(listener);
+      return () => {
+        watchers.delete(listener);
+      };
     },
   };
 

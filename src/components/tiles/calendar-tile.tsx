@@ -45,6 +45,35 @@ export const buildAgenda = (events: CalendarEvent[], now: Date) => {
   return { next, rest };
 };
 
+/** What the tile shows, from which calendars exist, have loaded, are healthy and are fresh. */
+const calendarTileState = ({
+  hasStaleEvents,
+  isOffline,
+  hasLoadedEvents,
+  lastFetchFailed,
+  presentCalendars,
+  anyCalendarHealthy,
+}: {
+  /** Some calendar's cached events are older than `CALENDAR_STALE_MS`. */
+  hasStaleEvents: boolean;
+  /** The connection to HA is down. */
+  isOffline: boolean;
+  /** At least one present calendar has events (possibly cached). */
+  hasLoadedEvents: boolean;
+  /** The last events fetch failed. */
+  lastFetchFailed: boolean;
+  /** How many configured calendars have an entity in HA. */
+  presentCalendars: number;
+  /** At least one present calendar is neither `unavailable` nor `unknown`. */
+  anyCalendarHealthy: boolean;
+}): TileState => {
+  if (presentCalendars === 0) return isOffline ? 'loading' : 'unavailable';
+  if (!hasLoadedEvents) {
+    return lastFetchFailed || !anyCalendarHealthy ? 'unavailable' : 'loading';
+  }
+  return hasStaleEvents ? 'stale' : 'normal'; // Tile also turns it stale while offline
+};
+
 /**
  * Today's next event and what follows, from the tile's calendars. If a refresh
  * fails the last events stay on screen.
@@ -81,33 +110,35 @@ export const CalendarTile = ({
   const current = useMinute(now);
   const [open, setOpen] = useState<CalendarEvent>();
   const close = useCallback(() => setOpen(undefined), []);
-  const offline = status !== 'connected';
+  const isOffline = status !== 'connected';
 
   // A missing entity is a config error, so its calendar is left out. An
   // unavailable one is usually transient (HA reloading an integration), so its
   // cached events stay on screen. Either is flagged in the legend.
-  const present = ids.filter((id) => entities[id] !== undefined);
-  const healthy = (key: string) =>
-    present.includes(key) &&
+  const presentIds = ids.filter((id) => entities[id] !== undefined);
+  const isHealthy = (key: string) =>
+    presentIds.includes(key) &&
     entities[key]?.state !== 'unavailable' &&
     entities[key]?.state !== 'unknown';
-  const loaded = present.some((key) => calendars[key] !== undefined);
+  const hasLoadedEvents = presentIds.some(
+    (key) => calendars[key] !== undefined,
+  );
   // Cached events are kept when refreshes fail, so say when they are old.
-  const old = present.some((key) => {
+  const hasStaleEvents = presentIds.some((key) => {
     const updated = calendarUpdated[key];
     return (
       updated !== undefined && current.getTime() - updated > CALENDAR_STALE_MS
     );
   });
 
-  let state: TileState = old ? 'stale' : 'normal'; // Tile also turns it stale while offline
-  if (present.length === 0) state = offline ? 'loading' : 'unavailable';
-  else if (!loaded) {
-    state =
-      calendarFailed || present.every((key) => !healthy(key))
-        ? 'unavailable'
-        : 'loading';
-  }
+  const state = calendarTileState({
+    hasStaleEvents,
+    isOffline,
+    hasLoadedEvents,
+    lastFetchFailed: calendarFailed,
+    presentCalendars: presentIds.length,
+    anyCalendarHealthy: presentIds.some(isHealthy),
+  });
 
   // Beside the tile, not inside it, so the tile's stale dimming and clipping
   // never touch the sheet. It keeps the event it was opened with.
@@ -135,7 +166,7 @@ export const CalendarTile = ({
           <div class="flex h-full flex-col justify-center gap-1">
             <Unavailable label="Calendar unavailable" />
             <div class="text-sm text-fg-dim">
-              {present.length === 0
+              {presentIds.length === 0
                 ? 'Check entity config'
                 : 'Will retry automatically'}
             </div>
@@ -146,7 +177,7 @@ export const CalendarTile = ({
     );
   }
 
-  const events = present.flatMap((key) => calendars[key] ?? []);
+  const events = presentIds.flatMap((key) => calendars[key] ?? []);
   const { next, rest } = buildAgenda(events, current);
   const nextMeta = next ? meta(sources, next.calendar) : FALLBACK;
   return (
@@ -160,7 +191,7 @@ export const CalendarTile = ({
             <div class="flex gap-3">
               {sources.map(({ entity: key, label, color }) => {
                 const { bar } = COLOR_CLASSES[color];
-                const missing = !healthy(key);
+                const missing = !isHealthy(key);
                 return (
                   <span
                     key={key}

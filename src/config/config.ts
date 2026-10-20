@@ -260,7 +260,7 @@ const validateNight = (night?: NightConfig): ConfigIssue[] => {
     return [{ key: 'night', message: 'hours must be whole numbers, 0 to 23' }];
   if (night.startHour === night.endHour)
     return [{ key: 'night', message: 'start and end hours must differ' }];
-  if (!(night.wakeMs > 0))
+  if (Number.isNaN(night.wakeMs) || night.wakeMs <= 0)
     return [{ key: 'night', message: 'wakeMs must be positive' }];
   return [];
 };

@@ -31,8 +31,8 @@ export const applyClimateService = (
   state: string,
   attributes: Record<string, unknown>,
   service: string,
-  data: Record<string, unknown> = {},
   lastMode: string,
+  data: Record<string, unknown> = {},
 ): { state: string; attributes: Record<string, unknown> } => {
   const options = (key: string) => (attributes[key] ?? []) as string[];
   const oneOf = (field: string, list: string) => {

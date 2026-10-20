@@ -14,12 +14,10 @@ export type TileState = 'loading' | 'normal' | 'unavailable' | 'stale';
 export const tileState = (
   entities: unknown[],
   usable = true,
-): TileState | undefined =>
-  entities.some((entity) => entity === undefined)
-    ? 'loading'
-    : usable
-      ? undefined
-      : 'unavailable';
+): TileState | undefined => {
+  if (entities.includes(undefined)) return 'loading';
+  return usable ? undefined : 'unavailable';
+};
 
 /** Shown inside a tile whose entity is unavailable. */
 export const Unavailable = ({ label = 'Unavailable' }: { label?: string }) => (

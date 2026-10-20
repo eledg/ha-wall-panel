@@ -12,9 +12,8 @@ export type TemperatureView = { value: number | undefined };
 export const readTemperature = (
   entity: HassEntity | undefined,
   attribute?: string,
-): TemperatureView => ({
-  value:
-    entity && isUsable(entity)
-      ? parseNumber(attribute ? entity.attributes[attribute] : entity.state)
-      : undefined,
-});
+): TemperatureView => {
+  if (!entity || !isUsable(entity)) return { value: undefined };
+  const raw = attribute ? entity.attributes[attribute] : entity.state;
+  return { value: parseNumber(raw) };
+};

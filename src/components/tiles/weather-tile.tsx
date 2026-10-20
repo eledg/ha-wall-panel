@@ -53,9 +53,9 @@ const percent = (value: unknown) =>
 
 /** The hourly item for the current hour: HA's list starts there. */
 export const currentPeriod = (items: ForecastItem[], now: Date) =>
-  items
-    .filter((item) => new Date(item.datetime).getTime() <= now.getTime())
-    .at(-1) ?? items[0];
+  items.findLast(
+    (item) => new Date(item.datetime).getTime() <= now.getTime(),
+  ) ?? items[0];
 
 const hour = (datetime: string) =>
   new Date(datetime).getHours().toString().padStart(2, '0');

@@ -36,14 +36,11 @@ export const heatingFixture = (state: MockHeatingState) => {
 export const heatingStateOf = (
   power: string | undefined,
   schedule: string | undefined,
-): MockHeatingState =>
-  power === 'heat'
-    ? schedule === 'on'
-      ? 'schedule'
-      : 'manual'
-    : schedule === 'on'
-      ? 'paused'
-      : 'off';
+): MockHeatingState => {
+  const scheduled = schedule === 'on';
+  if (power === 'heat') return scheduled ? 'schedule' : 'manual';
+  return scheduled ? 'paused' : 'off';
+};
 
 /**
  * Applies a `climate.*` service to the heating, as HA would: returns the new

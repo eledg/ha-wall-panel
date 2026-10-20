@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 
 import { FlameIcon } from '@/components/icons/flame-icon.tsx';
@@ -57,6 +58,28 @@ export const HeatingTile = ({
   const state = tileState([climate, schedule], view.usable);
   const running = view.state === 'schedule' || view.state === 'manual';
 
+  let status: ComponentChildren;
+  if (view.state === 'paused') {
+    status = (
+      <span class="flex items-center gap-1 text-xs">
+        <PauseIcon class="size-3" />
+        {STATE_LABEL.paused}
+      </span>
+    );
+  } else if (running) {
+    status = <span class="text-xs">{STATE_LABEL[view.state]}</span>;
+  }
+
+  let value: ComponentChildren = <div class="text-4xl font-semibold">Off</div>;
+  if (running) {
+    value =
+      view.target === undefined ? (
+        <MissingValue />
+      ) : (
+        <Temperature value={formatTemp(view.target)} matchDegree />
+      );
+  }
+
   return (
     <>
       <DeviceTile
@@ -67,27 +90,8 @@ export const HeatingTile = ({
         icon={<FlameIcon class="size-4" />}
         label={tile.label}
         right={<HeatWavesIcon demand={view.demand} class="size-5" />}
-        status={
-          view.state === 'paused' ? (
-            <span class="flex items-center gap-1 text-xs">
-              <PauseIcon class="size-3" />
-              {STATE_LABEL.paused}
-            </span>
-          ) : running ? (
-            <span class="text-xs">{STATE_LABEL[view.state]}</span>
-          ) : undefined
-        }
-        value={
-          running ? (
-            view.target === undefined ? (
-              <MissingValue />
-            ) : (
-              <Temperature value={formatTemp(view.target)} matchDegree />
-            )
-          ) : (
-            <div class="text-4xl font-semibold">Off</div>
-          )
-        }
+        status={status}
+        value={value}
       />
       {open && (
         <HeatingSheet

@@ -269,7 +269,7 @@ def main():
     args = parse_args(sys.argv[1:])
     try:
         deploy(args)
-    except (DeployError, OSError, urllib.error.URLError, tarfile.TarError, ValueError, KeyError) as error:
+    except (DeployError, OSError, tarfile.TarError, ValueError, KeyError) as error:
         print(f"deploy failed: {type(error).__name__}: {error}", file=sys.stderr)
         sys.exit(1)
 

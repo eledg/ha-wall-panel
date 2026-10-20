@@ -279,13 +279,14 @@ export const createHaStore = (
     try {
       const auth = await getAuth();
       let conn: Connection | undefined;
-      for (let attempt = 0; !conn; attempt++) {
+      let attempt = 0;
+      while (!conn) {
         try {
           conn = await deps.createConnection({ auth });
         } catch (err) {
           if (err === ERR_INVALID_AUTH || mine !== generation) throw err;
           update({ status: 'error', error: describeError(err) });
-          const { done, cancel } = cancellableDelay(retryDelay(attempt));
+          const { done, cancel } = cancellableDelay(retryDelay(attempt++));
           cancelRetry = cancel;
           await done;
           if (mine !== generation) return;
@@ -390,7 +391,9 @@ export const createHaStore = (
     getSnapshot: () => snapshot,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
-      return () => void listeners.delete(listener);
+      return () => {
+        listeners.delete(listener);
+      };
     },
     start,
     stop,
