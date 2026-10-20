@@ -92,7 +92,7 @@ export const HeatingSheet = ({
     const load = () => {
       const end = Date.now();
       const start = end - HISTORY_HOURS * 3_600_000;
-      store
+      void store
         .history(entities.demand, new Date(start), new Date(end))
         .then(
           (rows) => toIntervals(rows, start, end),

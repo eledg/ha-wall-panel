@@ -25,11 +25,13 @@ const saveTokens = (data: AuthData | null) => {
   }
 };
 
-const loadTokens = async (): Promise<AuthData | null> => {
+// The sign-in library expects a promise, though reading storage is synchronous.
+const loadTokens = (): Promise<AuthData | null> => {
   try {
-    return JSON.parse(storage()?.getItem(TOKENS_KEY) ?? 'null') as AuthData;
+    const data = JSON.parse(storage()?.getItem(TOKENS_KEY) ?? 'null');
+    return Promise.resolve(data as AuthData | null);
   } catch {
-    return null;
+    return Promise.resolve(null);
   }
 };
 

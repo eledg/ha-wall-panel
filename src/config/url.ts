@@ -6,6 +6,6 @@
  * under `pnpm dev`, it is `/config.json` (served by `dev-ha.ts`).
  */
 export const configUrl = (pathname: string) => {
-  const folder = pathname.replace(/[^/]*$/, '').replace(/\/$/, '');
+  const folder = pathname.slice(0, pathname.lastIndexOf('/'));
   return folder === '' ? '/config.json' : `${folder}.config.json`;
 };
