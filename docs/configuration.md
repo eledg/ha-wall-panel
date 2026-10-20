@@ -61,6 +61,15 @@ a string, such as a URL, is not a comment.
 - **`night`** (optional): from `startHour` until `endHour` (local time, 0 to 23,
   may span midnight) the palette turns warm and dim. A tap wakes the display for
   `wakeMs` milliseconds. Defaults: 21, 7 and 15000.
+- **`locale`** (optional): a language tag such as `"en-GB"` or `"de-DE"`. It sets
+  the order of day and month, the weekday and month names, and whether the clock
+  is 12 or 24 hours. Default: the display's own language, which a kiosk WebView
+  sometimes reports as `en-US`; set `"en-GB"` for a UK date order and 24 hour
+  clock. Only dates and times change: the rest of the text stays English.
+- **`timeZone`** (optional): an IANA name such as `"Europe/London"`. It drives
+  every time the panel shows (clock, calendar, heating history, Diagnostics) and
+  works out (night mode, "Today" and "Tmrw", the weather hours). Default: the
+  display's own time zone; set it only if the display reports the wrong one.
 
 ### Tiles
 

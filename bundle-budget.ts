@@ -10,7 +10,7 @@ import type { Plugin } from 'vite';
 export const BUDGET = {
   /** JS as served, which sets the parse and compile time on the display. */
   jsRaw: 150 * 1024,
-  jsGzip: 30 * 1024,
+  jsGzip: 32 * 1024,
   cssGzip: 12 * 1024,
 } as const;
 

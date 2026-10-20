@@ -4,7 +4,8 @@
 no token or HA. It runs in CI as the `e2e` job.
 
 - **Display:** 944 x 459 CSS px at a pixel ratio of 1.5, touch, `en-GB`,
-  `Europe/London` (see `docs/display.md`).
+  `Europe/London` (see `docs/display.md`). The mock config pins the app's own
+  `locale` and `timeZone` to the same, so baselines do not depend on the machine.
 - **Deterministic:** the page clock is fixed (`page.clock`), so the time, date and
   forecast hours never change. The mock overlay is hidden and the pixel shift
   (`src/hooks/use-pixel-shift.ts`) is held still, so baselines never depend on its path or

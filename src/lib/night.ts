@@ -1,3 +1,5 @@
+import { hourOf, zonedInstant, zonedParts } from '@/config/datetime.ts';
+
 /** `auto` follows the schedule; `on` and `off` are for the mock dev panel. */
 export type NightMode = 'auto' | 'on' | 'off';
 
@@ -9,7 +11,7 @@ export const isNight = (
   startHour: number,
   endHour: number,
 ): boolean => {
-  const h = now.getHours();
+  const h = hourOf(now);
   return startHour <= endHour
     ? h >= startHour && h < endHour
     : h >= startHour || h < endHour;
@@ -22,9 +24,10 @@ export const msToNextBoundary = (
   endHour: number,
 ): number => {
   const next = (hour: number) => {
-    const at = new Date(now);
-    at.setHours(hour, 0, 0, 0);
-    if (at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
+    const { year, month, day } = zonedParts(now);
+    let at = zonedInstant({ year, month, day, hour });
+    if (at.getTime() <= now.getTime())
+      at = zonedInstant({ year, month, day: day + 1, hour });
     return at.getTime() - now.getTime();
   };
   return Math.max(1, Math.min(next(startHour), next(endHour), 24 * HOUR_MS));

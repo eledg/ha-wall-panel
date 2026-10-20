@@ -110,6 +110,14 @@
     }
   ],
 
+  // Optional. Language tag for dates and times (day and month order, names,
+  // 12 or 24 hour clock). Default: the display's own. Text stays English.
+  // "locale": "en-GB",
+
+  // Optional. IANA time zone for every time shown and for night mode and day
+  // boundaries. Default: the display's own; set it if that is wrong.
+  // "timeZone": "Europe/London",
+
   // Optional. From startHour until endHour (local time, 0 to 23, may span
   // midnight) the display turns warm and dim; a tap wakes it for wakeMs.
   "night": { "startHour": 21, "endHour": 7, "wakeMs": 15000 }

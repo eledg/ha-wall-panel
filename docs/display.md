@@ -125,3 +125,10 @@ few idle seconds, dims to a darker set of solid colours (`[data-dimmed]`, no opa
 swallowed, so a stray touch changes nothing. This is purely the app's own theme:
 it does not touch the device's brightness or screen-off settings. In
 `pnpm dev:mock`, the "Night mode" panel forces night or day.
+
+## Language and time zone
+
+The panel formats dates and times in the WebView's language and time zone unless
+`config.json` sets `locale` or `timeZone` (see [configuration.md](configuration.md)).
+Kiosk WebViews often report `en-US`, which gives a 12 hour clock and month-first
+dates; set `"locale": "en-GB"` if the display shows that.

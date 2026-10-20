@@ -2,6 +2,7 @@ import { DropletIcon } from '@/components/icons/droplet-icon.tsx';
 import { WeatherIcon } from '@/components/icons/weather-icon.tsx';
 import type { IconCondition } from '@/components/icons/weather-icon.tsx';
 import type { TileConfig } from '@/config/config.ts';
+import { hourOf } from '@/config/datetime.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { ForecastItem, HaStore } from '@/services/ha/store.ts';
@@ -58,7 +59,7 @@ export const currentPeriod = (items: ForecastItem[], now: Date) =>
   ) ?? items[0];
 
 const hour = (datetime: string) =>
-  new Date(datetime).getHours().toString().padStart(2, '0');
+  hourOf(new Date(datetime)).toString().padStart(2, '0');
 
 /**
  * Current conditions and a short forecast. While HA is unreachable it keeps

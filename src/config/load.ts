@@ -58,8 +58,18 @@ export const parseConfig = (
   });
 
   const night = parseNight(root.night, problem);
+  const locale = parseSetting(root, 'locale', isLocale, problem);
+  const timeZone = parseSetting(root, 'timeZone', isTimeZone, problem);
 
-  return { config: { tiles, night }, issues };
+  return {
+    config: {
+      tiles,
+      night,
+      ...(locale && { locale }),
+      ...(timeZone && { timeZone }),
+    },
+    issues,
+  };
 };
 
 type Problem = (key: string, message: string) => void;
@@ -77,6 +87,40 @@ const parseNight = (raw: unknown, problem: Problem): NightConfig => {
     else problem('night', `${key} must be a number`);
   }
   return night;
+};
+
+/** A check that `make` accepts the value without throwing. */
+const accepts = (make: (value: string) => unknown) => (value: string) => {
+  try {
+    make(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isLocale = accepts((v) => Intl.getCanonicalLocales(v));
+const isTimeZone = accepts(
+  (v) => new Intl.DateTimeFormat(undefined, { timeZone: v }),
+);
+
+/** An optional top-level string setting that must pass `valid`; reported and ignored otherwise. */
+const parseSetting = (
+  root: Record<string, unknown>,
+  key: 'locale' | 'timeZone',
+  valid: (value: string) => boolean,
+  problem: Problem,
+) => {
+  const value = root[key];
+  if (value === undefined) return undefined;
+  if (typeof value === 'string' && valid(value.trim())) return value.trim();
+  problem(
+    key,
+    key === 'locale'
+      ? 'must be a language tag such as "en-GB"'
+      : 'must be a time zone name such as "Europe/London"',
+  );
+  return undefined;
 };
 
 /** The member of `options` that `value` equals; otherwise `undefined`, reported unless unset. */

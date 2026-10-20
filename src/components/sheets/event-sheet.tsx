@@ -3,17 +3,15 @@ import { useEffect, useState } from 'preact/hooks';
 import { XIcon } from '@/components/icons/x-icon.tsx';
 import { EmojiText } from '@/components/tiles/emoji-text.tsx';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
+import { dateFormat } from '@/config/datetime.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
 import { dayLabel } from '@/lib/calendar-labels.ts';
 import type { CalendarMeta } from '@/lib/calendar-labels.ts';
 import { formatTime } from '@/lib/format.ts';
 import type { CalendarEvent } from '@/services/ha/calendar.ts';
 
-const date = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-});
+const date = () =>
+  dateFormat({ weekday: 'long', day: 'numeric', month: 'long' });
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -94,7 +92,7 @@ export const EventSheet = ({
   const end = new Date(event.end);
   const duration = durationLabel(event);
   const when =
-    dayLabel(start, current) === 'Today' ? 'Today' : date.format(start);
+    dayLabel(start, current) === 'Today' ? 'Today' : date().format(start);
 
   return (
     <dialog

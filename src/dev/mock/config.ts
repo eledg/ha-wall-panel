@@ -109,4 +109,7 @@ export const mockConfig: RuntimeConfig = {
     },
   ],
   night: DEFAULT_NIGHT,
+  // Pinned so the e2e baselines look the same on any machine.
+  locale: 'en-GB',
+  timeZone: 'Europe/London',
 };

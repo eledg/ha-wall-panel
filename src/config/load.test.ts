@@ -18,8 +18,10 @@ const respond = (body: unknown, init: ResponseInit = {}) =>
   vi.fn(async () => new Response(JSON.stringify(body), init));
 
 /** The runtime config as `config.json` spells it: entities sit beside the settings. */
-const toFile = ({ tiles, night }: RuntimeConfig) => ({
+const toFile = ({ tiles, night, locale, timeZone }: RuntimeConfig) => ({
   night,
+  locale,
+  timeZone,
   tiles: tiles.map(({ entities, label, ...tile }) => ({
     ...tile,
     ...(label !== '' && { label }),
@@ -44,6 +46,35 @@ describe('parseConfig', () => {
 
     expect(issues).toEqual([]);
     expect(config).toEqual(mockConfig);
+  });
+
+  it('reads locale and timeZone, and leaves them unset by default', () => {
+    expect(parseConfig({ tiles: [toggleTile] }).config).not.toHaveProperty(
+      'locale',
+    );
+    const { config, issues } = parseConfig({
+      tiles: [toggleTile],
+      locale: 'de-DE',
+      timeZone: 'America/New_York',
+    });
+
+    expect(issues).toEqual([]);
+    expect(config).toMatchObject({
+      locale: 'de-DE',
+      timeZone: 'America/New_York',
+    });
+  });
+
+  it('reports a bad locale or time zone and ignores it', () => {
+    const { config, issues } = parseConfig({
+      tiles: [toggleTile],
+      locale: 'not a locale',
+      timeZone: 'Mars/Olympus',
+    });
+
+    expect(issues.map((i) => i.key)).toEqual(['locale', 'timeZone']);
+    expect(config).not.toHaveProperty('locale');
+    expect(config).not.toHaveProperty('timeZone');
   });
 
   it('reads a minimal tile and fills in the defaults', () => {
