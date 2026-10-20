@@ -40,7 +40,7 @@ test-results
 # Lovable design prototype (local reference only, see docs/design.md)
 .lovable-design/
 
-# Your own runtime config for `pnpm dev` (see config.example.json)
+# Your own runtime config for `pnpm dev` (see config.example.jsonc)
 /config.json
 
 # Python bytecode (scripts/)

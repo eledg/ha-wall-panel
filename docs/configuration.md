@@ -28,7 +28,8 @@ Under `pnpm dev` the dev server serves `./config.json` from the repo root
 
 ## The file
 
-Start from [`config.example.json`](../config.example.json). It lists the tiles to
+Start from [`config.example.jsonc`](../config.example.jsonc), which documents every setting
+in comments. It lists the tiles to
 show, where each sits and which Home Assistant entities it reads:
 
 ```json
@@ -49,6 +50,10 @@ show, where each sits and which Home Assistant entities it reads:
 ```
 
 (The real file has more tiles; the example above is shortened.)
+
+The file is JSON that allows `//` and block comments, so you can annotate your own
+copy as the example does. Trailing commas are not allowed. A comment marker inside
+a string, such as a URL, is not a comment.
 
 - **`tiles`** (required): the tiles on the display, in the order they stack in
   portrait. See [Tiles](#tiles).
@@ -98,7 +103,7 @@ each thing you want on the display and copy the entity IDs across:
 
 The old layout was: clock at column 1 row 1 spanning 3 columns, weather at column
 1 row 2 spanning 3, calendar at column 4 spanning 3 columns and 2 rows, then light
-(columns 1 to 2), room, heating and AC along row 3. `config.example.json` is that
+(columns 1 to 2), room, heating and AC along row 3. `config.example.jsonc` is that
 layout.
 
 ## When something is wrong

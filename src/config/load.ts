@@ -16,6 +16,7 @@ import type {
   TileConfig,
   TileType,
 } from './config.ts';
+import { stripJsonComments } from './jsonc.ts';
 import { configUrl } from './url.ts';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -242,7 +243,9 @@ export const loadConfig = async (
     // HA serves /local/ with long cache headers; an edited config must show at once.
     const response = await fetchFn(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const { config, issues } = parseConfig(await response.json());
+    const { config, issues } = parseConfig(
+      JSON.parse(stripJsonComments(await response.text())),
+    );
     applyConfig(config, issues);
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);

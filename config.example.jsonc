@@ -1,0 +1,114 @@
+// Copy this to /config/www/<folder>.config.json (beside the app's folder) and
+// change the entity IDs to yours. Comments like these are allowed in the file.
+// Full reference: docs/configuration.md. Entities and what the app reads from
+// each: docs/entities.md.
+//
+// The display is a grid of 6 columns by 3 rows. Every tile has:
+//   type   what it is: clock, weather, calendar, toggle, temperature, heating, ac
+//   col    left column, 1 to 6 (required)
+//   row    top row, 1 to 3 (required)
+//   w, h   columns and rows it spans (default 1). It must fit the grid, and
+//          tiles may not overlap.
+//   label  the name shown on the tile (optional; each type has a default)
+//   id     a unique name (optional; defaults to e.g. "toggle-1")
+// A tile type can be used any number of times, e.g. two "toggle" tiles for two
+// lights. In portrait the grid becomes two columns and the tiles stack in the
+// order listed here (col, row and h are ignored).
+//
+// Each entity ID must be in the domain shown in the comments below.
+{
+  "tiles": [
+    // The time and date. No entities.
+    { "type": "clock", "col": 1, "row": 1, "w": 3 },
+
+    // Current conditions and an hourly forecast.
+    {
+      "type": "weather",
+      "col": 1,
+      "row": 2,
+      "w": 3,
+      "entity": "weather.home" // weather.*
+    },
+
+    // An agenda merged from one or more calendars, spanning two rows.
+    {
+      "type": "calendar",
+      "col": 4,
+      "row": 1,
+      "w": 3,
+      "h": 2,
+      "calendars": [
+        // entity  calendar.* (required)
+        // label   the name in the legend (optional)
+        // color   yellow, blue or green (optional; the three are used in turn)
+        // kind    optional tidying: "f1" shortens race titles and hides their
+        //         notes; "birthdays" adds the age from a "Born 1977" note
+        { "entity": "calendar.family", "label": "Family", "color": "yellow" },
+        {
+          "entity": "calendar.birthdays",
+          "label": "Birthdays",
+          "color": "blue",
+          "kind": "birthdays"
+        },
+        {
+          "entity": "calendar.formula_1",
+          "label": "F1",
+          "color": "green",
+          "kind": "f1"
+        }
+      ]
+    },
+
+    // A switch you can tap to turn on and off. A plain switch: no dimming.
+    {
+      "type": "toggle",
+      "label": "Light",
+      "col": 1,
+      "row": 3,
+      "w": 2,
+      "entity": "switch.living_room_light" // switch.*
+    },
+
+    // A room's temperature and humidity.
+    {
+      "type": "temperature",
+      "label": "Room",
+      "col": 3,
+      "row": 3,
+      "temperature": "sensor.living_room_temperature", // sensor.*
+      "humidity": "sensor.living_room_humidity", // sensor.*
+      "battery": "sensor.living_room_sensor_battery" // sensor.*, optional (diagnostics only)
+    },
+
+    // Central heating, with a sheet of controls and demand history.
+    {
+      "type": "heating",
+      "label": "Heating",
+      "col": 4,
+      "row": 3,
+      "climate": "climate.living_room_thermostat", // climate.*
+      "schedule": "switch.living_room_schedule", // switch.*: on follows the schedule
+      "demand": "binary_sensor.heating_demand", // binary_sensor.*: boiler is calling for heat
+      "cloud": "binary_sensor.heating_cloud_connection", // binary_sensor.*: its data goes stale if this drops
+      "resume": "button.living_room_resume_schedule", // button.*
+      "boost": "button.heating_boost_all_zones" // button.*
+    },
+
+    // Air conditioning, with a sheet of controls.
+    {
+      "type": "ac",
+      "label": "AC",
+      "col": 5,
+      "row": 3,
+      "climate": "climate.living_room_ac", // climate.*
+      "powerful": "switch.living_room_ac_powerful", // switch.*
+      "economy": "switch.living_room_ac_economy_mode", // switch.*
+      "quietFan": "switch.living_room_ac_quiet_fan", // switch.*
+      "room": "sensor.living_room_temperature" // sensor.*, optional: shown beside the target
+    }
+  ],
+
+  // Optional. From startHour until endHour (local time, 0 to 23, may span
+  // midnight) the display turns warm and dim; a tap wakes it for wakeMs.
+  "night": { "startHour": 21, "endHour": 7, "wakeMs": 15000 }
+}

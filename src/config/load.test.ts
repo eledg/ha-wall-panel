@@ -4,7 +4,11 @@ import { mockConfig } from '@/dev/mock/config.ts';
 
 import { applyConfig, firstTile, getConfig, validateConfig } from './config.ts';
 import type { RuntimeConfig } from './config.ts';
+import { stripJsonComments } from './jsonc.ts';
 import type * as Load from './load.ts';
+// The example lives at the repo root, outside the `@` alias.
+// eslint-disable-next-line no-restricted-imports
+import example from '../../config.example.jsonc?raw';
 
 // The test setup stubs `loadConfig` for the app; these tests need the real one.
 const { loadConfig, parseConfig } =
@@ -243,6 +247,26 @@ describe('parseConfig', () => {
   });
 });
 
+describe('config.example.jsonc', () => {
+  it('parses and validates with no issues', () => {
+    const { config, issues } = parseConfig(
+      JSON.parse(stripJsonComments(example)),
+    );
+
+    expect(issues).toEqual([]);
+    expect(validateConfig(config)).toEqual([]);
+    expect(config.tiles.map((tile) => tile.type)).toEqual([
+      'clock',
+      'weather',
+      'calendar',
+      'toggle',
+      'temperature',
+      'heating',
+      'ac',
+    ]);
+  });
+});
+
 describe('loadConfig', () => {
   it('applies the fetched config', async () => {
     const fetchFn = respond({
@@ -256,6 +280,19 @@ describe('loadConfig', () => {
     });
     expect(firstTile('toggle')?.entities.entity).toBe('switch.desk_lamp');
     expect(getConfig().tiles[0]?.label).toBe('Desk lamp');
+    expect(validateConfig()).toEqual([]);
+  });
+
+  it('accepts comments in the file', async () => {
+    const body = `{
+      // one light
+      "tiles": [{ "type": "toggle", "col": 1, "row": 1, "entity": "switch.desk_lamp" /* here */ }]
+    }`;
+    const fetchFn = vi.fn(async () => new Response(body));
+
+    await loadConfig('/x.json', fetchFn as typeof fetch);
+
+    expect(firstTile('toggle')?.entities.entity).toBe('switch.desk_lamp');
     expect(validateConfig()).toEqual([]);
   });
 
