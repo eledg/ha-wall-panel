@@ -18,7 +18,12 @@ const SCHEDULE = entityId('heatingSchedule');
 const setup = async ({
   state = 'schedule',
   onClose = vi.fn(),
-}: { state?: MockHeatingState; onClose?: () => void } = {}) => {
+  roomLabel = tileOf('heating').roomLabel,
+}: {
+  state?: MockHeatingState;
+  onClose?: () => void;
+  roomLabel?: string;
+} = {}) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   const spy = vi.spyOn(store, 'callService');
@@ -28,7 +33,7 @@ const setup = async ({
     render(
       <HaConnection store={store}>
         <HeatingSheet
-          tile={tileOf('heating')}
+          tile={{ ...tileOf('heating'), roomLabel }}
           store={store}
           onClose={onClose}
           idleMs={30_000}
@@ -52,6 +57,13 @@ afterEach(() => {
 });
 
 describe('HeatingSheet', () => {
+  it('names the room in the current-temperature caption', async () => {
+    await setup({ roomLabel: 'Study' });
+
+    expect(document.body.textContent).toContain('Study now');
+    expect(document.body.textContent).not.toContain('Living room now');
+  });
+
   it('shows the status, room temperature and target', async () => {
     await setup();
     const text = document.body.textContent;

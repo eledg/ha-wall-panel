@@ -84,6 +84,7 @@
     {
       "type": "heating",
       "label": "Heating",
+      "roomLabel": "Living room", // optional: names the room in "Living room now" (default "Room")
       "col": 4,
       "row": 3,
       "climate": "climate.living_room_thermostat", // climate.*
@@ -98,6 +99,7 @@
     {
       "type": "ac",
       "label": "AC",
+      "roomLabel": "Living room", // optional: names the room in "Living room now" (default "Room")
       "col": 5,
       "row": 3,
       "climate": "climate.living_room_ac", // climate.*

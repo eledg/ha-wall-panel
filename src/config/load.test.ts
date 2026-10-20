@@ -202,6 +202,65 @@ describe('parseConfig', () => {
     ]);
   });
 
+  it('names the room of a heating or AC tile, "Room" by default', () => {
+    const base = { col: 1, row: 1, climate: 'climate.x' };
+    const heating = {
+      ...base,
+      type: 'heating',
+      schedule: 'switch.s',
+      demand: 'binary_sensor.d',
+      cloud: 'binary_sensor.c',
+      resume: 'button.r',
+      boost: 'button.b',
+    };
+    const ac = {
+      ...base,
+      type: 'ac',
+      powerful: 'switch.p',
+      economy: 'switch.e',
+      quietFan: 'switch.q',
+    };
+    const { config, issues } = parseConfig({
+      tiles: [
+        { ...heating, roomLabel: ' Study ' },
+        { ...heating, col: 2 },
+        { ...ac, col: 3, roomLabel: 'Office' },
+        { ...ac, col: 4 },
+      ],
+    });
+
+    expect(issues).toEqual([]);
+    expect(
+      config.tiles.map((t) => ('roomLabel' in t ? t.roomLabel : undefined)),
+    ).toEqual(['Study', 'Room', 'Office', 'Room']);
+  });
+
+  it('rejects a roomLabel that is empty or on another type of tile', () => {
+    const { issues } = parseConfig({
+      tiles: [
+        { ...toggleTile, roomLabel: 'Study' },
+        {
+          type: 'ac',
+          col: 2,
+          row: 1,
+          roomLabel: '',
+          climate: 'climate.x',
+          powerful: 'switch.p',
+          economy: 'switch.e',
+          quietFan: 'switch.q',
+        },
+      ],
+    });
+
+    expect(issues).toEqual([
+      {
+        key: 'tiles[0].roomLabel',
+        message: 'is not a setting of a toggle tile',
+      },
+      { key: 'tiles[1].roomLabel', message: 'must be a non-empty string' },
+    ]);
+  });
+
   it('reports settings a tile does not have, and values of the wrong type', () => {
     const { issues } = parseConfig({
       tiles: [

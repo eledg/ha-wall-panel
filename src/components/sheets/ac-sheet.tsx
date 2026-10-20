@@ -217,7 +217,7 @@ export const AcSheet = ({
           onClick={togglePower}
         />
         <TargetStepper
-          currentLabel="Room now"
+          currentLabel={`${tile.roomLabel} now`}
           targetLabel="AC target"
           current={Number.isFinite(roomTemp) ? roomTemp : undefined}
           target={steps.shown}

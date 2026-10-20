@@ -116,13 +116,17 @@ export const DEFAULT_LABEL: Record<TileType, string> = {
   ac: 'AC',
 };
 
+/** The room named in a sheet's "<room> now" caption, when the config gives no `roomLabel`. */
+export const DEFAULT_ROOM_LABEL = 'Room';
+
 export type TileConfig<T extends TileType = TileType> = T extends TileType
   ? Placement & {
       id: string;
       type: T;
       label: string;
       entities: TileEntities<T>;
-    } & (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown)
+    } & (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown) &
+      (T extends 'heating' | 'ac' ? { roomLabel: string } : unknown)
   : never;
 
 /**

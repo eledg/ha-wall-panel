@@ -4,6 +4,7 @@ import {
   CALENDAR_KINDS,
   DEFAULT_LABEL,
   DEFAULT_NIGHT,
+  DEFAULT_ROOM_LABEL,
   markConfigUnavailable,
   TILE_ROLES,
   TILE_TYPES,
@@ -100,6 +101,29 @@ const nonEmpty = (
   return fallback;
 };
 
+/** Settings beyond the common ones and the entity roles, for the types that have them. */
+const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
+  calendar: ['calendars'],
+  heating: ['roomLabel'],
+  ac: ['roomLabel'],
+};
+
+/** The type-specific settings of a tile: a calendar's sources, a climate tile's room name. */
+const parseExtras = (
+  raw: Record<string, unknown>,
+  type: TileType,
+  at: string,
+  problem: Problem,
+) => {
+  if (type === 'calendar')
+    return { calendars: parseCalendars(raw.calendars, at, problem) };
+  if (type === 'heating' || type === 'ac')
+    return {
+      roomLabel: nonEmpty(raw, 'roomLabel', at, DEFAULT_ROOM_LABEL, problem),
+    };
+  return {};
+};
+
 /** Reports settings that are not part of a tile of this type. */
 const checkKnownKeys = (
   raw: Record<string, unknown>,
@@ -110,7 +134,7 @@ const checkKnownKeys = (
   const known = new Set<string>([
     ...COMMON_KEYS,
     ...Object.keys(TILE_ROLES[type]),
-    ...(type === 'calendar' ? ['calendars'] : []),
+    ...(EXTRA_KEYS[type] ?? []),
   ]);
   for (const key of Object.keys(raw)) {
     if (!known.has(key))
@@ -187,9 +211,7 @@ const parseTile = (
     label: nonEmpty(raw, 'label', at, DEFAULT_LABEL[type], problem),
     entities: parseEntities(raw, type, at, problem),
     ...parsePlacement(raw, at, problem),
-    ...(type === 'calendar'
-      ? { calendars: parseCalendars(raw.calendars, at, problem) }
-      : {}),
+    ...parseExtras(raw, type, at, problem),
   };
   return tile as TileConfig;
 };

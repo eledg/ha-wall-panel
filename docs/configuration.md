@@ -79,6 +79,10 @@ with different entities are two independent lights.
 
 Tiles may not overlap, and a cell with no tile stays empty.
 
+A `heating` or `ac` tile may also set `roomLabel`, the room named in the caption
+above its current temperature on the controls screen ("Living room now"). Default:
+"Room".
+
 **Portrait.** If the display is turned so it is taller than wide, the 6 x 3 grid
 is replaced by two columns, and `col`, `row` and `h` are ignored. The tiles are
 placed one after another from the top, in the order they appear in `tiles`. A

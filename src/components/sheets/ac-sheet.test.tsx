@@ -20,6 +20,7 @@ const setup = async ({
   on = true,
   onClose = vi.fn(),
   idleMs = 30_000,
+  roomLabel = tileOf('ac').roomLabel,
 } = {}) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
@@ -30,7 +31,7 @@ const setup = async ({
     render(
       <HaConnection store={store}>
         <AcSheet
-          tile={{ ...tileOf('ac'), label: 'Office AC' }}
+          tile={{ ...tileOf('ac'), label: 'Office AC', roomLabel }}
           store={store}
           onClose={onClose}
           idleMs={idleMs}
@@ -67,6 +68,13 @@ describe('AcSheet', () => {
     for (const label of ['Powerful', 'Economy', 'Quiet']) {
       expect(text).toContain(label);
     }
+  });
+
+  it('names the room in the current-temperature caption', async () => {
+    await setup({ roomLabel: 'Study' });
+
+    expect(document.body.textContent).toContain('Study now');
+    expect(document.body.textContent).not.toContain('Room now');
   });
 
   it('shows the office sensor as the current temperature', async () => {

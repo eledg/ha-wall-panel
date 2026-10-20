@@ -156,7 +156,7 @@ export const HeatingSheet = ({
           onClick={togglePower}
         />
         <TargetStepper
-          currentLabel="Living room now"
+          currentLabel={`${tile.roomLabel} now`}
           targetLabel="Heating target"
           current={view.current}
           target={steps.shown}
