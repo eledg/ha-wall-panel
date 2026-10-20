@@ -8,10 +8,14 @@ const EMOJI =
  */
 export const EmojiText = ({ text }: { text: string }) => (
   <>
-    {text
-      .split(EMOJI)
-      .map((part, i) =>
-        i % 2 === 1 ? <span class="emoji">{part}</span> : part,
-      )}
+    {text.split(EMOJI).map((part, i) =>
+      i % 2 === 1 ? (
+        <span key={i} class="emoji">
+          {part}
+        </span>
+      ) : (
+        part
+      ),
+    )}
   </>
 );
