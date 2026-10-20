@@ -13,12 +13,6 @@ const sources = import.meta.glob<string>(['../**/*.tsx', '!../**/*.test.tsx'], {
   eager: true,
 });
 
-// Buttons that deliberately have no background, with the reason.
-const EXEMPT: Record<string, string> = {
-  'Wake display':
-    'full-screen tap target over the dimmed dashboard; it must stay see-through',
-};
-
 const OPAQUE_BG = /(?<![\w:/-])bg-(?!transparent\b)[a-z][\w-]*(?![\w/-])/;
 
 /** Opening tags of every `<button ...>`, ignoring `>` inside `{...}` and strings. */
@@ -70,14 +64,12 @@ describe('button backgrounds', () => {
   );
 
   it('finds the buttons', () => {
-    expect(found.length).toBeGreaterThan(10);
+    expect(found.length).toBeGreaterThan(5);
   });
 
   it.each(found.map(({ file, tag }) => [file, tag] as const))(
     '%s: has an opaque background',
     (file, tag) => {
-      const label = /aria-label="([^"]+)"/.exec(tag)?.[1];
-      if (label && label in EXEMPT) return;
       expect(
         OPAQUE_BG.test(expand(tag)),
         `${file}: <button> needs an opaque bg-* class (e.g. bg-bg, bg-surface); ` +

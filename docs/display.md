@@ -73,6 +73,7 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - `color-mix()` and cascade layers are supported, so this is not a missing feature. The `background-color: transparent` in Tailwind's base-layer reset is not applied to buttons, and `bg-transparent` did not fix it either.
 - Opaque utility backgrounds do apply (the tile's `bg-accent` computed correctly). Give every button an opaque background that matches what is behind it, such as `bg-bg` on the page or `bg-surface` in the dialog. Do not "simplify" these back to transparent.
 - `appearance: none` on buttons made no visible difference.
+- The full-screen "Wake display" overlay was a background-less `<button>` and lit the whole screen grey when night mode dimmed, which looked like the dimming had failed (the opacity change in #41 was not the cause). It is now a `div role="button"` in `Shell`; it cannot have an opaque background because it sits over the dashboard. Keep it a `div`.
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
 ### Inherited text stays day-bright at night
@@ -92,12 +93,12 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - The calendar tile's coloured stripe was an empty `<span class="w-1.5 shrink-0">` inside a `<button class="flex">`, relying on `align-items: stretch` for its height. It rendered fine in dev but was missing on the display (the cause is inferred, not measured on the device).
 - It is now absolutely positioned (`inset-y-3 left-3`) in a `relative` button. Prefer that over stretch for decorative bars inside buttons.
 
-### Opacity makes content lighter, not darker
+### Opacity may make content lighter, not darker (unconfirmed)
 
-- Night-mode dimming used `opacity-60` on the tile grid, and on the Shelly Wall Display X2i the dimmed state looked lighter than the awake night state (issue #21). The computed `opacity` and composited colours have **not** been measured yet; this is the maintainer's reading of the display.
-- Dimming is now a `[data-dimmed]` palette in `src/index.css`: the night tokens at lower lightness, all opaque. Do not bring `opacity` or alpha colours back for dimming.
-- Still using opacity, to change only if they look wrong on the display: stale tiles (`opacity-60`), locked or disabled controls (`opacity-50`, `opacity-30`), `bg-bg/90` sheet backdrops and the `pending-pulse` border.
-- To verify, use the probe below: check `opacity` and the dimmed colours on the display, and judge by eye rather than photos.
+- Night-mode dimming used `opacity-60` on the tile grid, and on the Shelly Wall Display X2i the dimmed state looked lighter than the awake night state (issue #21). The computed `opacity` and composited colours have **not** been measured; this was a hypothesis.
+- The likelier cause was the grey "Wake display" overlay (see "Buttons get a default grey background"). Replacing `opacity-60` with a `[data-dimmed]` palette in `src/index.css` (the night tokens at lower lightness, all opaque) did not change what the display showed; fixing the overlay is what should. So opacity itself is not shown to be a problem.
+- The palette stays, as it gives direct control of the dimmed colours. If opacity is ever suspected again, measure first: check the computed `opacity` and the dimmed colours with the probe below, and judge by eye rather than photos.
+- Other uses of opacity, left as they are: stale tiles (`opacity-60`), locked or disabled controls (`opacity-50`, `opacity-30`), `bg-bg/90` sheet backdrops and the `pending-pulse` border.
 
 ### Unexplained
 

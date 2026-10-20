@@ -67,9 +67,9 @@
 }
 
 /*
- * Dimmed night palette: the same tokens at lower lightness, all opaque. The
- * display renders faded (translucent) content lighter, not darker, so dimming
- * must never use opacity or alpha (docs/display.md, Rendering quirks).
+ * Dimmed night palette: the same tokens at lower lightness, all opaque, so
+ * dimming does not depend on how the display composites opacity
+ * (docs/display.md, Rendering quirks).
  */
 [data-dimmed='true'] {
   --color-surface: oklch(0.08 0 0);

@@ -60,7 +60,7 @@ describe('Shell night mode', () => {
     render(<Shell />, document.body);
     const main = document.querySelector('main')!;
     expect(main.dataset.night).toBeUndefined();
-    expect(main.querySelector('button')).toBeNull();
+    expect(main.querySelector('[role=button]')).toBeNull();
 
     act(() => {
       vi.advanceTimersByTime(60_000);
@@ -71,13 +71,13 @@ describe('Shell night mode', () => {
       'opacity',
     );
 
-    act(() => main.querySelector('button')!.click());
-    expect(main.querySelector('button')).toBeNull();
+    act(() => main.querySelector<HTMLElement>('[role=button]')!.click());
+    expect(main.querySelector('[role=button]')).toBeNull();
     expect(main.dataset.dimmed).toBeUndefined();
 
     act(() => {
       vi.advanceTimersByTime(getConfig().night.wakeMs);
     });
-    expect(main.querySelector('button')).not.toBeNull();
+    expect(main.querySelector('[role=button]')).not.toBeNull();
   });
 });
