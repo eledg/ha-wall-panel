@@ -6,11 +6,13 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  DEFAULT_NIGHT,
   entityRefs,
   getConfig,
   placeholder,
   type RuntimeConfig,
 } from '@/config/config.ts';
+import { mockConfig } from '@/dev/mock/config.ts';
 import { entityId } from '@/tests/ids.ts';
 
 import { CALENDAR_REFRESH_MS } from './calendar.ts';
@@ -51,6 +53,16 @@ const setup = () => {
 };
 
 describe('createHaStore', () => {
+  it('subscribes to the night override switch even if no tile shows it', () => {
+    const { deps } = setup();
+    const store = createHaStore(deps as unknown as HaDeps, {
+      ...mockConfig,
+      night: { ...DEFAULT_NIGHT, overrideSwitch: 'switch.office' },
+    });
+
+    expect(store.getSnapshot().subscribed).toContain('switch.office');
+  });
+
   it('subscribes to exactly the configured entities', () => {
     const { store } = setup();
 

@@ -5,6 +5,7 @@ import { tileOf } from '@/tests/ids.ts';
 
 import {
   applyConfig,
+  DEFAULT_NIGHT,
   entityRefs,
   firstTile,
   getConfig,
@@ -231,5 +232,27 @@ describe('validateConfig', () => {
         night: { startHour: 21, endHour: 7, wakeMs: 0 },
       })[0]?.message,
     ).toMatch(/positive/);
+  });
+
+  it('checks the night override switch like any entity', () => {
+    const withLight = (overrideSwitch: string) =>
+      validateConfig({
+        ...mockConfig,
+        night: { ...DEFAULT_NIGHT, overrideSwitch },
+      });
+    expect(withLight('switch.office')).toEqual([]);
+    expect(validateConfig({ ...mockConfig, night: DEFAULT_NIGHT })).toEqual([]);
+    expect(withLight('office')).toEqual([
+      {
+        key: 'night.overrideSwitch',
+        message: '"office" is not a valid entity ID',
+      },
+    ]);
+    expect(withLight('sensor.office')).toEqual([
+      {
+        key: 'night.overrideSwitch',
+        message: '"sensor.office" should be in the switch domain',
+      },
+    ]);
   });
 });

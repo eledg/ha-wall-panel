@@ -123,5 +123,7 @@
 
   // Optional. From startHour until endHour (local time, 0 to 23, may span
   // midnight) the display turns warm and dim; a tap wakes it for wakeMs.
+  // overrideSwitch (optional, a switch.* entity ID): while it is on, night mode
+  // is off. Add it as: "overrideSwitch": "switch.office"
   "night": { "startHour": 21, "endHour": 7, "wakeMs": 15000 }
 }

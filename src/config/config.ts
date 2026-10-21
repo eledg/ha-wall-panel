@@ -148,9 +148,11 @@ export type NightConfig = {
   startHour: number;
   endHour: number;
   wakeMs: number;
+  /** While this light is on, night mode is off. Unset by default. */
+  overrideSwitch?: string;
 };
 
-export const DEFAULT_NIGHT: NightConfig = {
+export const DEFAULT_NIGHT: Omit<NightConfig, 'overrideSwitch'> = {
   startHour: 21,
   endHour: 7,
   wakeMs: 15_000,
@@ -187,8 +189,21 @@ export type EntityRef = {
 const roleSpecs = (type: TileType) =>
   Object.entries(TILE_ROLES[type] as Record<string, RoleSpec>);
 
-/** Every entity the tiles read, including the calendars of a calendar tile. */
-export const entityRefs = (cfg: Config = current): EntityRef[] =>
+/** Every entity the config reads: the tiles' (including calendars) and the night override switch. */
+export const entityRefs = (cfg: Config = current): EntityRef[] => [
+  ...tileRefs(cfg),
+  ...(cfg.night?.overrideSwitch === undefined
+    ? []
+    : [
+        {
+          path: 'night.overrideSwitch',
+          id: cfg.night.overrideSwitch,
+          domain: 'switch' as const,
+        },
+      ]),
+];
+
+const tileRefs = (cfg: Config): EntityRef[] =>
   cfg.tiles.flatMap((tile, index): EntityRef[] => {
     const at = `tiles[${index}]`;
     const entities = tile.entities as Record<string, string | undefined>;

@@ -312,6 +312,19 @@ describe('parseConfig', () => {
     ]);
   });
 
+  it('reads the night override switch, and reports one that is not a string', () => {
+    const night = (overrideSwitch: unknown) =>
+      parseConfig({ tiles: [toggleTile], night: { overrideSwitch } });
+    expect(night('switch.office').config.night.overrideSwitch).toBe(
+      'switch.office',
+    );
+    expect(night('switch.office').issues).toEqual([]);
+    expect(night(7).issues).toEqual([
+      { key: 'night', message: 'overrideSwitch must be a string' },
+    ]);
+    expect(night(7).config.night).not.toHaveProperty('overrideSwitch');
+  });
+
   it('points a config in the old format at the new one', () => {
     const { config, issues } = parseConfig({
       entities: { light: 'switch.wall_light' },

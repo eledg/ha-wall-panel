@@ -77,16 +77,22 @@ type Problem = (key: string, message: string) => void;
 
 /** The night settings: the defaults, with any number given in `raw` over them. */
 const parseNight = (raw: unknown, problem: Problem): NightConfig => {
-  const night = { ...DEFAULT_NIGHT };
+  const night: NightConfig = { ...DEFAULT_NIGHT };
   if (raw !== undefined && !isRecord(raw))
     problem('night', 'must be an object');
   const given = isRecord(raw) ? raw : {};
-  for (const key of Object.keys(DEFAULT_NIGHT) as (keyof NightConfig)[]) {
+  for (const key of Object.keys(
+    DEFAULT_NIGHT,
+  ) as (keyof typeof DEFAULT_NIGHT)[]) {
     const value = given[key];
     if (value === undefined) continue;
     if (typeof value === 'number') night[key] = value;
     else problem('night', `${key} must be a number`);
   }
+  const sw = given.overrideSwitch;
+  if (typeof sw === 'string') night.overrideSwitch = sw;
+  else if (sw !== undefined)
+    problem('night', 'overrideSwitch must be a string');
   return night;
 };
 
