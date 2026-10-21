@@ -5,25 +5,14 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createHaStore } from '@/services/ha/store.ts';
-import type { HaDeps } from '@/services/ha/store.ts';
+import { fakeHaDeps } from '@/tests/ha-deps.ts';
 import { entityId } from '@/tests/ids.ts';
 
 import { shallowEqual, useSnapshot } from './use-snapshot.ts';
 
 const setup = async () => {
-  let push: (all: unknown) => void = () => {};
-  const deps = {
-    createConnection: vi
-      .fn()
-      .mockResolvedValue({ addEventListener: vi.fn(), close: vi.fn() }),
-    subscribeEntities: vi.fn((_, cb) => {
-      push = cb;
-      return vi.fn();
-    }),
-    callService: vi.fn().mockResolvedValue({ response: {} }),
-    fetchCalendarEvents: vi.fn().mockResolvedValue([]),
-  };
-  const store = createHaStore(deps as unknown as HaDeps);
+  const { deps, push } = fakeHaDeps();
+  const store = createHaStore(deps);
   await act(async () => {
     await store.start(() => Promise.resolve({} as Auth));
   });

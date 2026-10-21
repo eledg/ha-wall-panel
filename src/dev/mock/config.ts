@@ -108,7 +108,7 @@ export const mockConfig: RuntimeConfig = {
       },
     },
   ],
-  night: DEFAULT_NIGHT,
+  night: { ...DEFAULT_NIGHT, overrideSwitch: 'switch.night_override' },
   // Pinned so the e2e baselines look the same on any machine.
   locale: 'en-GB',
   timeZone: 'Europe/London',

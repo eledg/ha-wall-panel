@@ -128,6 +128,13 @@ swallowed, so a stray touch changes nothing. This is purely the app's own theme:
 it does not touch the device's brightness or screen-off settings. In
 `pnpm dev:mock`, the "Night mode" panel forces night or day.
 
+If `night.overrideSwitch` is set, night mode is off while that switch is on, even
+within the night hours, so the normal palette returns and the display does not
+dim. When the light goes off, night mode applies again at once if it is still
+within the night hours. A light that is unknown, unavailable or not found is
+ignored and the clock decides. The "Night mode" panel in `pnpm dev:mock` can
+turn the override switch on, off or unavailable.
+
 ## Language and time zone
 
 The panel formats dates and times in the WebView's language and time zone unless

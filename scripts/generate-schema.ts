@@ -114,12 +114,17 @@ export const buildSchema = (): Json => ({
       type: 'object',
       additionalProperties: false,
       description: 'Dim warm palette between startHour and endHour.',
-      properties: Object.fromEntries(
-        Object.entries(DEFAULT_NIGHT).map(([key, value]) => [
-          key,
-          { type: 'number', default: value },
-        ]),
-      ),
+      properties: {
+        ...Object.fromEntries(
+          Object.entries(DEFAULT_NIGHT).map(([key, value]) => [
+            key,
+            { type: 'number', default: value },
+          ]),
+        ),
+        overrideSwitch: text(
+          'A switch.* entity ID (such as a room light); while on, night mode is off.',
+        ),
+      },
     },
     locale: text('A language tag such as "en-GB".'),
     timeZone: text('An IANA time zone name such as "Europe/London".'),

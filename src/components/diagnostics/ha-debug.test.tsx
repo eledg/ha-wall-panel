@@ -2,30 +2,19 @@
 import type { Auth } from 'home-assistant-js-websocket';
 import { render } from 'preact';
 import { act } from 'preact/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { entityRefs } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
-import type { HaDeps } from '@/services/ha/store.ts';
+import { fakeHaDeps } from '@/tests/ha-deps.ts';
 import { entityId } from '@/tests/ids.ts';
 
 import { HaDebug } from './ha-debug.tsx';
 
 describe('HaDebug', () => {
   it('shows live state and the subscription list', async () => {
-    let push: (all: unknown) => void = () => {};
-    const deps = {
-      createConnection: vi
-        .fn()
-        .mockResolvedValue({ addEventListener: vi.fn(), close: vi.fn() }),
-      subscribeEntities: vi.fn((_, cb) => {
-        push = cb;
-        return vi.fn();
-      }),
-      callService: vi.fn().mockResolvedValue({ response: {} }),
-      fetchCalendarEvents: vi.fn().mockResolvedValue([]),
-    };
-    const store = createHaStore(deps as unknown as HaDeps);
+    const { deps, push } = fakeHaDeps();
+    const store = createHaStore(deps);
     await act(() => {
       render(<HaDebug store={store} />, document.body);
     });
@@ -54,15 +43,8 @@ describe('HaDebug', () => {
   });
 
   it('lists entities alphabetically by ID', async () => {
-    const deps = {
-      createConnection: vi
-        .fn()
-        .mockResolvedValue({ addEventListener: vi.fn(), close: vi.fn() }),
-      subscribeEntities: vi.fn(() => vi.fn()),
-      callService: vi.fn().mockResolvedValue({ response: {} }),
-      fetchCalendarEvents: vi.fn().mockResolvedValue([]),
-    };
-    const store = createHaStore(deps as unknown as HaDeps);
+    const { deps } = fakeHaDeps();
+    const store = createHaStore(deps);
     await act(() => {
       render(<HaDebug store={store} />, document.body);
     });

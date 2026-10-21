@@ -60,7 +60,11 @@ a string, such as a URL, is not a comment.
   [Tiles](#tiles).
 - **`night`** (optional): from `startHour` until `endHour` (local time, 0 to 23,
   may span midnight) the palette turns warm and dim. A tap wakes the display for
-  `wakeMs` milliseconds. Defaults: 21, 7 and 15000.
+  `wakeMs` milliseconds. Defaults: 21, 7 and 15000. Optionally set `overrideSwitch`
+  to a `switch.*` entity ID: while that switch is on, night mode is off (normal
+  palette, no dimming), and it applies again when the switch goes off. If the
+  switch is unknown or unavailable, the clock decides. The switch need not be on a
+  tile.
 - **`locale`** (optional): a language tag such as `"en-GB"` or `"de-DE"`. It sets
   the order of day and month, the weekday and month names, and whether the clock
   is 12 or 24 hours. Default: the display's own language, which a kiosk WebView

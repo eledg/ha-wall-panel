@@ -485,6 +485,11 @@
         "wakeMs": {
           "type": "number",
           "default": 15000
+        },
+        "overrideSwitch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A switch.* entity ID (such as a room light); while on, night mode is off."
         }
       }
     },

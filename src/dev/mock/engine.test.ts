@@ -5,6 +5,7 @@ import { entityRefs } from '@/config/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import { entityId } from '@/tests/ids.ts';
 
+import { mockConfig } from './config.ts';
 import { createMockHa, UNRELATED_ID } from './engine.ts';
 
 const LIGHT = entityId('light');
@@ -58,6 +59,7 @@ describe('createMockHa', () => {
         entityId('heatingResume'),
         entityId('heatingBoost'),
         ...CALENDARS,
+        mockConfig.night.overrideSwitch!,
         UNRELATED_ID,
       ].sort(),
     );
