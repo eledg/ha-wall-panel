@@ -2,12 +2,12 @@
 import type { Auth } from 'home-assistant-js-websocket';
 import { render } from 'preact';
 import { act } from 'preact/test-utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { DEFAULT_NIGHT } from '@/config/config.ts';
 import { mockConfig } from '@/dev/mock/config.ts';
 import { createHaStore } from '@/services/ha/store.ts';
-import type { HaDeps } from '@/services/ha/store.ts';
+import { fakeHaDeps } from '@/tests/ha-deps.ts';
 
 import { useNight } from './use-night.ts';
 
@@ -17,19 +17,8 @@ const at22 = () => new Date(2026, 2, 14, 22, 0, 0);
 const at12 = () => new Date(2026, 2, 14, 12, 0, 0);
 
 const setup = async () => {
-  let push: (all: unknown) => void = () => {};
-  const deps = {
-    createConnection: vi
-      .fn()
-      .mockResolvedValue({ addEventListener: vi.fn(), close: vi.fn() }),
-    subscribeEntities: vi.fn((_, cb) => {
-      push = cb;
-      return vi.fn();
-    }),
-    callService: vi.fn().mockResolvedValue({ response: {} }),
-    fetchCalendarEvents: vi.fn().mockResolvedValue([]),
-  };
-  const store = createHaStore(deps as unknown as HaDeps, {
+  const { deps, push } = fakeHaDeps();
+  const store = createHaStore(deps, {
     ...mockConfig,
     night,
   });
