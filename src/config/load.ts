@@ -266,14 +266,14 @@ const parseTile = (
   return tile as TileConfig;
 };
 
-const CALENDAR_KEYS = [
+const CALENDAR_KEYS = new Set([
   'entity',
   'label',
   'color',
   'birthdays',
   'hideNotes',
   'title',
-];
+]);
 
 /** An optional true/false setting; reported and ignored when it is anything else. */
 const optionalBoolean = (value: unknown, path: string, problem: Problem) => {
@@ -314,7 +314,7 @@ const parseCalendar = (
   problem: Problem,
 ): CalendarSource => {
   for (const key of Object.keys(item)) {
-    if (!CALENDAR_KEYS.includes(key))
+    if (!CALENDAR_KEYS.has(key))
       problem(`${path}.${key}`, 'is not a setting of a calendar');
   }
   if (item.entity !== undefined && typeof item.entity !== 'string')
