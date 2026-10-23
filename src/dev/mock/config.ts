@@ -43,9 +43,18 @@ export const mockConfig: RuntimeConfig = {
           entity: 'calendar.birthdays',
           label: 'Birthdays',
           color: 'blue',
-          kind: 'birthdays',
+          birthdays: true,
         },
-        { entity: 'calendar.f1', label: 'F1', color: 'green', kind: 'f1' },
+        {
+          entity: 'calendar.f1',
+          label: 'F1',
+          color: 'green',
+          hideNotes: true,
+          title: {
+            match: String.raw`^(\S+)\s+FORMULA 1\s.*\s-\s(.+)$`,
+            replace: '$1 F1 {location} - $2',
+          },
+        },
       ],
     },
     {

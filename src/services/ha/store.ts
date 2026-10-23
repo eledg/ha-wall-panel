@@ -8,19 +8,20 @@ import {
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import { entityProblem, entityRefs, getConfig } from '@/config/config.ts';
-import type {
-  CalendarKind,
-  EntityDomain,
-  RuntimeConfig,
-} from '@/config/config.ts';
+import type { EntityDomain, RuntimeConfig } from '@/config/config.ts';
 
 import {
   CALENDAR_REFRESH_MS,
   calendarWindow,
+  compileFormat,
   fetchCalendarEvents,
   normaliseEvents,
 } from './calendar.ts';
-import type { CalendarEvent, RawCalendarEvent } from './calendar.ts';
+import type {
+  CalendarEvent,
+  CalendarFormat,
+  RawCalendarEvent,
+} from './calendar.ts';
 import { cancellableDelay } from './delay.ts';
 import { fetchHistory } from './history.ts';
 import type { RawHistoryState } from './history.ts';
@@ -137,12 +138,12 @@ export const createHaStore = (
   const tracked = [...domains.keys()];
   const trackedIn = (domain: EntityDomain) =>
     tracked.filter((id) => domains.get(id) === domain);
-  // Calendars of one kind get the tidying for it (see `normaliseEvents`).
-  const calendarKinds = new Map<string, CalendarKind | undefined>();
+  // Each calendar's events are tidied by its own options (see `normaliseEvents`).
+  const calendarFormats = new Map<string, CalendarFormat>();
   for (const tile of cfg.tiles) {
     if (tile.type !== 'calendar') continue;
-    for (const { entity, kind } of tile.calendars)
-      calendarKinds.set(entity, kind);
+    for (const source of tile.calendars)
+      calendarFormats.set(source.entity, compileFormat(source));
   }
 
   let snapshot: HaSnapshot = {
@@ -248,7 +249,7 @@ export const createHaStore = (
     try {
       const raw = await deps.fetchCalendarEvents(auth, id, start, end);
       if (mine !== generation) return;
-      const events = normaliseEvents(id, raw, calendarKinds.get(id));
+      const events = normaliseEvents(id, raw, calendarFormats.get(id));
       calendarsFailed.delete(id);
       update({
         calendars: { ...snapshot.calendars, [id]: events },

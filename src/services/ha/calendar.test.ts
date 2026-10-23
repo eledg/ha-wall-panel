@@ -3,11 +3,22 @@ import { describe, expect, it } from 'vitest';
 import {
   CALENDAR_DAYS,
   calendarWindow,
+  compileFormat,
   normaliseEvent,
   normaliseEvents,
-  shortenF1,
+  rewriteTitle,
   withBirthdayAge,
 } from './calendar.ts';
+
+/** The F1 recipe from `config.example.jsonc`. */
+const f1 = compileFormat({
+  hideNotes: true,
+  title: {
+    match: String.raw`^(\S+)\s+FORMULA 1\s.*\s-\s(.+)$`,
+    replace: '$1 F1 {location} - $2',
+  },
+});
+const birthdays = compileFormat({ birthdays: true });
 
 describe('normaliseEvent', () => {
   it('reads a timed event and parses its offset', () => {
@@ -68,7 +79,7 @@ describe('normaliseEvent', () => {
         start: { dateTime: '2026-10-25T20:00:00+00:00' },
         end: { dateTime: '2026-10-25T21:00:00+00:00' },
       },
-      'f1',
+      f1,
     );
     const b = normaliseEvent(
       'calendar.f1',
@@ -77,7 +88,7 @@ describe('normaliseEvent', () => {
         start: { dateTime: '2026-10-25T21:00:00+01:00' },
         end: { dateTime: '2026-10-25T22:00:00+01:00' },
       },
-      'f1',
+      f1,
     );
 
     expect(a?.start).toBe(b?.start);
@@ -91,7 +102,7 @@ describe('normaliseEvent', () => {
         start: { date: '2026-10-12' },
         end: { date: '2026-10-13' },
       },
-      'birthdays',
+      birthdays,
     );
 
     expect(event?.allDay).toBe(true);
@@ -109,7 +120,7 @@ describe('normaliseEvent', () => {
           start: { date: '2026-10-14' },
           end: { date: '2026-10-15' },
         },
-        'birthdays',
+        birthdays,
       );
 
     expect(birthday("Alex Example's Birthday", 'Born 1977')?.summary).toBe(
@@ -190,7 +201,9 @@ describe('calendarWindow', () => {
   });
 });
 
-describe('shortenF1', () => {
+describe('rewriteTitle, with the F1 recipe', () => {
+  const shorten = (summary: string, location?: string | null) =>
+    rewriteTitle(summary, f1.title!, location);
   const title = (emoji: string, gp: string, session: string) =>
     `${emoji} FORMULA 1 ${gp} 2026 - ${session}`;
 
@@ -222,37 +235,48 @@ describe('shortenF1', () => {
       'Practice 3',
     ],
   ])('shortens %s %s', (emoji, gp, location, session) => {
-    expect(shortenF1(title(emoji, gp, session), location)).toBe(
+    expect(shorten(title(emoji, gp, session), location)).toBe(
       `${emoji} F1 ${location} - ${session}`,
     );
   });
 
   it('keeps the emoji exactly, including a variation selector', () => {
-    expect(shortenF1(title('⏱️', 'X GRAND PRIX', 'Race'), 'Place')).toMatch(
+    expect(shorten(title('⏱️', 'X GRAND PRIX', 'Race'), 'Place')).toMatch(
       /^⏱️ F1 /u,
     );
   });
 
   it('uses the last " - " for the session', () => {
-    expect(
-      shortenF1('🏁 FORMULA 1 A - B GRAND PRIX 2026 - Race', 'Place'),
-    ).toBe('🏁 F1 Place - Race');
+    expect(shorten('🏁 FORMULA 1 A - B GRAND PRIX 2026 - Race', 'Place')).toBe(
+      '🏁 F1 Place - Race',
+    );
   });
 
   it('leaves the title alone without a location', () => {
     const original = title('🏁', 'SINGAPORE GRAND PRIX', 'Race');
-    expect(shortenF1(original, undefined)).toBe(original);
-    expect(shortenF1(original, null)).toBe(original);
-    expect(shortenF1(original, '  ')).toBe(original);
+    expect(shorten(original, undefined)).toBe(original);
+    expect(shorten(original, null)).toBe(original);
+    expect(shorten(original, '  ')).toBe(original);
   });
 
   it('leaves a title that is not an F1 session alone', () => {
-    expect(shortenF1('Dinner - with friends', 'Place')).toBe(
+    expect(shorten('Dinner - with friends', 'Place')).toBe(
       'Dinner - with friends',
     );
-    expect(shortenF1('🏁 FORMULA 1 SINGAPORE GRAND PRIX 2026', 'Place')).toBe(
+    expect(shorten('🏁 FORMULA 1 SINGAPORE GRAND PRIX 2026', 'Place')).toBe(
       '🏁 FORMULA 1 SINGAPORE GRAND PRIX 2026',
     );
+  });
+
+  it('rewrites only the part the rule matches', () => {
+    const rule = { match: /^Holiday: /u, replace: '' };
+    expect(rewriteTitle('Holiday: Spain', rule)).toBe('Spain');
+    expect(rewriteTitle('Trip: Spain', rule)).toBe('Trip: Spain');
+  });
+
+  it('puts $0 to $9 and a location with a $ in it in as plain text', () => {
+    const rule = { match: /^(a)(b)$/u, replace: '$2$1 $0 $9 {location}' };
+    expect(rewriteTitle('ab', rule, 'US$1 Bay')).toBe('ba ab  US$1 Bay');
   });
 });
 
@@ -265,7 +289,7 @@ describe('normaliseEvent, F1 titles', () => {
   };
 
   it('keeps the full title for the detail view, and the location', () => {
-    const event = normaliseEvent('calendar.f1', raw, 'f1');
+    const event = normaliseEvent('calendar.f1', raw, f1);
 
     expect(event?.fullSummary).toBe(raw.summary);
     expect(event?.location).toBe('Singapore');
@@ -274,7 +298,7 @@ describe('normaliseEvent, F1 titles', () => {
   it('drops the F1 promotional description but not other calendars', () => {
     const withNotes = { ...raw, description: 'Follow all the action on F1 TV' };
 
-    expect(normaliseEvent('calendar.f1', withNotes, 'f1')).not.toHaveProperty(
+    expect(normaliseEvent('calendar.f1', withNotes, f1)).not.toHaveProperty(
       'description',
     );
     expect(normaliseEvent('calendar.family', withNotes)?.description).toBe(
@@ -282,10 +306,48 @@ describe('normaliseEvent, F1 titles', () => {
     );
   });
 
-  it('shortens titles on the F1 calendar only', () => {
-    expect(normaliseEvent('calendar.f1', raw, 'f1')?.summary).toBe(
+  it('shortens titles of a calendar with the rule only', () => {
+    expect(normaliseEvent('calendar.f1', raw, f1)?.summary).toBe(
       '🏁 F1 Singapore - Race',
     );
     expect(normaliseEvent('calendar.family', raw)?.summary).toBe(raw.summary);
+  });
+});
+
+describe('compileFormat', () => {
+  it('compiles the title rule and leaves out unset options', () => {
+    expect(compileFormat({})).toEqual({});
+    expect(compileFormat({ hideNotes: false })).toEqual({});
+    expect(compileFormat({ title: { match: 'a', replace: 'b' } })).toEqual({
+      title: { match: /a/u, replace: 'b' },
+    });
+  });
+
+  it('applies a birthday and a title rule together', () => {
+    const event = normaliseEvent(
+      'calendar.birthdays',
+      {
+        summary: "Sam's Birthday",
+        description: 'Born 2004',
+        start: { date: '2026-10-14' },
+        end: { date: '2026-10-15' },
+      },
+      compileFormat({
+        birthdays: true,
+        title: { match: ' Birthday$', replace: '' },
+      }),
+    );
+    expect(event?.fullSummary).toBe("Sam's 22nd Birthday");
+    expect(event?.summary).toBe("Sam's 22nd");
+  });
+
+  it('leaves birthdays alone unless the calendar asks for them', () => {
+    const event = normaliseEvent('calendar.family', {
+      summary: "Sam's Birthday",
+      description: 'Born 2004',
+      start: { date: '2026-10-14' },
+      end: { date: '2026-10-15' },
+    });
+    expect(event?.summary).toBe("Sam's Birthday");
   });
 });

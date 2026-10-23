@@ -162,7 +162,7 @@ describe('parseConfig', () => {
     });
   });
 
-  it('reads calendars, with colours by position and kinds', () => {
+  it('reads calendars, with colours by position and formatting', () => {
     const { config, issues } = parseConfig({
       tiles: [
         {
@@ -171,7 +171,13 @@ describe('parseConfig', () => {
           row: 1,
           calendars: [
             { entity: 'calendar.a', label: 'A' },
-            { entity: 'calendar.b', color: 'green', kind: 'f1' },
+            {
+              entity: 'calendar.b',
+              color: 'green',
+              hideNotes: true,
+              birthdays: true,
+              title: { match: '^a', replace: 'b' },
+            },
           ],
         },
       ],
@@ -181,7 +187,14 @@ describe('parseConfig', () => {
     expect(config.tiles[0]).toMatchObject({
       calendars: [
         { entity: 'calendar.a', label: 'A', color: 'yellow' },
-        { entity: 'calendar.b', label: '', color: 'green', kind: 'f1' },
+        {
+          entity: 'calendar.b',
+          label: '',
+          color: 'green',
+          hideNotes: true,
+          birthdays: true,
+          title: { match: '^a', replace: 'b' },
+        },
       ],
     });
   });
@@ -221,7 +234,14 @@ describe('parseConfig', () => {
           row: 1,
           calendars: [
             { entity: 5 },
-            { entity: 'calendar.b', color: 'orange', kind: 'x' },
+            {
+              entity: 'calendar.b',
+              color: 'orange',
+              kind: 'f1',
+              hideNotes: 'yes',
+            },
+            { entity: 'calendar.d', title: { match: '(', replace: '' } },
+            { entity: 'calendar.e', title: { match: 'a' } },
             'calendar.c',
           ],
         },
@@ -235,15 +255,27 @@ describe('parseConfig', () => {
         message: 'entity ID must be a string',
       },
       {
+        key: 'tiles[0].calendars[1].kind',
+        message: 'is not a setting of a calendar',
+      },
+      {
         key: 'tiles[0].calendars[1].color',
         message: 'must be one of yellow, blue, green, red, purple, teal, pink',
       },
       {
-        key: 'tiles[0].calendars[1].kind',
-        message: 'must be one of f1, birthdays',
+        key: 'tiles[0].calendars[1].hideNotes',
+        message: 'must be true or false',
       },
       {
-        key: 'tiles[0].calendars[2]',
+        key: 'tiles[0].calendars[2].title.match',
+        message: 'must be a valid regular expression',
+      },
+      {
+        key: 'tiles[0].calendars[3].title',
+        message: 'must be an object with a "match" and a "replace" string',
+      },
+      {
+        key: 'tiles[0].calendars[4]',
         message: 'must be an object with an "entity"',
       },
       { key: 'tiles[1].calendars', message: 'must be a list of calendars' },

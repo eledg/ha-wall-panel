@@ -105,9 +105,38 @@ down the screen. In landscape the order of the list makes no difference.
 
 A `calendar` tile lists its calendars instead of a single entity. Each has an
 `entity`, an optional `label` (shown in the legend) and `color` (`yellow`, `blue`,
-`green`, `red`, `purple`, `teal` or `pink`; by default they are used in that order), and an optional `kind`:
-`f1` shortens Formula 1 race titles and hides their notes, `birthdays` adds the
-age from a "Born 1977" note.
+`green`, `red`, `purple`, `teal` or `pink`; by default they are used in that order).
+Three more options tidy a calendar's events:
+
+- `hideNotes: true` hides the events' notes (their description).
+- `title` shortens the title in the tile's rows. `match` is a regular expression
+  (with the `u` flag) and `replace` is what the part it matches becomes: `$1` to
+  `$9` are the match's groups (`$0` all of it) and `{location}` is the event's
+  location. A title that doesn't match, or an event with no location when
+  `replace` uses `{location}`, is left as it is. The detail sheet always shows
+  the full title. In JSON, write each backslash twice (`"\\S"`). An invalid
+  `match` is reported and the rule ignored.
+- `birthdays: true` turns `Alex Example's Birthday` into `Alex Example's 49th
+Birthday`. It needs the title to end in `'s Birthday` and the event's
+  description to contain `Born 1977` (the birth year). The age is the event's
+  year minus the birth year, so next year's birthday shows next year's age. With
+  no birth year, or a birth year this year or later, the title is left as it is.
+  The `th` is English only.
+
+For example, a Formula 1 calendar whose titles read
+`🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race`, with the
+place in the event's location, becomes `🏁 F1 Singapore - Race`:
+
+```jsonc
+{
+  "entity": "calendar.formula_1",
+  "hideNotes": true,
+  "title": {
+    "match": "^(\\S+)\\s+FORMULA 1\\s.*\\s-\\s(.+)$",
+    "replace": "$1 F1 {location} - $2",
+  },
+}
+```
 
 ## Editor support
 

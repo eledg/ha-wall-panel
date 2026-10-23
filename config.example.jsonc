@@ -45,20 +45,32 @@
         // label   the name in the legend (optional)
         // color   yellow, blue, green, red, purple, teal or pink (optional;
         //         by default they are used in that order)
-        // kind    optional tidying: "f1" shortens race titles and hides their
-        //         notes; "birthdays" adds the age from a "Born 1977" note
+        // birthdays  true adds the age to "<name>'s Birthday" titles, from
+        //            "Born 1977" in the event's description (optional)
+        // hideNotes  true hides the events' notes (optional)
+        // title      shortens the title in the tile's rows (optional): "match" is
+        //            a regular expression and "replace" what it becomes, where
+        //            $1 to $9 are its groups and {location} the event's location.
+        //            A title that doesn't match is left as it is. The detail
+        //            sheet always shows the full title
         { "entity": "calendar.family", "label": "Family", "color": "yellow" },
         {
           "entity": "calendar.birthdays",
           "label": "Birthdays",
           "color": "blue",
-          "kind": "birthdays"
+          "birthdays": true
         },
+        // "🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race"
+        // becomes "🏁 F1 Singapore - Race"
         {
           "entity": "calendar.formula_1",
           "label": "F1",
           "color": "green",
-          "kind": "f1"
+          "hideNotes": true,
+          "title": {
+            "match": "^(\\S+)\\s+FORMULA 1\\s.*\\s-\\s(.+)$",
+            "replace": "$1 F1 {location} - $2"
+          }
         }
       ]
     },

@@ -1,6 +1,6 @@
 import type { Auth } from 'home-assistant-js-websocket';
 
-import type { CalendarKind } from '@/config/config.ts';
+import type { CalendarSource } from '@/config/config.ts';
 import { midnightOf, startOfDay } from '@/config/datetime.ts';
 
 /** How often calendar events are re-fetched; HA pushes no event when they change. */
@@ -16,7 +16,7 @@ export const CALENDAR_DAYS = 7;
 export type CalendarEvent = {
   /** Entity ID of the calendar the event came from. */
   calendar: string;
-  /** The title for the tile's rows, shortened for some calendars (see `shortenF1`). */
+  /** The title for the tile's rows, rewritten by the calendar's `title` rule, if it has one. */
   summary: string;
   /** The title as HA sends it, for the detail sheet. */
   fullSummary: string;
@@ -37,27 +37,54 @@ export type RawCalendarEvent = {
   end: { date?: string; dateTime?: string };
 };
 
-/** The leading emoji (which may carry a variation selector), then `FORMULA 1`. */
-const F1_TITLE = /^(\S+)\s+FORMULA 1\s.*\s-\s(.+)$/u;
-
-/**
- * `🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race` becomes
- * `🏁 F1 Singapore - Race`. The grand prix name carries sponsors and varies by
- * race, so the place comes from the event's `location`. A title that doesn't fit
- * the pattern, or an event with no location, is left as it is.
- */
-export const shortenF1 = (summary: string, location?: string | null) => {
-  const match = F1_TITLE.exec(summary);
-  const place = location?.trim();
-  if (!match || !place) return summary;
-  return `${match[1]} F1 ${place} - ${match[2]}`;
+/** A calendar's formatting options, with its title rule compiled. */
+export type CalendarFormat = {
+  birthdays?: boolean;
+  hideNotes?: boolean;
+  title?: { match: RegExp; replace: string };
 };
 
+/** Compiles a calendar's options once, so each event doesn't rebuild the regex. */
+export const compileFormat = ({
+  birthdays,
+  hideNotes,
+  title,
+}: Pick<
+  CalendarSource,
+  'birthdays' | 'hideNotes' | 'title'
+>): CalendarFormat => ({
+  ...(birthdays && { birthdays }),
+  ...(hideNotes && { hideNotes }),
+  ...(title && {
+    title: { match: new RegExp(title.match, 'u'), replace: title.replace },
+  }),
+});
+
+const TITLE_TOKEN = /\$(\d)|\{location\}/gu;
+
 /**
- * Kinds of calendar whose descriptions aren't worth showing. F1's is the same
- * ~1.5 KB of promotional links on every event.
+ * Replaces the part of `summary` the rule matches. In `replace`, `$1` to `$9`
+ * are the match's groups (`$0` all of it) and `{location}` is the event's
+ * location. A title the rule doesn't match, or a rule that needs a location the
+ * event lacks, leaves the title as it is.
  */
-const NO_NOTES = new Set<CalendarKind>(['f1']);
+export const rewriteTitle = (
+  summary: string,
+  rule: NonNullable<CalendarFormat['title']>,
+  location?: string | null,
+) => {
+  const match = rule.match.exec(summary);
+  const place = location?.trim();
+  if (!match || (rule.replace.includes('{location}') && !place)) return summary;
+  const text = rule.replace.replace(TITLE_TOKEN, (_token, n?: string) =>
+    n === undefined ? (place ?? '') : (match[Number(n)] ?? ''),
+  );
+  return (
+    summary.slice(0, match.index) +
+    text +
+    summary.slice(match.index + match[0].length)
+  );
+};
 
 /** Trimmed text, or `undefined` when HA sends nothing, `null` or `""`. */
 const textOf = (value?: string | null) => value?.trim() || undefined;
@@ -95,13 +122,6 @@ export const withBirthdayAge = (
   return `${match[1]}${match[2]} ${ordinal(age)} Birthday`;
 };
 
-/** Per-calendar tidying of titles that are too long for the tile. */
-const SUMMARY_FORMATTERS: Partial<
-  Record<CalendarKind, (summary: string, raw: RawCalendarEvent) => string>
-> = {
-  f1: (summary, raw) => shortenF1(summary, raw.location),
-};
-
 /**
  * Reduces a REST calendar item to a `CalendarEvent`, or `undefined` when it
  * has no usable times. Timed events carry a UTC offset that can differ between
@@ -110,7 +130,7 @@ const SUMMARY_FORMATTERS: Partial<
 export const normaliseEvent = (
   calendar: string,
   raw: RawCalendarEvent,
-  kind?: CalendarKind,
+  format: CalendarFormat = {},
 ): CalendarEvent | undefined => {
   const allDay = raw.start.date !== undefined;
   const start = allDay
@@ -123,17 +143,16 @@ export const normaliseEvent = (
     return undefined;
   }
   const rawSummary = raw.summary?.trim() || 'Untitled';
-  const fullSummary =
-    kind === 'birthdays'
-      ? withBirthdayAge(rawSummary, raw.description, start)
-      : rawSummary;
+  const fullSummary = format.birthdays
+    ? withBirthdayAge(rawSummary, raw.description, start)
+    : rawSummary;
   const location = textOf(raw.location);
-  const description =
-    kind && NO_NOTES.has(kind) ? undefined : textOf(raw.description);
+  const description = format.hideNotes ? undefined : textOf(raw.description);
   return {
     calendar,
-    summary:
-      (kind && SUMMARY_FORMATTERS[kind])?.(fullSummary, raw) ?? fullSummary,
+    summary: format.title
+      ? rewriteTitle(fullSummary, format.title, raw.location)
+      : fullSummary,
     fullSummary,
     ...(location && { location }),
     ...(description && { description }),
@@ -147,10 +166,10 @@ export const normaliseEvent = (
 export const normaliseEvents = (
   calendar: string,
   raw: RawCalendarEvent[],
-  kind?: CalendarKind,
+  format?: CalendarFormat,
 ) =>
   raw
-    .map((item) => normaliseEvent(calendar, item, kind))
+    .map((item) => normaliseEvent(calendar, item, format))
     .filter((event): event is CalendarEvent => event !== undefined);
 
 /** Midnight today in the configured zone until `CALENDAR_DAYS` days later: what the store fetches. */

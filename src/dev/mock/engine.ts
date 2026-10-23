@@ -1,7 +1,6 @@
 import type { Auth, Connection, HassEntity } from 'home-assistant-js-websocket';
 
 import {
-  type CalendarKind,
   type EntityDomain,
   entityRefs,
   firstTile,
@@ -166,18 +165,17 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   entities.set(weather, make(weather, scenario.state, scenario.attributes));
   let calendarScenario = calendarScenarios[0]!;
   let calendarFails = false;
-  // The scenarios name their calendars by kind: the unmarked one is the family's.
-  const calendarKinds = new Map<string, CalendarKind | undefined>();
+  // The scenarios name their calendars: any other is the family's.
+  const calendarIds = new Set<string>();
   for (const tile of cfg.tiles) {
     if (tile.type !== 'calendar') continue;
-    for (const { entity, kind } of tile.calendars)
-      calendarKinds.set(entity, kind);
+    for (const { entity } of tile.calendars) calendarIds.add(entity);
   }
-  const SCENARIO_KEY = {
-    f1: 'calendarF1',
-    birthdays: 'calendarBirthdays',
-  } as const;
-  for (const id of calendarKinds.keys()) entities.set(id, make(id, 'off'));
+  const SCENARIO_KEY: Record<string, string> = {
+    'calendar.birthdays': 'calendarBirthdays',
+    'calendar.f1': 'calendarF1',
+  };
+  for (const id of calendarIds) entities.set(id, make(id, 'off'));
   const ac = mockTile('ac').entities.climate;
   entities.set(ac, make(ac, 'off', acAttributes()));
   const room = mockTile('temperature').entities;
@@ -365,11 +363,10 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       if (calendarFails) {
         return Promise.reject(new Error('Mock HA: calendar failed'));
       }
-      if (!calendarKinds.has(entityId) || !entities.has(entityId)) {
+      if (!calendarIds.has(entityId) || !entities.has(entityId)) {
         return Promise.reject(new Error(`Mock HA: unknown entity ${entityId}`));
       }
-      const kind = calendarKinds.get(entityId);
-      const key = kind ? SCENARIO_KEY[kind] : 'calendarFamily';
+      const key = SCENARIO_KEY[entityId] ?? 'calendarFamily';
       return Promise.resolve(calendarScenario.events(new Date())[key] ?? []);
     },
     fetchHistory: (_auth, entityId) => {
@@ -479,7 +476,7 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       calendarScenario =
         calendarScenarios.find((s) => s.id === id) ?? calendarScenario;
       // As HA does when events change, touch the entities so the store refetches.
-      for (const id of calendarKinds.keys()) entities.set(id, make(id, 'off'));
+      for (const id of calendarIds) entities.set(id, make(id, 'off'));
       publish();
     },
     failCalendar: (failing) => {
