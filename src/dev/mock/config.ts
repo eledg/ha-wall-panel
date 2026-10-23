@@ -85,6 +85,7 @@ export const mockConfig: RuntimeConfig = {
         climate: 'climate.heating',
         schedule: 'switch.heating_schedule',
         demand: 'binary_sensor.heating_demand',
+        power: 'sensor.heating_power',
         cloud: 'binary_sensor.heating_cloud_connection',
         resume: 'button.heating_resume_schedule',
         boost: 'button.heating_boost',

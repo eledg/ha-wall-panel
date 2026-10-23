@@ -53,8 +53,12 @@ export const HeatingTile = ({
   );
   const demand = useSnapshot(store, (s) => s.entities[tile.entities.demand]);
   const cloud = useSnapshot(store, (s) => s.entities[tile.entities.cloud]);
+  const power = useSnapshot(
+    store,
+    (s) => s.entities[tile.entities.power ?? ''],
+  );
   const [open, setOpen] = useState(false);
-  const view = readHeating(climate, schedule, demand, cloud);
+  const view = readHeating(climate, schedule, demand, cloud, power);
   const state = tileState([climate, schedule], view.usable);
   const running = view.state === 'schedule' || view.state === 'manual';
 
@@ -89,7 +93,7 @@ export const HeatingTile = ({
         tone={TONE[view.state]}
         icon={<FlameIcon class="size-4" />}
         label={tile.label}
-        right={<HeatWavesIcon demand={view.demand} class="size-5" />}
+        right={<HeatWavesIcon level={view.demandLevel} class="size-5" />}
         status={status}
         value={value}
       />

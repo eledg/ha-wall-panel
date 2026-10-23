@@ -90,6 +90,8 @@ export type MockControls = {
   getHeating: () => MockHeatingState;
   /** Whether the boiler is called for heat (home-wide). */
   setHeatingDemand: (demand: boolean) => void;
+  /** Sets the heating power in percent; demand is on above 0. */
+  setHeatingPower: (percent: number) => void;
   /** Makes the demand history fetch fail. */
   failHistory: (failing: boolean) => void;
   /** Whether the demand history fetch is set to fail. */
@@ -195,10 +197,15 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   const heating = heatingEntities.climate;
   const heatingSchedule = heatingEntities.schedule;
   const heatingDemand = heatingEntities.demand;
+  const heatingPower = heatingEntities.power!;
   const fixture = heatingFixture('schedule');
   entities.set(heating, make(heating, fixture.power, heatingAttributes()));
   entities.set(heatingSchedule, make(heatingSchedule, fixture.schedule));
   entities.set(heatingDemand, make(heatingDemand, 'on'));
+  entities.set(
+    heatingPower,
+    make(heatingPower, '100', { unit_of_measurement: '%' }),
+  );
   entities.set(heatingEntities.cloud, make(heatingEntities.cloud, 'on'));
   // Presses never change a button's state, as in HA.
   for (const id of [heatingEntities.resume, heatingEntities.boost]) {
@@ -228,6 +235,18 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     publish();
   };
 
+  /** Sets the heating power (percent) and, with it, the demand flag, as Tado does. */
+  const setDemand = (percent: number) => {
+    entities.set(
+      heatingPower,
+      make(heatingPower, String(percent), { unit_of_measurement: '%' }),
+    );
+    entities.set(
+      heatingDemand,
+      make(heatingDemand, percent > 0 ? 'on' : 'off'),
+    );
+  };
+
   /** Changes the heating's power, control and target together, with one update. */
   const setHeatingParts = (
     power: string,
@@ -244,9 +263,7 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       heatingSchedule,
       make(heatingSchedule, scheduleOn ? 'on' : 'off'),
     );
-    if (demand !== undefined) {
-      entities.set(heatingDemand, make(heatingDemand, demand ? 'on' : 'off'));
-    }
+    if (demand !== undefined) setDemand(demand ? 100 : 0);
     publish();
   };
 
@@ -439,8 +456,14 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
         entities.get(heating)?.state,
         entities.get(heatingSchedule)?.state,
       ),
-    setHeatingDemand: (demand) =>
-      setState(heatingDemand, demand ? 'on' : 'off'),
+    setHeatingDemand: (demand) => {
+      setDemand(demand ? 100 : 0);
+      publish();
+    },
+    setHeatingPower: (percent) => {
+      setDemand(percent);
+      publish();
+    },
     failHistory: (failing) => {
       historyFails = failing;
       watchers.forEach((watcher) => watcher());

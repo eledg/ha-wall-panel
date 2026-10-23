@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canBoost,
   canResume,
+  demandLevelOf,
   heatingStatus,
   readHeating,
 } from './heating-model.ts';
@@ -19,14 +20,29 @@ const attrs = { temperature: 20, current_temperature: 19.9 };
 const read = (
   power: string,
   schedule: string,
-  { demand = 'off', cloud = 'on' } = {},
+  { demand = 'off', cloud = 'on', percent }: Record<string, string> = {},
 ) =>
   readHeating(
     entity(power, attrs),
     entity(schedule),
     entity(demand),
     entity(cloud),
+    percent === undefined ? undefined : entity(percent),
   );
+
+describe('demandLevelOf', () => {
+  it.each([
+    [0, 0],
+    [1, 1],
+    [33, 1],
+    [34, 2],
+    [66, 2],
+    [67, 3],
+    [100, 3],
+  ])('puts %i%% at %i waves', (percent, level) => {
+    expect(demandLevelOf(percent)).toBe(level);
+  });
+});
 
 describe('readHeating', () => {
   it.each([
@@ -50,6 +66,28 @@ describe('readHeating', () => {
       max: 30,
       step: 0.5,
     });
+  });
+
+  it('grades demand by the power sensor when it reads a number', () => {
+    expect(read('heat', 'on', { percent: '59' }).demandLevel).toBe(2);
+    // The power wins over the on/off flag.
+    expect(read('heat', 'on', { percent: '0', demand: 'on' }).demandLevel).toBe(
+      0,
+    );
+  });
+
+  it('falls back to all or none by the demand flag without a usable power', () => {
+    expect(read('heat', 'on', { demand: 'on' }).demandLevel).toBe(3);
+    expect(read('heat', 'on').demandLevel).toBe(0);
+    for (const percent of ['unavailable', 'unknown', 'n/a', '']) {
+      expect(read('heat', 'on', { demand: 'on', percent }).demandLevel).toBe(3);
+    }
+  });
+
+  it('shows no waves when the cloud connection drops, whatever the power', () => {
+    expect(
+      read('heat', 'on', { percent: '90', cloud: 'off' }).demandLevel,
+    ).toBe(0);
   });
 
   it('follows demand on its own, whatever the state', () => {

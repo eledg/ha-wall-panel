@@ -22,6 +22,7 @@ domain shown. A tile type may appear any number of times.
 | `heating`     | `climate`     | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating. See [Heating](#heating).                               |
 |               | `schedule`    | `switch`        | `state`                                                                                                                                 | Heating control: on follows the schedule.                               |
 |               | `demand`      | `binary_sensor` | `state`                                                                                                                                 | Boiler demand, whole house.                                             |
+|               | `power`       | `sensor`        | `state`                                                                                                                                 | Optional. Heating power in percent; grades the heat waves.              |
 |               | `cloud`       | `binary_sensor` | `state`                                                                                                                                 | Heating cloud link; `off` makes the heating unavailable.                |
 |               | `resume`      | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                                               |
 |               | `boost`       | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                                         |
@@ -146,7 +147,13 @@ Two signals, kept separate (`heating-model.ts`):
 - **Demand** (`demand`) is home-wide and drives the
   heat-waves icon alone: filled when `on`, outlined when `off`, in every state. In
   Schedule or Manual the target can be reached with no demand, so a lit tile with
-  outlined waves is correct.
+  outlined waves is correct. With the optional `power` sensor (a percentage, such as
+  Tado's heating power sensor) the waves fill left to right
+  instead: none at 0%, one up to 33%, two up to 66%, three above. Tado doesn't
+  publish these bands; they are the community's reading of its app. On a relay
+  (non-OpenTherm) boiler the percentage is Tado's estimate, not a signal the
+  boiler receives. A `power` that is missing or not a number falls back to all or
+  none by `demand`.
 - **Unavailable**: the climate or schedule entity unusable, or
   `cloud` `off`. The cloud
   link drops without an error, so this is the only signal that the data is stale.

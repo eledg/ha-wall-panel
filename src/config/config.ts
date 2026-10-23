@@ -44,6 +44,8 @@ export const TILE_ROLES = {
     schedule: { domain: 'switch' },
     /** Whether the heating is asking the boiler for heat. */
     demand: { domain: 'binary_sensor' },
+    /** Heating power in percent, which grades the heat waves; without it they follow `demand` alone. */
+    power: { domain: 'sensor', optional: true },
     /** Cloud connection of the heating: its data goes stale silently when it drops. */
     cloud: { domain: 'binary_sensor' },
     /** Returns the heating to its schedule. Press-only: the state is never read. */

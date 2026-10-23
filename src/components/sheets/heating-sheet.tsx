@@ -63,8 +63,9 @@ export const HeatingSheet = ({
   const schedule = useSnapshot(store, (s) => s.entities[entities.schedule]);
   const demand = useSnapshot(store, (s) => s.entities[entities.demand]);
   const cloud = useSnapshot(store, (s) => s.entities[entities.cloud]);
+  const power = useSnapshot(store, (s) => s.entities[entities.power ?? '']);
   const offline = useOffline();
-  const view = readHeating(climate, schedule, demand, cloud);
+  const view = readHeating(climate, schedule, demand, cloud, power);
   const commands = useClimateCommands(view, {
     name: 'Heating',
     onClose,
@@ -191,7 +192,7 @@ export const HeatingSheet = ({
           } ${pulseClass(pending?.key === 'boost')}`}
           onClick={() => press('boost')}
         >
-          <HeatWavesIcon demand class="size-5" />
+          <HeatWavesIcon level={3} class="size-5" />
           <span>Boost</span>
         </ClimateButton>
       </div>

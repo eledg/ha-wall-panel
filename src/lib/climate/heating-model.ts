@@ -1,6 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 
-import { isUsable, num } from '@/services/ha/entity.ts';
+import { isUsable, num, parseNumber } from '@/services/ha/entity.ts';
 
 /** Where the target comes from, and whether heating is on (see docs/entities.md#heating). */
 export type HeatingState = 'schedule' | 'manual' | 'off' | 'paused';
@@ -10,6 +10,23 @@ const DEFAULT_MIN = 5;
 const DEFAULT_MAX = 30;
 /** Tado reports no `target_temp_step`; it takes half degrees. */
 export const HEATING_STEP = 0.5;
+
+/** How many of the three heat waves are filled. */
+export type DemandLevel = 0 | 1 | 2 | 3;
+
+/**
+ * Heating power (percent) up to which one, then two, waves are filled; above
+ * it, three. Tado doesn't publish its own, so these are the community's
+ * reading of its app: 1–33%, 34–66%, 67–100%.
+ */
+const LEVEL_CEILINGS = [33, 66] as const;
+
+/** The waves for a heating power in percent: none at 0, all three above the last ceiling. */
+export const demandLevelOf = (percent: number): DemandLevel => {
+  if (percent <= 0) return 0;
+  if (percent <= LEVEL_CEILINGS[0]) return 1;
+  return percent <= LEVEL_CEILINGS[1] ? 2 : 3;
+};
 
 export type HeatingView = {
   /** The climate entity answers and the Tado cloud connection is up. */
@@ -21,6 +38,11 @@ export type HeatingView = {
   state: HeatingState;
   /** Boiler demand, home-wide. Only ever true while usable. */
   demand: boolean;
+  /**
+   * Boiler demand in waves. From the `power` sensor when it reads a number,
+   * else all or none by `demand`. 0 unless usable.
+   */
+  demandLevel: DemandLevel;
   target: number | undefined;
   /** The living room reading from the Tado sensor. */
   current: number | undefined;
@@ -39,6 +61,7 @@ export const readHeating = (
   schedule: HassEntity | undefined,
   demand: HassEntity | undefined,
   cloud: HassEntity | undefined,
+  power?: HassEntity,
 ): HeatingView => {
   const attrs = climate?.attributes ?? {};
   // A dropped cloud connection leaves stale data with no error.
@@ -49,12 +72,17 @@ export const readHeating = (
   let state: HeatingState = 'off';
   if (on) state = following ? 'schedule' : 'manual';
   else if (following) state = 'paused';
+  const percent = isUsable(power) ? parseNumber(power!.state) : undefined;
+  const demanded = usable && demand?.state === 'on';
+  let demandLevel: DemandLevel = demanded ? 3 : 0;
+  if (usable && percent !== undefined) demandLevel = demandLevelOf(percent);
   return {
     usable,
     on,
     following,
     state,
-    demand: usable && demand?.state === 'on',
+    demand: demanded,
+    demandLevel,
     target: num(attrs.temperature),
     current: num(attrs.current_temperature),
     min: num(attrs.min_temp) ?? DEFAULT_MIN,
