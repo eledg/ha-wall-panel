@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockConfig } from '@/dev/mock/config.ts';
 
-import { applyConfig, firstTile, getConfig, validateConfig } from './config.ts';
+import {
+  applyConfig,
+  CALENDAR_COLORS,
+  firstTile,
+  getConfig,
+  validateConfig,
+} from './config.ts';
 import type { RuntimeConfig } from './config.ts';
 import { stripJsonComments } from './jsonc.ts';
 import type * as Load from './load.ts';
@@ -180,6 +186,32 @@ describe('parseConfig', () => {
     });
   });
 
+  it('accepts every palette colour and rotates through them by default', () => {
+    const { config, issues } = parseConfig({
+      tiles: [
+        {
+          type: 'calendar',
+          col: 1,
+          row: 1,
+          calendars: [
+            ...CALENDAR_COLORS.map((color, i) => ({
+              entity: `calendar.${i}`,
+              color,
+            })),
+            { entity: 'calendar.plain' },
+          ],
+        },
+      ],
+    });
+
+    expect(issues).toEqual([]);
+    const tile = config.tiles[0] as { calendars: { color: string }[] };
+    expect(tile.calendars.map((c) => c.color)).toEqual([
+      ...CALENDAR_COLORS,
+      CALENDAR_COLORS[0],
+    ]);
+  });
+
   it('reports bad calendars', () => {
     const { issues } = parseConfig({
       tiles: [
@@ -189,7 +221,7 @@ describe('parseConfig', () => {
           row: 1,
           calendars: [
             { entity: 5 },
-            { entity: 'calendar.b', color: 'pink', kind: 'x' },
+            { entity: 'calendar.b', color: 'orange', kind: 'x' },
             'calendar.c',
           ],
         },
@@ -204,7 +236,7 @@ describe('parseConfig', () => {
       },
       {
         key: 'tiles[0].calendars[1].color',
-        message: 'must be one of yellow, blue, green',
+        message: 'must be one of yellow, blue, green, red, purple, teal, pink',
       },
       {
         key: 'tiles[0].calendars[1].kind',

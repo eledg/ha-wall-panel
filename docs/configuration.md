@@ -104,8 +104,8 @@ so two of them sit side by side. Put the tiles in the order you want to read the
 down the screen. In landscape the order of the list makes no difference.
 
 A `calendar` tile lists its calendars instead of a single entity. Each has an
-`entity`, an optional `label` (shown in the legend) and `color` (`yellow`, `blue`
-or `green`; by default the three are used in turn), and an optional `kind`:
+`entity`, an optional `label` (shown in the legend) and `color` (`yellow`, `blue`,
+`green`, `red`, `purple`, `teal` or `pink`; by default they are used in that order), and an optional `kind`:
 `f1` shortens Formula 1 race titles and hides their notes, `birthdays` adds the
 age from a "Born 1977" note.
 

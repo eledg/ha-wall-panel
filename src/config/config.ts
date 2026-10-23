@@ -92,8 +92,19 @@ export const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
   ac: ['roomLabel'],
 };
 
-/** Calendar colours, named after the palette in `index.css`. */
-export const CALENDAR_COLORS = ['yellow', 'blue', 'green'] as const;
+/**
+ * Calendar colours, named after the palette in `index.css`. The first three
+ * are the default rotation for calendars without a `color`, so keep them first.
+ */
+export const CALENDAR_COLORS = [
+  'yellow',
+  'blue',
+  'green',
+  'red',
+  'purple',
+  'teal',
+  'pink',
+] as const;
 export type CalendarColor = (typeof CALENDAR_COLORS)[number];
 
 /**
