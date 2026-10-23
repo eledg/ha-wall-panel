@@ -11,6 +11,10 @@ export const COLOR_CLASSES: Record<
   yellow: { bar: 'bg-cal-yellow', text: 'text-cal-yellow' },
   blue: { bar: 'bg-cal-blue', text: 'text-cal-blue' },
   green: { bar: 'bg-cal-green', text: 'text-cal-green' },
+  red: { bar: 'bg-cal-red', text: 'text-cal-red' },
+  purple: { bar: 'bg-cal-purple', text: 'text-cal-purple' },
+  teal: { bar: 'bg-cal-teal', text: 'text-cal-teal' },
+  pink: { bar: 'bg-cal-pink', text: 'text-cal-pink' },
 };
 
 export const FALLBACK: CalendarMeta = {

@@ -175,7 +175,11 @@
                       "enum": [
                         "yellow",
                         "blue",
-                        "green"
+                        "green",
+                        "red",
+                        "purple",
+                        "teal",
+                        "pink"
                       ],
                       "description": "By default the colours are used in turn."
                     },

@@ -43,7 +43,8 @@
       "calendars": [
         // entity  calendar.* (required)
         // label   the name in the legend (optional)
-        // color   yellow, blue or green (optional; the three are used in turn)
+        // color   yellow, blue, green, red, purple, teal or pink (optional;
+        //         by default they are used in that order)
         // kind    optional tidying: "f1" shortens race titles and hides their
         //         notes; "birthdays" adds the age from a "Born 1977" note
         { "entity": "calendar.family", "label": "Family", "color": "yellow" },
