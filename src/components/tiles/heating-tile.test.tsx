@@ -105,6 +105,23 @@ describe('HeatingTile', () => {
     }
   });
 
+  it('fills the waves left to right by heating power', async () => {
+    const { mock, tile, waves } = await setup();
+    const fills = () =>
+      [...(tile()?.querySelectorAll('svg[role="img"] path') ?? [])].map((p) =>
+        p.getAttribute('fill'),
+      );
+
+    await act(() => mock.controls.setHeatingPower(59));
+    expect(waves()).toBe('Calling for heat: 2 of 3');
+    expect(fills()).toEqual(['currentColor', 'currentColor', 'none']);
+    await act(() => mock.controls.setHeatingPower(20));
+    expect(waves()).toBe('Calling for heat: 1 of 3');
+    expect(fills()).toEqual(['currentColor', 'none', 'none']);
+    await act(() => mock.controls.setHeatingPower(0));
+    expect(waves()).toBe('No heating demand');
+  });
+
   it('shows an unavailable climate entity and cannot be opened', async () => {
     const { mock, tile } = await setup();
     await act(() => mock.controls.setUnavailable(CLIMATE));

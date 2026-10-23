@@ -11,7 +11,7 @@ export const heatingPanel: MockPanel = {
   title: 'Heating',
   Panel: ({ mock }) => {
     useMockChanges(mock);
-    const { climate, demand, cloud } = entitiesOf('heating');
+    const { climate, demand, power, cloud } = entitiesOf('heating');
     const state = mock.getState(climate);
     const attrs = state?.attributes ?? {};
     return (
@@ -42,6 +42,17 @@ export const heatingPanel: MockPanel = {
           >
             Demand
           </Chip>
+        </Group>
+        <Group label="Heating power">
+          {[0, 20, 59, 80].map((percent) => (
+            <Chip
+              key={percent}
+              active={mock.getState(power!)?.state === String(percent)}
+              onClick={() => mock.setHeatingPower(percent)}
+            >
+              {`${percent}%`}
+            </Chip>
+          ))}
         </Group>
         <Group label="Entities">
           <Chip onClick={() => mock.setUnavailable(climate)}>

@@ -366,6 +366,11 @@
                 "minLength": 1,
                 "description": "A binary_sensor.* entity ID."
               },
+              "power": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A sensor.* entity ID."
+              },
               "cloud": {
                 "type": "string",
                 "minLength": 1,

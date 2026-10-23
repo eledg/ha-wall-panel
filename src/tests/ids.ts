@@ -33,6 +33,7 @@ export const IDS = {
   heatingClimate: heating.climate,
   heatingSchedule: heating.schedule,
   heatingDemand: heating.demand,
+  heatingPower: heating.power!,
   heatingCloud: heating.cloud,
   heatingResume: heating.resume,
   heatingBoost: heating.boost,
