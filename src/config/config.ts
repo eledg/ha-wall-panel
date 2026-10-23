@@ -107,18 +107,19 @@ export const CALENDAR_COLORS = [
 ] as const;
 export type CalendarColor = (typeof CALENDAR_COLORS)[number];
 
-/**
- * Tidying the app applies to a calendar's events: `f1` shortens race titles and
- * drops the promotional notes, `birthdays` adds the age from a "Born 1977" note.
- */
-export const CALENDAR_KINDS = ['f1', 'birthdays'] as const;
-export type CalendarKind = (typeof CALENDAR_KINDS)[number];
+/** A rule that rewrites a calendar's event titles: `match` is a regular expression, `replace` its replacement. */
+export type TitleRule = { match: string; replace: string };
 
 export type CalendarSource = {
   entity: string;
   label: string;
   color: CalendarColor;
-  kind?: CalendarKind;
+  /** Adds the years since the year in an event's notes, as in "Born 1977", to its title. */
+  showYears?: boolean;
+  /** Drops the events' descriptions. */
+  hideNotes?: boolean;
+  /** Shortens the titles shown in the tile's rows. */
+  title?: TitleRule;
 };
 
 /** Where a tile sits on the grid: 1-based column and row, and how many it spans. */

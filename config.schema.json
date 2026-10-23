@@ -183,12 +183,33 @@
                       ],
                       "description": "By default the colours are used in turn."
                     },
-                    "kind": {
-                      "enum": [
-                        "f1",
-                        "birthdays"
+                    "showYears": {
+                      "type": "boolean",
+                      "description": "Adds the years since the year in the event's notes (such as \"Born 1977\" or \"Married 2010\") to its title."
+                    },
+                    "hideNotes": {
+                      "type": "boolean",
+                      "description": "Hides the events' notes (their description)."
+                    },
+                    "title": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "match",
+                        "replace"
                       ],
-                      "description": "\"f1\" shortens race titles and hides their notes; \"birthdays\" adds the age from a \"Born 1977\" note."
+                      "properties": {
+                        "match": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "A regular expression the event title is matched against."
+                        },
+                        "replace": {
+                          "type": "string",
+                          "description": "What the match becomes: $1 to $9 are its groups, {location} the event location."
+                        }
+                      },
+                      "description": "Rewrites the title shown in the tile, to shorten it."
                     }
                   }
                 },

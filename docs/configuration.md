@@ -105,9 +105,43 @@ down the screen. In landscape the order of the list makes no difference.
 
 A `calendar` tile lists its calendars instead of a single entity. Each has an
 `entity`, an optional `label` (shown in the legend) and `color` (`yellow`, `blue`,
-`green`, `red`, `purple`, `teal` or `pink`; by default they are used in that order), and an optional `kind`:
-`f1` shortens Formula 1 race titles and hides their notes, `birthdays` adds the
-age from a "Born 1977" note.
+`green`, `red`, `purple`, `teal` or `pink`; by default they are used in that order).
+Three more options tidy a calendar's events:
+
+- `hideNotes: true` hides the events' notes (their description).
+- `title` shortens the title in the tile's rows. `match` is a regular expression
+  (with the `u` flag) and `replace` is what the part it matches becomes: `$1` to
+  `$9` are the match's groups (`$0` all of it) and `{location}` is the event's
+  location. A title that doesn't match, or an event with no location when
+  `replace` uses `{location}`, is left as it is. The detail sheet always shows
+  the full title. In JSON, write each backslash twice (`"\\S"`). An invalid
+  `match` is reported and the rule ignored.
+- `showYears: true` counts the years since a year in the event's notes, for
+  birthdays, anniversaries and the like. The first four-digit year in the
+  description is used (`Born 1977`, `Married 2010`). `Alex Example's Birthday`
+  becomes `Alex Example's 49th Birthday`: the count goes after the last `'s`,
+  or at the start of a title without one, so `Wedding Anniversary` becomes
+  `16th Wedding Anniversary` (but `Our Anniversary` becomes `16th Our
+Anniversary`). The count is the event's year minus that year, so next year's
+  event shows next year's number. An event with no year in its notes, or a year
+  that isn't before the event's, keeps its title. It applies to every event in
+  the calendar, so use it on a calendar whose notes hold no other years. The `th`
+  is English only.
+
+For example, a Formula 1 calendar whose titles read
+`🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race`, with the
+place in the event's location, becomes `🏁 F1 Singapore - Race`:
+
+```jsonc
+{
+  "entity": "calendar.formula_1",
+  "hideNotes": true,
+  "title": {
+    "match": "^(\\S+)\\s+FORMULA 1\\s.*\\s-\\s(.+)$",
+    "replace": "$1 F1 {location} - $2",
+  },
+}
+```
 
 ## Editor support
 

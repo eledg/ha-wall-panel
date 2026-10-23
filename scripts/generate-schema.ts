@@ -2,7 +2,6 @@ import { writeFileSync } from 'node:fs';
 
 import {
   CALENDAR_COLORS,
-  CALENDAR_KINDS,
   DEFAULT_NIGHT,
   EXTRA_KEYS,
   TILE_ROLES,
@@ -41,10 +40,28 @@ const calendar: Json = {
       enum: [...CALENDAR_COLORS],
       description: 'By default the colours are used in turn.',
     },
-    kind: {
-      enum: [...CALENDAR_KINDS],
+    showYears: {
+      type: 'boolean',
       description:
-        '"f1" shortens race titles and hides their notes; "birthdays" adds the age from a "Born 1977" note.',
+        'Adds the years since the year in the event\'s notes (such as "Born 1977" or "Married 2010") to its title.',
+    },
+    hideNotes: {
+      type: 'boolean',
+      description: "Hides the events' notes (their description).",
+    },
+    title: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['match', 'replace'],
+      properties: {
+        match: text('A regular expression the event title is matched against.'),
+        replace: {
+          type: 'string',
+          description:
+            'What the match becomes: $1 to $9 are its groups, {location} the event location.',
+        },
+      },
+      description: 'Rewrites the title shown in the tile, to shorten it.',
     },
   },
 };

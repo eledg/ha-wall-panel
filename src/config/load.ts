@@ -1,7 +1,6 @@
 import {
   applyConfig,
   CALENDAR_COLORS,
-  CALENDAR_KINDS,
   COMMON_KEYS,
   DEFAULT_LABEL,
   DEFAULT_NIGHT,
@@ -18,6 +17,7 @@ import type {
   RuntimeConfig,
   TileConfig,
   TileType,
+  TitleRule,
 } from './config.ts';
 import { stripJsonComments } from './jsonc.ts';
 import { configUrl } from './url.ts';
@@ -266,12 +266,57 @@ const parseTile = (
   return tile as TileConfig;
 };
 
+const CALENDAR_KEYS = new Set([
+  'entity',
+  'label',
+  'color',
+  'showYears',
+  'hideNotes',
+  'title',
+]);
+
+/** An optional true/false setting; reported and ignored when it is anything else. */
+const optionalBoolean = (value: unknown, path: string, problem: Problem) => {
+  if (value === undefined) return undefined;
+  if (typeof value === 'boolean') return value;
+  problem(path, 'must be true or false');
+  return undefined;
+};
+
+/** A title rule needs a `match` that compiles as a regular expression and a `replace`. */
+const parseTitleRule = (
+  value: unknown,
+  path: string,
+  problem: Problem,
+): TitleRule | undefined => {
+  if (value === undefined) return undefined;
+  if (
+    !isRecord(value) ||
+    typeof value.match !== 'string' ||
+    typeof value.replace !== 'string'
+  ) {
+    problem(path, 'must be an object with a "match" and a "replace" string');
+    return undefined;
+  }
+  try {
+    new RegExp(value.match, 'u');
+  } catch {
+    problem(`${path}.match`, 'must be a valid regular expression');
+    return undefined;
+  }
+  return { match: value.match, replace: value.replace };
+};
+
 const parseCalendar = (
   item: Record<string, unknown>,
   path: string,
   n: number,
   problem: Problem,
 ): CalendarSource => {
+  for (const key of Object.keys(item)) {
+    if (!CALENDAR_KEYS.has(key))
+      problem(`${path}.${key}`, 'is not a setting of a calendar');
+  }
   if (item.entity !== undefined && typeof item.entity !== 'string')
     problem(`${path}.entity`, 'entity ID must be a string');
   if (item.label !== undefined && typeof item.label !== 'string')
@@ -280,12 +325,24 @@ const parseCalendar = (
   const color =
     oneOf(CALENDAR_COLORS, item.color, `${path}.color`, problem) ??
     CALENDAR_COLORS[n % CALENDAR_COLORS.length]!;
-  const kind = oneOf(CALENDAR_KINDS, item.kind, `${path}.kind`, problem);
+  const showYears = optionalBoolean(
+    item.showYears,
+    `${path}.showYears`,
+    problem,
+  );
+  const hideNotes = optionalBoolean(
+    item.hideNotes,
+    `${path}.hideNotes`,
+    problem,
+  );
+  const title = parseTitleRule(item.title, `${path}.title`, problem);
   return {
     entity: typeof item.entity === 'string' ? item.entity : '',
     label: typeof item.label === 'string' ? item.label.trim() : '',
     color,
-    ...(kind && { kind }),
+    ...(showYears && { showYears }),
+    ...(hideNotes && { hideNotes }),
+    ...(title && { title }),
   };
 };
 

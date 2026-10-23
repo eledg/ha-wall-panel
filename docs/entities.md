@@ -50,16 +50,20 @@ HA is ignored. Several tiles may each list their own.
     `location` and `description` and ignores the rest. The detail sheet shows
     the full title, the times, the `location` and the description as notes.
   - F1 descriptions are the same ~1.5 KB of promotional links on every event, so
-    the store drops the description for that calendar and the sheet shows no notes.
+    that calendar is set to `hideNotes` and the sheet shows no notes.
 - **Order is not guaranteed.** Neither this endpoint nor the `calendar.get_events`
   service sorts or takes a sort option, so the tile sorts by start time.
-- F1 summaries (for a calendar of `kind` `f1`) are long and carry sponsor
-  names (`🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race`), so the store rewrites them as
+- **Titles can be long.** F1 summaries carry sponsor names
+  (`🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race`). A
+  calendar's `title` rule rewrites them for the tile's rows, for example to
   `🏁 F1 Singapore - Race`: the leading emoji, `F1`, the event's `location`
-  (clean: `Singapore`, `United States`, ...) and the text after the last `-`.
-  Sessions seen in 2026: Practice 1-3, Qualifying, Race, Sprint Qualification and
-  Sprint Race. A title that doesn't fit the pattern, or has no location, is kept
-  as HA sends it. Other calendars' titles are untouched. A calendar of `kind` `birthdays` also gets the age from a `Born 1977` note. The detail sheet shows the title in full, as HA sends it.
+  (clean: `Singapore`, `United States`, ...) and the text after the last `-`
+  (see [configuration.md](configuration.md#tiles) for the rule). Sessions seen
+  in 2026: Practice 1-3, Qualifying, Race, Sprint Qualification and Sprint Race.
+  A title the rule doesn't match, or an event with no location, is kept as HA
+  sends it. A calendar with `showYears` also gets the years since a year in the
+  notes (`Born 1977`, `Married 2010`). The detail sheet shows the title in full,
+  as HA sends it (with the count).
 - **Health:** a calendar whose entity is missing is a config error and is left out.
   One that is `unavailable` is usually transient, so its cached events stay,
   flagged in the legend. Cached events are badged `stale` once 15 minutes pass
