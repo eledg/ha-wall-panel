@@ -147,8 +147,8 @@ Two signals, kept separate (`heating-model.ts`):
 - **Demand** (`demand`) is home-wide and drives the
   heat-waves icon alone: filled when `on`, outlined when `off`, in every state. In
   Schedule or Manual the target can be reached with no demand, so a lit tile with
-  outlined waves is correct. With the optional `power` sensor (a percentage, e.g.
-  Tado's `sensor.living_room_heating_power`) the waves fill left to right
+  outlined waves is correct. With the optional `power` sensor (a percentage, such as
+  Tado's heating power sensor) the waves fill left to right
   instead: none at 0%, one up to 33%, two up to 66%, three above. Tado doesn't
   publish these bands; they are the community's reading of its app. On a relay
   (non-OpenTherm) boiler the percentage is Tado's estimate, not a signal the
