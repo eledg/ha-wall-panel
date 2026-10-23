@@ -43,7 +43,7 @@ export const mockConfig: RuntimeConfig = {
           entity: 'calendar.birthdays',
           label: 'Birthdays',
           color: 'blue',
-          birthdays: true,
+          showYears: true,
         },
         {
           entity: 'calendar.f1',

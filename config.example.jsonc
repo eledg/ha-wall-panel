@@ -45,8 +45,10 @@
         // label   the name in the legend (optional)
         // color   yellow, blue, green, red, purple, teal or pink (optional;
         //         by default they are used in that order)
-        // birthdays  true adds the age to "<name>'s Birthday" titles, from
-        //            "Born 1977" in the event's description (optional)
+        // showYears  true adds the years since the year in an event's description
+        //            ("Born 1977", "Married 2010"): "Alex's Birthday" becomes
+        //            "Alex's 49th Birthday" and "Wedding Anniversary" becomes
+        //            "16th Wedding Anniversary" (optional)
         // hideNotes  true hides the events' notes (optional)
         // title      shortens the title in the tile's rows (optional): "match" is
         //            a regular expression and "replace" what it becomes, where
@@ -58,7 +60,7 @@
           "entity": "calendar.birthdays",
           "label": "Birthdays",
           "color": "blue",
-          "birthdays": true
+          "showYears": true
         },
         // "🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race"
         // becomes "🏁 F1 Singapore - Race"

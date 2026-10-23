@@ -7,7 +7,7 @@ import {
   normaliseEvent,
   normaliseEvents,
   rewriteTitle,
-  withBirthdayAge,
+  withYears,
 } from './calendar.ts';
 
 /** The F1 recipe from `config.example.jsonc`. */
@@ -18,7 +18,7 @@ const f1 = compileFormat({
     replace: '$1 F1 {location} - $2',
   },
 });
-const birthdays = compileFormat({ birthdays: true });
+const showYears = compileFormat({ showYears: true });
 
 describe('normaliseEvent', () => {
   it('reads a timed event and parses its offset', () => {
@@ -102,7 +102,7 @@ describe('normaliseEvent', () => {
         start: { date: '2026-10-12' },
         end: { date: '2026-10-13' },
       },
-      birthdays,
+      showYears,
     );
 
     expect(event?.allDay).toBe(true);
@@ -120,7 +120,7 @@ describe('normaliseEvent', () => {
           start: { date: '2026-10-14' },
           end: { date: '2026-10-15' },
         },
-        birthdays,
+        showYears,
       );
 
     expect(birthday("Alex Example's Birthday", 'Born 1977')?.summary).toBe(
@@ -140,13 +140,37 @@ describe('normaliseEvent', () => {
     );
   });
 
+  it('counts years for anything with a year in its notes, not only birthdays', () => {
+    const years = (summary: string, description: string | undefined) =>
+      withYears(summary, description, new Date(2026, 5, 1));
+
+    expect(years('Wedding Anniversary', 'Married 2010')).toBe(
+      '16th Wedding Anniversary',
+    );
+    expect(years("Alex & Jo's Wedding Anniversary", 'Since 2010')).toBe(
+      "Alex & Jo's 16th Wedding Anniversary",
+    );
+    expect(years("Alex's Mum's Birthday", 'Born 1956')).toBe(
+      "Alex's Mum's 70th Birthday",
+    );
+    expect(years("Sam's Birthday Party", 'Born 2016')).toBe(
+      "Sam's 10th Birthday Party",
+    );
+    expect(years('Wedding Anniversary', undefined)).toBe('Wedding Anniversary');
+    expect(years('Wedding Anniversary', 'Booked for the weekend')).toBe(
+      'Wedding Anniversary',
+    );
+    expect(years('Wedding Anniversary', 'Married 2027')).toBe(
+      'Wedding Anniversary',
+    );
+    expect(years('Wedding Anniversary', 'Room 12345')).toBe(
+      'Wedding Anniversary',
+    );
+  });
+
   it('picks the right ordinal suffix', () => {
     const age = (years: number) =>
-      withBirthdayAge(
-        "Sam's Birthday",
-        `Born ${2026 - years}`,
-        new Date(2026, 5, 1),
-      );
+      withYears("Sam's Birthday", `Born ${2026 - years}`, new Date(2026, 5, 1));
 
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(age)).toEqual([
       "Sam's 1st Birthday",
@@ -333,7 +357,7 @@ describe('compileFormat', () => {
         end: { date: '2026-10-15' },
       },
       compileFormat({
-        birthdays: true,
+        showYears: true,
         title: { match: ' Birthday$', replace: '' },
       }),
     );
@@ -341,7 +365,7 @@ describe('compileFormat', () => {
     expect(event?.summary).toBe("Sam's 22nd");
   });
 
-  it('leaves birthdays alone unless the calendar asks for them', () => {
+  it('leaves the title alone unless the calendar asks for years', () => {
     const event = normaliseEvent('calendar.family', {
       summary: "Sam's Birthday",
       description: 'Born 2004',

@@ -40,10 +40,10 @@ const calendar: Json = {
       enum: [...CALENDAR_COLORS],
       description: 'By default the colours are used in turn.',
     },
-    birthdays: {
+    showYears: {
       type: 'boolean',
       description:
-        'Adds the age from a "Born 1977" note to "<name>\'s Birthday" titles.',
+        'Adds the years since the year in the event\'s notes (such as "Born 1977" or "Married 2010") to its title.',
     },
     hideNotes: {
       type: 'boolean',

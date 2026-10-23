@@ -116,12 +116,17 @@ Three more options tidy a calendar's events:
   `replace` uses `{location}`, is left as it is. The detail sheet always shows
   the full title. In JSON, write each backslash twice (`"\\S"`). An invalid
   `match` is reported and the rule ignored.
-- `birthdays: true` turns `Alex Example's Birthday` into `Alex Example's 49th
-Birthday`. It needs the title to end in `'s Birthday` and the event's
-  description to contain `Born 1977` (the birth year). The age is the event's
-  year minus the birth year, so next year's birthday shows next year's age. With
-  no birth year, or a birth year this year or later, the title is left as it is.
-  The `th` is English only.
+- `showYears: true` counts the years since a year in the event's notes, for
+  birthdays, anniversaries and the like. The first four-digit year in the
+  description is used (`Born 1977`, `Married 2010`). `Alex Example's Birthday`
+  becomes `Alex Example's 49th Birthday`: the count goes after the last `'s`,
+  or at the start of a title without one, so `Wedding Anniversary` becomes
+  `16th Wedding Anniversary` (but `Our Anniversary` becomes `16th Our
+Anniversary`). The count is the event's year minus that year, so next year's
+  event shows next year's number. An event with no year in its notes, or a year
+  that isn't before the event's, keeps its title. It applies to every event in
+  the calendar, so use it on a calendar whose notes hold no other years. The `th`
+  is English only.
 
 For example, a Formula 1 calendar whose titles read
 `🏁 FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026 - Race`, with the

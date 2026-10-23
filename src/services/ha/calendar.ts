@@ -39,21 +39,21 @@ export type RawCalendarEvent = {
 
 /** A calendar's formatting options, with its title rule compiled. */
 export type CalendarFormat = {
-  birthdays?: boolean;
+  showYears?: boolean;
   hideNotes?: boolean;
   title?: { match: RegExp; replace: string };
 };
 
 /** Compiles a calendar's options once, so each event doesn't rebuild the regex. */
 export const compileFormat = ({
-  birthdays,
+  showYears,
   hideNotes,
   title,
 }: Pick<
   CalendarSource,
-  'birthdays' | 'hideNotes' | 'title'
+  'showYears' | 'hideNotes' | 'title'
 >): CalendarFormat => ({
-  ...(birthdays && { birthdays }),
+  ...(showYears && { showYears }),
   ...(hideNotes && { hideNotes }),
   ...(title && {
     title: { match: new RegExp(title.match, 'u'), replace: title.replace },
@@ -102,24 +102,28 @@ const ORDINAL_SUFFIX = {
 const ordinal = (n: number) =>
   `${n}${ORDINAL_SUFFIX[ordinalRules.select(n) as keyof typeof ORDINAL_SUFFIX] ?? 'th'}`;
 
-const BIRTHDAY_TITLE = /^(.+?)(['\u2019]s) Birthday$/u;
-const BORN_YEAR = /\bBorn (\d{4})\b/u;
+const START_YEAR = /\b((?:19|20)\d{2})\b/u;
+const LAST_POSSESSIVE = /^(.*['\u2019]s) (.+)$/u;
 
 /**
- * `Alex Example's Birthday` with a description of `Born 1977`, falling in
- * 2026, becomes `Alex Example's 49th Birthday`. Without a birth year (or with
- * a title that doesn't fit) the title is left as it is.
+ * Adds how many years it has been since the first year in the description.
+ * `Alex Example's Birthday` with a description of `Born 1977`, falling in 2026,
+ * becomes `Alex Example's 49th Birthday`: the count goes after the last `'s`,
+ * or at the start of a title without one (`16th Wedding Anniversary`). Without a
+ * year, or if the year isn't before the event's, the title is left as it is.
  */
-export const withBirthdayAge = (
+export const withYears = (
   summary: string,
   description: string | null | undefined,
   eventDate: Date,
 ) => {
-  const match = BIRTHDAY_TITLE.exec(summary);
-  const born = Number(BORN_YEAR.exec(description ?? '')?.[1]);
-  const age = eventDate.getFullYear() - born;
-  if (!match || !Number.isFinite(born) || age < 1) return summary;
-  return `${match[1]}${match[2]} ${ordinal(age)} Birthday`;
+  const since = Number(START_YEAR.exec(description ?? '')?.[1]);
+  const years = eventDate.getFullYear() - since;
+  if (!Number.isFinite(since) || years < 1) return summary;
+  const possessive = LAST_POSSESSIVE.exec(summary);
+  return possessive
+    ? `${possessive[1]} ${ordinal(years)} ${possessive[2]}`
+    : `${ordinal(years)} ${summary}`;
 };
 
 /**
@@ -143,8 +147,8 @@ export const normaliseEvent = (
     return undefined;
   }
   const rawSummary = raw.summary?.trim() || 'Untitled';
-  const fullSummary = format.birthdays
-    ? withBirthdayAge(rawSummary, raw.description, start)
+  const fullSummary = format.showYears
+    ? withYears(rawSummary, raw.description, start)
     : rawSummary;
   const location = textOf(raw.location);
   const description = format.hideNotes ? undefined : textOf(raw.description);

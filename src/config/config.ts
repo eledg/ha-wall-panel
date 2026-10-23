@@ -114,8 +114,8 @@ export type CalendarSource = {
   entity: string;
   label: string;
   color: CalendarColor;
-  /** Adds the age from a "Born 1977" note to "<name>'s Birthday" titles. */
-  birthdays?: boolean;
+  /** Adds the years since the year in an event's notes, as in "Born 1977", to its title. */
+  showYears?: boolean;
   /** Drops the events' descriptions. */
   hideNotes?: boolean;
   /** Shortens the titles shown in the tile's rows. */

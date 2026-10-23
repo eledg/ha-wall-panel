@@ -270,7 +270,7 @@ const CALENDAR_KEYS = new Set([
   'entity',
   'label',
   'color',
-  'birthdays',
+  'showYears',
   'hideNotes',
   'title',
 ]);
@@ -325,9 +325,9 @@ const parseCalendar = (
   const color =
     oneOf(CALENDAR_COLORS, item.color, `${path}.color`, problem) ??
     CALENDAR_COLORS[n % CALENDAR_COLORS.length]!;
-  const birthdays = optionalBoolean(
-    item.birthdays,
-    `${path}.birthdays`,
+  const showYears = optionalBoolean(
+    item.showYears,
+    `${path}.showYears`,
     problem,
   );
   const hideNotes = optionalBoolean(
@@ -340,7 +340,7 @@ const parseCalendar = (
     entity: typeof item.entity === 'string' ? item.entity : '',
     label: typeof item.label === 'string' ? item.label.trim() : '',
     color,
-    ...(birthdays && { birthdays }),
+    ...(showYears && { showYears }),
     ...(hideNotes && { hideNotes }),
     ...(title && { title }),
   };

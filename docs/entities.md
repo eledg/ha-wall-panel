@@ -61,8 +61,9 @@ HA is ignored. Several tiles may each list their own.
   (see [configuration.md](configuration.md#tiles) for the rule). Sessions seen
   in 2026: Practice 1-3, Qualifying, Race, Sprint Qualification and Sprint Race.
   A title the rule doesn't match, or an event with no location, is kept as HA
-  sends it. A calendar with `birthdays` also gets the age from a `Born 1977`
-  note. The detail sheet shows the title in full, as HA sends it (with the age).
+  sends it. A calendar with `showYears` also gets the years since a year in the
+  notes (`Born 1977`, `Married 2010`). The detail sheet shows the title in full,
+  as HA sends it (with the count).
 - **Health:** a calendar whose entity is missing is a config error and is left out.
   One that is `unavailable` is usually transient, so its cached events stay,
   flagged in the legend. Cached events are badged `stale` once 15 minutes pass
