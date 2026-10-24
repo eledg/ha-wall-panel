@@ -92,6 +92,11 @@ with different entities are two independent lights.
 
 Tiles may not overlap, and a cell with no tile stays empty.
 
+The `heating` tile is built around Tado and needs the Tado Hijack integration
+(HACS); the core Tado integration is not enough. See
+[Heating system](entities.md#heating-system) for what is tested and how to find
+the entity IDs.
+
 A `heating` or `ac` tile may also set `roomLabel`, the room named in the caption
 above its current temperature on the controls screen ("Living room now"). Default:
 "Room".

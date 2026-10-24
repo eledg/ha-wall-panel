@@ -24,7 +24,8 @@ modern WebView should work, but check [docs/display.md](docs/display.md) first.
 - Up to three calendars with event details
 - A light toggle, room temperature and humidity
 - Air-conditioner controls (mode, target, fan, swing)
-- Central heating with a demand history
+- Central heating with a demand history (built for [Tado](docs/entities.md#heating-system),
+  using the Tado Hijack integration from HACS)
 - Night mode, burn-in pixel shift, a disconnected banner and automatic reload
   when a new release is deployed
 
