@@ -130,7 +130,9 @@ screen lists it (`100 %`); no tile shows it.
 ## Heating
 
 The Heating tile (`components/tiles/heating-tile.tsx`) and its sheet
-(`heating-sheet.tsx`) show the **whole-house** heating (tested with Tado). The tile shows the
+(`heating-sheet.tsx`) show the **whole-house** heating. **They are built around
+[Tado](https://www.tado.com)**; see [Heating system](#heating-system) for what that
+needs. The tile shows the
 target (or "Off"), with no humidity, as in the design; the sheet shows the room
 temperature from the `climate` entity, the room the heating controls.
 
@@ -173,6 +175,41 @@ Two signals, kept separate (`heating-model.ts`):
 - **Demand history** is read from `/api/history/period` when the sheet opens and
   every minute while it is open (`services/ha/history.ts`). An empty or failed first read
   shows "No demand history available"; a failed refresh keeps the last bars.
-- With Tado X the controls come from the **Tado Hijack** custom integration (the
-  core Tado integration doesn't support Tado X). Tado's cloud API allows 20,000 calls a day, so
-  the dashboard doesn't poll.
+- Tado's cloud API allows 20,000 calls a day, so the dashboard doesn't poll.
+
+### Heating system
+
+The tile needs seven roles (see the table above), and the logic follows Tado's
+behaviour: control from a schedule switch, the "Paused" state, a cloud sensor for
+stale data, and resume and boost buttons. Nothing about it is configurable by
+provider.
+
+| Setup                                                                                      | Works? | Notes                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tado X with [Tado Hijack](https://github.com/banter240/tado_hijack) (HACS)                 | Yes    | The author's setup. The only one tested.                                                                                                                                                                  |
+| Tado V3 Classic with Tado Hijack (HACS)                                                    | Likely | Hijack lists V3 support and creates the same entities, but this is **untested**. The `climate` entity then comes from the HomeKit integration, and `cloud` is probably `binary_sensor.bridge_connection`. |
+| Tado V3 with the core [Tado integration](https://www.home-assistant.io/integrations/tado/) | **No** | It has no schedule switch, home-wide demand sensor, cloud sensor or buttons, so the tile can't reach a usable state.                                                                                      |
+| Any other heating system                                                                   | No     | Untested. Not supported.                                                                                                                                                                                  |
+
+Install [Tado Hijack](https://github.com/banter240/tado_hijack) from HACS and remove
+the core Tado integration first (both poll the same account). Keep the HomeKit (V3)
+or Matter (Tado X) integration: it supplies the `climate` entity. Tado Hijack
+gives (names vary with your home and zone):
+
+| Setting    | Tado Hijack entity                                                                                        |
+| ---------- | --------------------------------------------------------------------------------------------------------- |
+| `climate`  | From HomeKit or Matter, e.g. `climate.living_room`                                                        |
+| `schedule` | `switch.<zone>_schedule`                                                                                  |
+| `demand`   | `binary_sensor.tado_<home>_heating_demand`                                                                |
+| `power`    | `sensor.<zone>_heating_power`                                                                             |
+| `cloud`    | A cloud connection `binary_sensor` (Tado X: `..._cloud_connection`; V3: `bridge_connection`, unconfirmed) |
+| `resume`   | `button.<zone>_resume_schedule`                                                                           |
+| `boost`    | `button.tado_<home>_boost_all_zones` (no per-zone boost)                                                  |
+
+**A different heating system** needs all seven roles with the same meanings.
+Template entities might fill the gaps; that is untested.
+
+**No `provider` setting (decided, for now).** Nothing in the tile varies by
+provider, and the logic is shaped by Tado, so a general version can't be designed
+before a second system exists. Revisit it if the V3 check shows different entities
+are needed. A new setting could default to Tado so existing configs keep working.
