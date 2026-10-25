@@ -97,6 +97,43 @@ The `heating` tile is built around Tado and needs the Tado Hijack integration
 [Heating system](entities.md#heating-system) for what is tested and how to find
 the entity IDs.
 
+A `weather` tile may also name a `sun` entity (`sun.sun`). Tapping the tile opens
+the weather screen, which then also shows sunrise and sunset. Without `sun`
+those two are left out.
+
+The weather screen's contents come from an optional `details` object on the tile.
+Every setting is optional; the defaults are what the screen shows without it. The
+tile's own forecast strip is not affected.
+
+| `details` setting | Meaning                                                                           | Default |
+| ----------------- | --------------------------------------------------------------------------------- | ------- |
+| `days`            | Days in the outlook, from today. 0 to 7; 0 hides the outlook.                     | 7       |
+| `hoursStep`       | Hours between the columns of the hourly strip. 1 to 12.                           | 3       |
+| `hoursCount`      | Columns in the hourly strip. 0 to 8; 0 hides the strip.                           | 5       |
+| `stats`           | The stat boxes to show, in this order: a list of the keys below. `[]` hides them. | all     |
+
+The `stats` keys are `wind` (speed, direction and gusts), `feelsLike`, `humidity`,
+`uv`, `pressure`, `visibility`, `dewPoint`, `sunrise` and `sunset`. A stat the
+weather source does not report (or `sunrise` and `sunset` without a `sun` entity)
+is left out, never shown empty. The hourly forecast covers 48 hours and the daily
+one 7 days, so a strip or outlook that asks for more simply stops at the end.
+
+```jsonc
+{
+  "type": "weather",
+  "col": 1,
+  "row": 2,
+  "w": 3,
+  "entity": "weather.home",
+  "details": {
+    "days": 5,
+    "hoursStep": 2,
+    "hoursCount": 6,
+    "stats": ["wind", "feelsLike", "humidity"],
+  },
+}
+```
+
 A `heating` or `ac` tile may also set `roomLabel`, the room named in the caption
 above its current temperature on the controls screen ("Living room now"). Default:
 "Room".

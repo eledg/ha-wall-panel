@@ -20,7 +20,7 @@ modern WebView should work, but check [docs/display.md](docs/display.md) first.
 
 ## What it shows
 
-- Clock and date, and weather with an hourly forecast
+- Clock and date, and weather with an hourly forecast and a full weather screen (the week, wind, rain, sunrise and sunset)
 - Up to three calendars with event details
 - A light toggle, room temperature and humidity
 - Air-conditioner controls (mode, target, fan, swing)

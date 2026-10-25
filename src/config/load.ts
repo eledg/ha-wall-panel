@@ -5,10 +5,13 @@ import {
   DEFAULT_LABEL,
   DEFAULT_NIGHT,
   DEFAULT_ROOM_LABEL,
+  DEFAULT_WEATHER_DETAILS,
   EXTRA_KEYS,
   markConfigUnavailable,
   TILE_ROLES,
   TILE_TYPES,
+  WEATHER_DETAILS_LIMITS,
+  WEATHER_STATS,
 } from './config.ts';
 import type {
   CalendarSource,
@@ -18,6 +21,8 @@ import type {
   TileConfig,
   TileType,
   TitleRule,
+  WeatherDetailsConfig,
+  WeatherStat,
 } from './config.ts';
 import { stripJsonComments } from './jsonc.ts';
 import { configUrl } from './url.ts';
@@ -158,13 +163,96 @@ const nonEmpty = (
   return fallback;
 };
 
-/** The type-specific settings of a tile: a calendar's sources, a climate tile's room name. */
+const DETAILS_KEYS = new Set(['days', 'hoursStep', 'hoursCount', 'stats']);
+
+/** A whole number within `min` to `max`; `fallback` (reported unless unset) otherwise. */
+const integerIn = (
+  value: unknown,
+  { min, max }: { min: number; max: number },
+  path: string,
+  fallback: number,
+  problem: Problem,
+) => {
+  if (value === undefined) return fallback;
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    if (value >= min && value <= max) return value;
+  }
+  problem(path, `must be a whole number from ${min} to ${max}`);
+  return fallback;
+};
+
+/** The stat boxes to show: the listed keys in order, each once. Bad or repeated ones are reported and dropped. */
+const parseStats = (
+  raw: unknown,
+  path: string,
+  problem: Problem,
+): WeatherStat[] => {
+  if (raw === undefined) return [...DEFAULT_WEATHER_DETAILS.stats];
+  if (!Array.isArray(raw)) {
+    problem(path, `must be a list of ${WEATHER_STATS.join(', ')}`);
+    return [...DEFAULT_WEATHER_DETAILS.stats];
+  }
+  const stats: WeatherStat[] = [];
+  raw.forEach((item: unknown, n) => {
+    const at = `${path}[${n}]`;
+    const stat = oneOf(WEATHER_STATS, item, at, problem);
+    if (stat === undefined) return;
+    if (stats.includes(stat)) problem(at, `"${stat}" is listed twice`);
+    else stats.push(stat);
+  });
+  return stats;
+};
+
+/** What the weather screen shows: the defaults, with any valid setting in `raw` over them. */
+const parseWeatherDetails = (
+  raw: unknown,
+  at: string,
+  problem: Problem,
+): WeatherDetailsConfig => {
+  const path = `${at}.details`;
+  if (raw !== undefined && !isRecord(raw)) {
+    problem(path, 'must be an object');
+    return {
+      ...DEFAULT_WEATHER_DETAILS,
+      stats: [...DEFAULT_WEATHER_DETAILS.stats],
+    };
+  }
+  const given = isRecord(raw) ? raw : {};
+  for (const key of Object.keys(given)) {
+    if (!DETAILS_KEYS.has(key))
+      problem(`${path}.${key}`, 'is not a setting of the weather screen');
+  }
+  const { days, hoursStep, hoursCount } = DEFAULT_WEATHER_DETAILS;
+  const limits = WEATHER_DETAILS_LIMITS;
+  return {
+    days: integerIn(given.days, limits.days, `${path}.days`, days, problem),
+    hoursStep: integerIn(
+      given.hoursStep,
+      limits.hoursStep,
+      `${path}.hoursStep`,
+      hoursStep,
+      problem,
+    ),
+    hoursCount: integerIn(
+      given.hoursCount,
+      limits.hoursCount,
+      `${path}.hoursCount`,
+      hoursCount,
+      problem,
+    ),
+    stats: parseStats(given.stats, `${path}.stats`, problem),
+  };
+};
+
+/** The type-specific settings of a tile: a weather screen's options, a calendar's sources, a climate tile's room name. */
 const parseExtras = (
   raw: Record<string, unknown>,
   type: TileType,
   at: string,
   problem: Problem,
 ) => {
+  if (type === 'weather')
+    return { details: parseWeatherDetails(raw.details, at, problem) };
   if (type === 'calendar')
     return { calendars: parseCalendars(raw.calendars, at, problem) };
   if (type === 'heating' || type === 'ac')

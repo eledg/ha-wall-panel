@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 
 import { FLASH_MS } from '@/config/constants.ts';
+import { useIdleClose } from '@/hooks/use-idle-close.ts';
 import { stepTarget, type TargetLimits } from '@/lib/climate/target.ts';
 
 /** Rapid − / + taps are sent as one `set_temperature` once they pause. */
@@ -44,19 +45,9 @@ export const useClimateCommands = <S>(
   // A command is over as soon as HA reports its result.
   const confirmed = issued?.done?.(state) ?? false;
   const pending = confirmed ? undefined : issued;
-  // Bumped by every touch inside the sheet to restart the idle timer.
-  const [activity, setActivity] = useState(0);
+  const onActivity = useIdleClose(onClose, idleMs);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useEffect(() => {
-    const timer = setTimeout(onClose, idleMs);
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [onClose, activity, idleMs]);
   useEffect(() => {
     if (!flash) return;
     const timer = setTimeout(() => setFlash(undefined), FLASH_MS);
@@ -114,7 +105,7 @@ export const useClimateCommands = <S>(
     end,
     fail,
     send,
-    onActivity: () => setActivity((n) => n + 1),
+    onActivity,
   };
 };
 

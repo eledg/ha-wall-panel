@@ -32,6 +32,7 @@ type DomainServices = {
   button: 'press';
   binary_sensor: never;
   sensor: never;
+  sun: never;
   weather: never;
   calendar: never;
   climate:
@@ -43,8 +44,13 @@ type DomainServices = {
     | 'set_swing_mode';
 };
 
+/** `WeatherEntityFeature.FORECAST_DAILY`: bit 1 of `supported_features`. */
+const FORECAST_DAILY = 1;
+
 /** `WeatherEntityFeature.FORECAST_HOURLY`: bit 2 of `supported_features`. */
 const FORECAST_HOURLY = 2;
+
+type ForecastType = 'hourly' | 'daily';
 
 /** How often the forecast is re-fetched; HA pushes no event when it changes. */
 export const FORECAST_REFRESH_MS = 30 * 60_000;
@@ -56,13 +62,28 @@ export const RETRY_MAX_MS = 5_000;
 export const retryDelay = (attempt: number) =>
   Math.min(1000 * 2 ** attempt, RETRY_MAX_MS);
 
-/** One period of a weather entity's hourly forecast. */
+/**
+ * One period of a weather entity's hourly or daily forecast. Every field but
+ * the time is optional: integrations differ, and HA leaves out what it lacks.
+ */
 export type ForecastItem = {
   datetime: string;
   condition?: string;
+  /** The high, in a daily forecast. */
   temperature?: number;
+  /** The low; daily forecasts only. */
+  templow?: number;
+  apparent_temperature?: number;
   /** Chance of rain, 0 to 100. */
   precipitation_probability?: number;
+  /** Rain in mm. Hourly only, and `null` when the source has no figure. */
+  precipitation?: number | null;
+  uv_index?: number;
+  pressure?: number;
+  wind_speed?: number;
+  wind_gust_speed?: number;
+  /** Degrees, the direction the wind blows from. */
+  wind_bearing?: number;
 };
 
 export type ServiceName<D extends EntityDomain> = DomainServices[D];
@@ -81,8 +102,10 @@ export type HaSnapshot = {
   subscribed: string[];
   /** Current state by entity ID. */
   entities: Partial<Record<string, HassEntity>>;
-  /** Last forecast fetched per weather entity; kept while HA is unreachable. */
+  /** Last hourly forecast fetched per weather entity; kept while HA is unreachable. */
   forecasts: Partial<Record<string, ForecastItem[]>>;
+  /** Last daily forecast per weather entity, kept the same way. */
+  dailyForecasts: Partial<Record<string, ForecastItem[]>>;
   /** Last events fetched per calendar entity; kept when a fetch fails. */
   calendars: Partial<Record<string, CalendarEvent[]>>;
   /** When each calendar last loaded (epoch ms), so the tile can tell old events. */
@@ -151,6 +174,7 @@ export const createHaStore = (
     subscribed: tracked,
     entities: {},
     forecasts: {},
+    dailyForecasts: {},
     calendars: {},
     calendarUpdated: {},
     calendarFailed: false,
@@ -167,6 +191,9 @@ export const createHaStore = (
   let calendarTimer: ReturnType<typeof setInterval> | undefined;
   // Kept for the calendar's REST calls, which the websocket library cannot make.
   let calendarAuth: Auth | undefined;
+  // When each weather entity's forecasts last loaded (epoch ms). Kept outside
+  // the snapshot: only `refreshWeather` reads it.
+  const forecastFetched = new Map<string, number>();
   // Calendars whose fetch failed with nothing earlier to show.
   const calendarsFailed = new Set<string>();
   let cancelRetry: (() => void) | undefined;
@@ -185,6 +212,7 @@ export const createHaStore = (
     clearInterval(calendarTimer);
     unsubscribe = connection = forecastTimer = calendarTimer = undefined;
     calendarAuth = undefined;
+    forecastFetched.clear();
     calendarsFailed.clear();
     update({
       status: 'idle',
@@ -193,6 +221,7 @@ export const createHaStore = (
       lastUpdate: undefined,
       entities: {},
       forecasts: {},
+      dailyForecasts: {},
       calendars: {},
       calendarUpdated: {},
       calendarFailed: false,
@@ -201,18 +230,24 @@ export const createHaStore = (
 
   /**
    * Current HA serves forecasts only through `weather.get_forecasts`, not as an
-   * attribute. A failed fetch keeps the previous forecast.
+   * attribute. Each type is asked for only when the entity supports it, and a
+   * failed fetch keeps the previous forecast.
    */
-  const refreshForecast = async (id: string) => {
+  const refreshForecastType = async (
+    id: string,
+    type: ForecastType,
+    feature: number,
+  ) => {
     const mine = generation;
+    const key = type === 'hourly' ? 'forecasts' : 'dailyForecasts';
     const features = snapshot.entities[id]?.attributes.supported_features;
     if (!connection) return;
-    // An entity that cannot do hourly forecasts would only error; show current
-    // conditions alone, and drop any forecast from before.
-    if (typeof features === 'number' && !(features & FORECAST_HOURLY)) {
-      if (snapshot.forecasts[id]) {
-        const { [id]: _dropped, ...rest } = snapshot.forecasts;
-        update({ forecasts: rest });
+    // An entity that cannot do this forecast would only error; drop any
+    // forecast from before and show what it does support.
+    if (typeof features === 'number' && !(features & feature)) {
+      if (snapshot[key][id]) {
+        const { [id]: _dropped, ...rest } = snapshot[key];
+        update({ [key]: rest });
       }
       return;
     }
@@ -221,18 +256,25 @@ export const createHaStore = (
         connection,
         'weather',
         'get_forecasts',
-        { type: 'hourly' },
+        { type },
         { entity_id: id },
         true,
       )) as { response?: Record<string, { forecast?: ForecastItem[] }> };
       const forecast = result.response?.[id]?.forecast;
       if (mine === generation && forecast) {
-        update({ forecasts: { ...snapshot.forecasts, [id]: forecast } });
+        forecastFetched.set(id, Date.now());
+        update({ [key]: { ...snapshot[key], [id]: forecast } });
       }
     } catch (err) {
-      console.error(`Forecast for ${id} failed`, err);
+      console.error(`Forecast (${type}) for ${id} failed`, err);
     }
   };
+
+  const refreshForecast = (id: string) =>
+    Promise.all([
+      refreshForecastType(id, 'hourly', FORECAST_HOURLY),
+      refreshForecastType(id, 'daily', FORECAST_DAILY),
+    ]);
 
   const refreshForecasts = () =>
     trackedIn('weather').forEach((id) => void refreshForecast(id));
@@ -363,6 +405,18 @@ export const createHaStore = (
   };
 
   /**
+   * Re-reads a weather entity's forecasts unless they loaded less than
+   * `maxAgeMs` ago, so a sheet opening shows current figures without a fetch on
+   * every tap. Never rejects: a failure keeps the earlier forecast.
+   */
+  const refreshWeather = async (id: string, maxAgeMs: number) => {
+    if (domains.get(id) !== 'weather') return;
+    const fetched = forecastFetched.get(id);
+    if (fetched !== undefined && Date.now() - fetched < maxAgeMs) return;
+    await refreshForecast(id);
+  };
+
+  /**
    * Recorded states of a configured entity over a window. Rejects while HA is
    * not connected, so a sheet can show its empty state.
    */
@@ -400,6 +454,7 @@ export const createHaStore = (
     stop,
     callService,
     history,
+    refreshWeather,
   };
 };
 

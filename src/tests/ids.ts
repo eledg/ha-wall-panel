@@ -20,6 +20,7 @@ const heating = tileOf('heating').entities;
 export const IDS = {
   light: toggle.entity,
   weather: weather.entity,
+  weatherSun: weather.sun!,
   calendarFamily: family!.entity,
   calendarBirthdays: birthdays!.entity,
   calendarF1: f1!.entity,

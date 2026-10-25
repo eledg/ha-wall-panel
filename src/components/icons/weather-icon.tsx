@@ -1,15 +1,8 @@
 import type { ComponentChildren } from 'preact';
 
-/** The conditions the design has an icon for. */
-export type IconCondition =
-  | 'sunny'
-  | 'clear-night'
-  | 'partlycloudy'
-  | 'cloudy'
-  | 'rainy'
-  | 'snowy'
-  | 'fog'
-  | 'lightning';
+import type { IconCondition } from '@/lib/weather-model.ts';
+
+export type { IconCondition };
 
 const Svg = ({
   class: className,

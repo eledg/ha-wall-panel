@@ -26,7 +26,12 @@ import {
   type MockHeatingState,
   SCHEDULED_TARGET,
 } from '@/dev/mock/scenarios/heating.ts';
-import { forecastFor, weatherScenarios } from '@/dev/mock/scenarios/weather.ts';
+import {
+  dailyFor,
+  forecastFor,
+  sunAttributes,
+  weatherScenarios,
+} from '@/dev/mock/scenarios/weather.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
 
 /** Present only in mock code; a build test looks for it in `dist/`. */
@@ -106,6 +111,7 @@ const DEFAULT_STATE: Partial<Record<EntityDomain, string>> = {
   binary_sensor: 'on',
   button: 'unknown',
   sensor: '0',
+  sun: 'above_horizon',
 };
 
 const plainEntity = (
@@ -163,6 +169,9 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   const scenarios = weatherScenarios();
   let scenario = scenarios[0]!;
   entities.set(weather, make(weather, scenario.state, scenario.attributes));
+  const sun = mockTile('weather').entities.sun;
+  if (sun)
+    entities.set(sun, make(sun, 'above_horizon', sunAttributes(Date.now())));
   let calendarScenario = calendarScenarios[0]!;
   let calendarFails = false;
   // The scenarios name their calendars: any other is the family's.
@@ -279,10 +288,13 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   const fail = (message: string) =>
     Promise.reject(new Error(`Mock HA: ${message}`));
 
-  const getForecasts = (id: string) => {
+  const getForecasts = (id: string, type: unknown) => {
     if (!entities.has(id)) return fail(`unknown entity ${id}`);
     if (forecastFails) return fail('forecast failed');
-    const forecast = forecastFor(scenario, Date.now());
+    const forecast =
+      type === 'daily'
+        ? dailyFor(scenario, Date.now())
+        : forecastFor(scenario, Date.now());
     return Promise.resolve({ response: { [id]: { forecast } } });
   };
 
@@ -383,7 +395,10 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     callService: (_conn, domain, service, data, target) => {
       if (!connected) return fail('connection lost');
       if (domain === 'weather' && service === 'get_forecasts') {
-        return getForecasts((target as { entity_id: string }).entity_id);
+        return getForecasts(
+          (target as { entity_id: string }).entity_id,
+          (data as { type?: unknown } | undefined)?.type,
+        );
       }
       const id = (target as { entity_id?: string } | undefined)?.entity_id;
       const entity = id ? entities.get(id) : undefined;

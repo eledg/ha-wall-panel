@@ -24,13 +24,33 @@
     // The time and date. No entities.
     { "type": "clock", "col": 1, "row": 1, "w": 3 },
 
-    // Current conditions and an hourly forecast.
+    // Current conditions and an hourly forecast. Tap for the full weather screen.
     {
       "type": "weather",
       "col": 1,
       "row": 2,
       "w": 3,
-      "entity": "weather.home" // weather.*
+      "entity": "weather.home", // weather.*
+      "sun": "sun.sun", // optional sun.*: adds sunrise and sunset to the weather screen
+
+      // Optional: what the weather screen shows. These are the defaults.
+      "details": {
+        "days": 7, // days in the outlook, 0 to 7 (0 hides it)
+        "hoursStep": 3, // hours between the columns of the hourly strip, 1 to 12
+        "hoursCount": 5, // columns in the hourly strip, 0 to 8 (0 hides it)
+        // The stat boxes, in the order shown. Leave one out to hide it.
+        "stats": [
+          "wind",
+          "feelsLike",
+          "humidity",
+          "uv",
+          "pressure",
+          "visibility",
+          "dewPoint",
+          "sunrise",
+          "sunset"
+        ]
+      }
     },
 
     // An agenda merged from one or more calendars, spanning two rows.

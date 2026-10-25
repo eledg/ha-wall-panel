@@ -356,6 +356,128 @@ describe('parseConfig', () => {
     ]);
   });
 
+  describe('the weather screen settings', () => {
+    const weather = { type: 'weather', col: 1, row: 1, entity: 'weather.home' };
+    const detailsOf = (details?: unknown) => {
+      const { config, issues } = parseConfig({
+        tiles: [{ ...weather, ...(details !== undefined && { details }) }],
+      });
+      const tile = config.tiles[0];
+      return {
+        issues,
+        details: tile?.type === 'weather' ? tile.details : undefined,
+      };
+    };
+
+    it('shows everything the design has when `details` is absent or empty', () => {
+      const all = {
+        days: 7,
+        hoursStep: 3,
+        hoursCount: 5,
+        stats: [
+          'wind',
+          'feelsLike',
+          'humidity',
+          'uv',
+          'pressure',
+          'visibility',
+          'dewPoint',
+          'sunrise',
+          'sunset',
+        ],
+      };
+
+      expect(detailsOf()).toEqual({ issues: [], details: all });
+      expect(detailsOf({})).toEqual({ issues: [], details: all });
+    });
+
+    it('reads days, the hours and the stats in the order given', () => {
+      expect(
+        detailsOf({
+          days: 5,
+          hoursStep: 2,
+          hoursCount: 6,
+          stats: ['sunset', 'wind'],
+        }),
+      ).toEqual({
+        issues: [],
+        details: {
+          days: 5,
+          hoursStep: 2,
+          hoursCount: 6,
+          stats: ['sunset', 'wind'],
+        },
+      });
+    });
+
+    it('accepts 0 days, 0 columns and no stats, which hide them', () => {
+      expect(detailsOf({ days: 0, hoursCount: 0, stats: [] })).toMatchObject({
+        issues: [],
+        details: { days: 0, hoursCount: 0, stats: [] },
+      });
+    });
+
+    it('reports each bad number and keeps its default', () => {
+      const { issues, details } = detailsOf({
+        days: 8,
+        hoursStep: 0,
+        hoursCount: 2.5,
+      });
+
+      expect(details).toMatchObject({ days: 7, hoursStep: 3, hoursCount: 5 });
+      expect(issues.map(({ key }) => key)).toEqual([
+        'tiles[0].details.days',
+        'tiles[0].details.hoursStep',
+        'tiles[0].details.hoursCount',
+      ]);
+      expect(issues[0]!.message).toBe('must be a whole number from 0 to 7');
+      expect(detailsOf({ days: '3' }).issues.map(({ key }) => key)).toEqual([
+        'tiles[0].details.days',
+      ]);
+    });
+
+    it('drops stats that are unknown or listed twice, and says which', () => {
+      const { issues, details } = detailsOf({
+        stats: ['wind', 'cloud', 'wind', 'uv', 4],
+      });
+
+      expect(details?.stats).toEqual(['wind', 'uv']);
+      expect(issues.map(({ key }) => key)).toEqual([
+        'tiles[0].details.stats[1]',
+        'tiles[0].details.stats[2]',
+        'tiles[0].details.stats[4]',
+      ]);
+      expect(issues[1]!.message).toBe('"wind" is listed twice');
+    });
+
+    it('reports a `stats` that is not a list, and unknown settings', () => {
+      const { issues, details } = detailsOf({ stats: 'wind', stat: ['uv'] });
+
+      expect(details?.stats).toHaveLength(9);
+      expect(issues).toEqual([
+        {
+          key: 'tiles[0].details.stat',
+          message: 'is not a setting of the weather screen',
+        },
+        expect.objectContaining({ key: 'tiles[0].details.stats' }),
+      ]);
+    });
+
+    it('reports a `details` that is not an object, and one on another tile', () => {
+      expect(detailsOf('big').issues).toEqual([
+        { key: 'tiles[0].details', message: 'must be an object' },
+      ]);
+      expect(
+        parseConfig({ tiles: [{ ...toggleTile, details: {} }] }).issues,
+      ).toEqual([
+        {
+          key: 'tiles[0].details',
+          message: 'is not a setting of a toggle tile',
+        },
+      ]);
+    });
+  });
+
   it('reports settings a tile does not have, and values of the wrong type', () => {
     const { issues } = parseConfig({
       tiles: [

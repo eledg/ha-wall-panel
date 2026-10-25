@@ -10,6 +10,7 @@ domain shown. A tile type may appear any number of times.
 | `clock`       | none          |                 |                                                                                                                                         | The time and date.                                                      |
 | `toggle`      | `entity`      | `switch`        | `state`                                                                                                                                 | A room light. A plain switch: no dimming.                               |
 | `weather`     | `entity`      | `weather`       | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Current conditions plus an hourly forecast. See [Weather](#weather).    |
+|               | `sun`         | `sun`           | `next_rising`, `next_setting`                                                                                                           | Optional. Sunrise and sunset on the weather screen.                     |
 | `calendar`    | `calendars`   | `calendar`      | `state`; events via REST                                                                                                                | A list of calendars, each with `entity`. See [Calendars](#calendars).   |
 | `ac`          | `climate`     | `climate`       | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | The air conditioner. See [Air conditioning](#air-conditioning).         |
 |               | `powerful`    | `switch`        | `state`                                                                                                                                 | AC Powerful boost.                                                      |
@@ -73,22 +74,38 @@ HA is ignored. Several tiles may each list their own.
 
 ## Weather
 
-The `weather` entity needs hourly forecast support (see `supported_features`
-below). Tested with the Met Office integration; an integration that offers only
-daily forecasts shows current conditions alone.
+The tile needs hourly forecast support (see `supported_features` below); the
+weather screen also uses the daily forecast and an optional `sun` entity. Tested
+with the Met Office integration. An integration with only daily forecasts shows
+current conditions on the tile and the week on the screen. Every field is
+optional: the screen shows only what is reported.
 
 - **State** is the condition (`sunny`, `partlycloudy`, `rainy`, `pouring`, ...).
   The tile maps every HA condition onto the design's eight icons.
-- **Attributes** carry `temperature` (`temperature_unit` is `°C`), humidity, wind,
-  pressure. There is **no `forecast` attribute**: HA removed it.
-- **Forecast** comes from the `weather.get_forecasts` service with
-  `{ type: 'hourly' }`, called with `return_response`. The response is
-  `{ [entity_id]: { forecast: [{ datetime, condition, temperature, precipitation_probability, ... }] } }`,
-  one item per hour, starting from the current hour, with UTC `datetime`s.
+- **Attributes** read: `temperature`, `humidity`, `uv_index`, `dew_point`,
+  `pressure`, `visibility`, `wind_speed` and `wind_bearing`, each with its
+  `*_unit` attribute (Met Office wind is km/h; the screen shows HA's unit, it
+  does not convert). There is **no `forecast` attribute**: HA removed it, and
+  the Met Office entity has no feels-like, gust or cloud cover.
+- **Hourly forecast** comes from `weather.get_forecasts` with `{ type: 'hourly' }`,
+  called with `return_response`. The response is
+  `{ [entity_id]: { forecast: [...] } }`: about 49 items, one per hour, starting
+  from the current hour, with UTC `datetime`s. Fields read: `condition`,
+  `temperature`, `apparent_temperature` (the screen's "feels like"),
+  `precipitation_probability`, `precipitation` (mm, `null` when unknown) and
+  `wind_gust_speed`.
+- **Daily forecast** is the same call with `{ type: 'daily' }`: 7 days including
+  today, each dated midnight UTC (so the weekday is the UTC date). Fields read:
+  `condition`, `temperature` (the high), `templow`, `precipitation_probability`.
+  Its `precipitation` is always `null`, so the week shows no rain amounts.
 - **`supported_features`** is a bitmask: 1 daily, 2 hourly, 4 twice-daily. The Met
-  Office integration reports 7. The store skips the forecast call when the hourly bit is unset.
+  Office integration reports 7. The store asks for each forecast only when its
+  bit is set.
+- **`sun`** (optional, `sun.sun`): `next_rising` and `next_setting` give the
+  screen's sunrise and sunset. Without the role they are left out.
 - HA sends no event when a forecast changes, so the store refetches on entity
-  changes, on reconnect, and every 30 minutes.
+  changes, on reconnect, and every 30 minutes. Opening the weather screen
+  refetches when the forecasts are over 10 minutes old.
 
 ## Air conditioning
 
