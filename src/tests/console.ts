@@ -10,7 +10,9 @@ export const captureConsole = () => {
   calls = { error: [], warn: [] };
   expected = new Set();
   for (const method of methods) {
-    console[method] = (...args: unknown[]) => void calls[method].push(args);
+    console[method] = (...args: unknown[]) => {
+      calls[method].push(args);
+    };
   }
 };
 
