@@ -16,24 +16,12 @@ const FLASH_MS = 900;
 const SETTLE_MS = 5000;
 
 /**
- * A tile that shows an entity's on/off state and calls `toggle` on tap. One
- * column wide it is a stacked `DeviceTile` like the other single-width tiles;
- * wider, an icon beside the label and state.
- *
- * A tap flips the tile at once (optimistic). If the service call fails the
- * tile reverts to HA's state and flashes in the warning colours.
+ * The toggle's state: HA's `state` with a guess laid over it from the moment of
+ * a tap, `usable` while HA reports on or off, and `failed` for a moment after
+ * a service call is rolled back.
  */
-export const ToggleTile = ({
-  tile,
-  store = haStore,
-}: {
-  tile: TileConfig<'toggle'>;
-  store?: HaStore;
-}) => {
-  const { label, entities } = tile;
-  const entity = entities.entity;
+const useToggle = (label: string, entity: string, store: HaStore) => {
   const state = useSnapshot(store, (s) => s.entities[entity]?.state);
-  const offline = useOffline();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   const [failed, setFailed] = useState(false);
   const pendingRef = useRef(false);
@@ -70,11 +58,31 @@ export const ToggleTile = ({
       });
   };
 
-  const value = (
-    <span class={`text-4xl font-semibold ${on ? 'text-accent' : 'text-fg'}`}>
-      {on ? 'On' : 'Off'}
-    </span>
+  return { state, on, usable, failed, toggle };
+};
+
+/**
+ * A tile that shows an entity's on/off state and calls `toggle` on tap. One
+ * column wide it is a stacked `DeviceTile` like the other single-width tiles;
+ * wider, an icon beside the label and state.
+ *
+ * A tap flips the tile at once (optimistic). If the service call fails the
+ * tile reverts to HA's state and flashes in the warning colours.
+ */
+export const ToggleTile = ({
+  tile,
+  store = haStore,
+}: {
+  tile: TileConfig<'toggle'>;
+  store?: HaStore;
+}) => {
+  const { label, entities } = tile;
+  const { state, on, usable, failed, toggle } = useToggle(
+    label,
+    entities.entity,
+    store,
   );
+  const offline = useOffline();
 
   if (tile.w === 1) {
     return (
@@ -83,7 +91,13 @@ export const ToggleTile = ({
         state={tileState([state], usable)}
         icon={<BulbIcon class="size-4" on={on} />}
         label={label}
-        value={value}
+        value={
+          <span
+            class={`text-4xl font-semibold ${on ? 'text-accent' : 'text-fg'}`}
+          >
+            {on ? 'On' : 'Off'}
+          </span>
+        }
         tone={on && !failed ? 'accent' : 'neutral'}
         flash={failed}
         pressed={on}
