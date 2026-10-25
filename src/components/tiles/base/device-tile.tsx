@@ -56,6 +56,8 @@ export const DeviceTile = ({
   tone = 'neutral',
   flash,
   onTap,
+  disabled,
+  pressed,
   centerValue = false,
 }: {
   place: Placement;
@@ -69,6 +71,10 @@ export const DeviceTile = ({
   tone?: DeviceTone;
   flash?: boolean;
   onTap?: () => void;
+  /** Stops a tap, e.g. while the entity is unavailable. */
+  disabled?: boolean;
+  /** The `aria-pressed` state of a tappable tile that is a switch. */
+  pressed?: boolean;
   /** Centre the value in the space below the header instead of anchoring it. */
   centerValue?: boolean;
 }) => {
@@ -89,6 +95,8 @@ export const DeviceTile = ({
       place={place}
       state={state}
       onTap={onTap}
+      disabled={disabled}
+      pressed={pressed}
       flash={flash}
       class={tileClass}
     >

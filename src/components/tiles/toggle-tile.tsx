@@ -7,7 +7,8 @@ import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
-import { Tile, type TileState, Unavailable } from './base/tile.tsx';
+import { DeviceTile } from './base/device-tile.tsx';
+import { Tile, type TileState, tileState, Unavailable } from './base/tile.tsx';
 
 /** How long the tile flashes after a rolled-back toggle (the design's 900 ms). */
 const FLASH_MS = 900;
@@ -15,22 +16,12 @@ const FLASH_MS = 900;
 const SETTLE_MS = 5000;
 
 /**
- * A tile that shows an entity's on/off state and calls `toggle` on tap.
- *
- * A tap flips the tile at once (optimistic). If the service call fails the
- * tile reverts to HA's state and flashes in the warning colours.
+ * The toggle's state: HA's `state` with a guess laid over it from the moment of
+ * a tap, `usable` while HA reports on or off, and `failed` for a moment after
+ * a service call is rolled back.
  */
-export const ToggleTile = ({
-  tile,
-  store = haStore,
-}: {
-  tile: TileConfig<'toggle'>;
-  store?: HaStore;
-}) => {
-  const { label, entities } = tile;
-  const entity = entities.entity;
+const useToggle = (label: string, entity: string, store: HaStore) => {
   const state = useSnapshot(store, (s) => s.entities[entity]?.state);
-  const offline = useOffline();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   const [failed, setFailed] = useState(false);
   const pendingRef = useRef(false);
@@ -67,6 +58,50 @@ export const ToggleTile = ({
       });
   };
 
+  return { state, on, usable, failed, toggle };
+};
+
+type ToggleView = ReturnType<typeof useToggle> & {
+  tile: TileConfig<'toggle'>;
+};
+
+/** One column wide: the stacked `DeviceTile` the other single-width tiles use. */
+const CompactToggle = ({
+  tile,
+  state,
+  on,
+  usable,
+  failed,
+  toggle,
+}: ToggleView) => (
+  <DeviceTile
+    place={tile}
+    state={tileState([state], usable)}
+    icon={<BulbIcon class="size-4" on={on} />}
+    label={tile.label}
+    value={
+      <span class={`text-4xl font-semibold ${on ? 'text-accent' : 'text-fg'}`}>
+        {on ? 'On' : 'Off'}
+      </span>
+    }
+    tone={on && !failed ? 'accent' : 'neutral'}
+    flash={failed}
+    pressed={on}
+    disabled={!usable}
+    onTap={toggle}
+  />
+);
+
+/** Two or more columns wide: a round icon beside the label and state. */
+const WideToggle = ({
+  tile,
+  state,
+  on,
+  usable,
+  failed,
+  toggle,
+}: ToggleView) => {
+  const offline = useOffline();
   let tileStatus: TileState = 'normal';
   if (state === undefined) tileStatus = 'loading';
   else if (offline) tileStatus = 'stale';
@@ -90,7 +125,7 @@ export const ToggleTile = ({
           <BulbIcon on={on} />
         </div>
         <div class="min-w-0">
-          <div class="truncate text-lg text-fg-dim">{label}</div>
+          <div class="truncate text-lg text-fg-dim">{tile.label}</div>
           {usable ? (
             <div
               class={`text-3xl font-semibold ${on ? 'text-accent' : 'text-fg'}`}
@@ -104,4 +139,26 @@ export const ToggleTile = ({
       </div>
     </Tile>
   );
+};
+
+/**
+ * A tile that shows an entity's on/off state and calls `toggle` on tap. One
+ * column wide it is a stacked `DeviceTile` like the other single-width tiles;
+ * wider, an icon beside the label and state.
+ *
+ * A tap flips the tile at once (optimistic). If the service call fails the
+ * tile reverts to HA's state and flashes in the warning colours.
+ */
+export const ToggleTile = ({
+  tile,
+  store = haStore,
+}: {
+  tile: TileConfig<'toggle'>;
+  store?: HaStore;
+}) => {
+  const view = {
+    tile,
+    ...useToggle(tile.label, tile.entities.entity, store),
+  };
+  return tile.w === 1 ? <CompactToggle {...view} /> : <WideToggle {...view} />;
 };

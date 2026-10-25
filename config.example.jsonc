@@ -78,6 +78,8 @@
     },
 
     // A switch you can tap to turn on and off. A plain switch: no dimming.
+    // Works at any width: 1 column stacks the label above the state, 2 or more
+    // put the icon beside them.
     {
       "type": "toggle",
       "label": "Light",
