@@ -68,11 +68,16 @@ const Stat = ({ icon, label, value, wide }: StatItem) => (
   </div>
 );
 
+/** One decimal for light rain, whole millimetres once it is heavy. */
+const millimetres = (amount: number) =>
+  amount < 10 ? amount.toFixed(1) : String(Math.round(amount));
+
 /** Rain in mm for one hour: nothing when dry or when the source gave no figure. */
-const rainAmount = (item: ForecastItem, unit = 'mm') =>
-  typeof item.precipitation === 'number' && item.precipitation > 0
-    ? `${item.precipitation < 10 ? item.precipitation.toFixed(1) : Math.round(item.precipitation)} ${unit}`
-    : undefined;
+const rainAmount = (item: ForecastItem, unit = 'mm') => {
+  const amount = item.precipitation;
+  if (typeof amount !== 'number' || amount <= 0) return undefined;
+  return `${millimetres(amount)} ${unit}`;
+};
 
 /**
  * Full-screen weather detail, as in the design: current conditions and the

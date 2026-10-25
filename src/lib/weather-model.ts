@@ -191,14 +191,14 @@ const time = (raw: unknown) => {
  */
 export const readWeather = (
   entity: HassEntity | undefined,
-  hourly: ForecastItem[] = [],
-  daily: ForecastItem[] = [],
+  hourly: ForecastItem[] | undefined,
+  daily: ForecastItem[] | undefined,
   sun: HassEntity | undefined,
   now: Date,
 ): WeatherView => {
   const [icon, label] = describe(entity?.state);
   if (!entity || !isUsable(entity)) return { usable: false, icon, label };
-  const period = currentPeriod(hourly, now);
+  const period = currentPeriod(hourly ?? [], now);
   const speed = measure(entity, 'wind_speed', 'wind_speed');
   const bearing = num(entity.attributes.wind_bearing);
   return {
@@ -207,8 +207,8 @@ export const readWeather = (
     label,
     temperature: num(entity.attributes.temperature),
     feelsLike: num(period?.apparent_temperature),
-    high: num(daily[0]?.temperature),
-    low: num(daily[0]?.templow),
+    high: num(daily?.[0]?.temperature),
+    low: num(daily?.[0]?.templow),
     humidity: num(entity.attributes.humidity),
     uvIndex: num(entity.attributes.uv_index),
     dewPoint: num(entity.attributes.dew_point),
