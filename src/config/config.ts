@@ -9,6 +9,7 @@ export type EntityDomain =
   | 'calendar'
   | 'climate'
   | 'sensor'
+  | 'sun'
   | 'switch'
   | 'weather';
 
@@ -23,8 +24,11 @@ type RoleSpec = { domain: EntityDomain; optional?: true };
 export const TILE_ROLES = {
   /** The time and date. */
   clock: {},
-  /** Current conditions plus hourly forecast. */
-  weather: { entity: { domain: 'weather' } },
+  /** Current conditions plus hourly and daily forecasts; `sun` adds sunrise and sunset. */
+  weather: {
+    entity: { domain: 'weather' },
+    sun: { domain: 'sun', optional: true },
+  },
   /** One or more calendars, merged into an agenda. */
   calendar: {},
   /** A plain switch, a room light with no dimming. */
@@ -87,6 +91,7 @@ export const COMMON_KEYS = ['id', 'type', 'label', 'col', 'row', 'w', 'h'];
 
 /** Settings beyond the common ones and the entity roles, for the types that have them. */
 export const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
+  weather: ['details'],
   calendar: ['calendars'],
   heating: ['roomLabel'],
   ac: ['roomLabel'],
@@ -122,6 +127,46 @@ export type CalendarSource = {
   title?: TitleRule;
 };
 
+/** The figures the weather screen can show in its stats block, in their default order. */
+export const WEATHER_STATS = [
+  'wind',
+  'feelsLike',
+  'humidity',
+  'uv',
+  'pressure',
+  'visibility',
+  'dewPoint',
+  'sunrise',
+  'sunset',
+] as const;
+export type WeatherStat = (typeof WEATHER_STATS)[number];
+
+/** What the weather screen shows; a weather tile's `details` setting. */
+export type WeatherDetailsConfig = {
+  /** Days in the outlook, from today; 0 hides it. */
+  days: number;
+  /** Hours between the columns of the hourly strip. */
+  hoursStep: number;
+  /** Columns in the hourly strip; 0 hides it. */
+  hoursCount: number;
+  /** The stat boxes to show, in this order. */
+  stats: WeatherStat[];
+};
+
+export const DEFAULT_WEATHER_DETAILS: WeatherDetailsConfig = {
+  days: 7,
+  hoursStep: 3,
+  hoursCount: 5,
+  stats: [...WEATHER_STATS],
+};
+
+/** Inclusive limits of the numeric `details` settings: the forecasts hold 7 days and 48 hours. */
+export const WEATHER_DETAILS_LIMITS = {
+  days: { min: 0, max: 7 },
+  hoursStep: { min: 1, max: 12 },
+  hoursCount: { min: 0, max: 8 },
+} as const;
+
 /** Where a tile sits on the grid: 1-based column and row, and how many it spans. */
 export type Placement = { col: number; row: number; w: number; h: number };
 
@@ -149,7 +194,8 @@ export type TileConfig<T extends TileType = TileType> = T extends TileType
       type: T;
       label: string;
       entities: TileEntities<T>;
-    } & (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown) &
+    } & (T extends 'weather' ? { details: WeatherDetailsConfig } : unknown) &
+      (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown) &
       (T extends 'heating' | 'ac' ? { roomLabel: string } : unknown)
   : never;
 

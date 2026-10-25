@@ -1,4 +1,4 @@
-import { DEFAULT_NIGHT } from '@/config/config.ts';
+import { DEFAULT_NIGHT, DEFAULT_WEATHER_DETAILS } from '@/config/config.ts';
 import type { RuntimeConfig } from '@/config/config.ts';
 
 /**
@@ -26,7 +26,8 @@ export const mockConfig: RuntimeConfig = {
       row: 2,
       w: 3,
       h: 1,
-      entities: { entity: 'weather.home' },
+      entities: { entity: 'weather.home', sun: 'sun.sun' },
+      details: DEFAULT_WEATHER_DETAILS,
     },
     {
       id: 'calendar',

@@ -8,7 +8,7 @@ import { createMockHa } from '@/dev/mock/engine.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import { entityId, tileOf } from '@/tests/ids.ts';
 
-import { pickForecast, WeatherTile } from './weather-tile.tsx';
+import { WeatherTile } from './weather-tile.tsx';
 
 const id = entityId('weather');
 const text = () => document.body.textContent;
@@ -27,23 +27,6 @@ const setup = async () => {
   });
   return { mock, store };
 };
-
-describe('pickForecast', () => {
-  it('takes every third future hour, up to five', () => {
-    const now = new Date('2026-01-05T09:30:00Z');
-    const items = Array.from({ length: 24 }, (_, i) => ({
-      datetime: new Date(now.getTime() + (i + 1) * 3_600_000).toISOString(),
-      temperature: i,
-    }));
-    expect(pickForecast(items, now).map((item) => item.temperature)).toEqual([
-      2, 5, 8, 11, 14,
-    ]);
-  });
-
-  it('returns what exists when the forecast is short', () => {
-    expect(pickForecast([], new Date())).toEqual([]);
-  });
-});
 
 describe('WeatherTile', () => {
   it('shows current conditions and the forecast', async () => {
@@ -94,6 +77,32 @@ describe('WeatherTile', () => {
 
     expect(text()).toContain('11°');
     expect(text()).toContain('stale');
+  });
+
+  it('opens the weather sheet when tapped, and closes it again', async () => {
+    await setup();
+    expect(document.querySelector('dialog')).toBeNull();
+
+    await act(() =>
+      document.querySelector<HTMLButtonElement>('button')!.click(),
+    );
+    expect(document.querySelector('dialog')).not.toBeNull();
+    expect(text()).toContain('Feels like');
+
+    await act(() =>
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="Close"]')!
+        .click(),
+    );
+    expect(document.querySelector('dialog')).toBeNull();
+  });
+
+  it('is not tappable while unavailable', async () => {
+    const { mock } = await setup();
+
+    await act(async () => mock.controls.setUnavailable(id));
+
+    expect(document.querySelector('button')).toBeNull();
   });
 
   it('shows a skeleton before the first state arrives', async () => {

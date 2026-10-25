@@ -60,6 +60,15 @@ test('heating: the sheet', async ({ page }) => {
   await expect(page).toHaveScreenshot('heating-sheet.png');
 });
 
+test('weather: the sheet', async ({ page }) => {
+  await page.getByRole('button', { name: /Sunny/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  // Let both forecasts load.
+  await expect(page.getByLabel('7-day outlook')).toBeVisible();
+  await expect(page.getByLabel('Next hours')).toBeVisible();
+  await expect(page).toHaveScreenshot('weather-sheet.png');
+});
+
 test('pixel shift: the grid moves every five minutes', async ({ page }) => {
   // The style tag above pins the transform, so read the inline style instead.
   const shift = () =>

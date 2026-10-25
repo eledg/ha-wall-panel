@@ -3,9 +3,12 @@ import { writeFileSync } from 'node:fs';
 import {
   CALENDAR_COLORS,
   DEFAULT_NIGHT,
+  DEFAULT_WEATHER_DETAILS,
   EXTRA_KEYS,
   TILE_ROLES,
   TILE_TYPES,
+  WEATHER_DETAILS_LIMITS,
+  WEATHER_STATS,
 } from '../src/config/config.ts';
 import type { TileType } from '../src/config/config.ts';
 
@@ -66,7 +69,40 @@ const calendar: Json = {
   },
 };
 
+const count = (
+  key: keyof typeof WEATHER_DETAILS_LIMITS,
+  description: string,
+): Json => ({
+  type: 'integer',
+  minimum: WEATHER_DETAILS_LIMITS[key].min,
+  maximum: WEATHER_DETAILS_LIMITS[key].max,
+  default: DEFAULT_WEATHER_DETAILS[key],
+  description,
+});
+
+const details: Json = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    days: count('days', 'Days in the outlook, from today. 0 hides it.'),
+    hoursStep: count(
+      'hoursStep',
+      'Hours between the columns of the hourly strip.',
+    ),
+    hoursCount: count('hoursCount', 'Columns in the hourly strip. 0 hides it.'),
+    stats: {
+      type: 'array',
+      uniqueItems: true,
+      items: { enum: [...WEATHER_STATS] },
+      default: [...WEATHER_STATS],
+      description:
+        'The stat boxes to show, in this order. A stat the weather source does not report is left out.',
+    },
+  },
+};
+
 const extras: Json = {
+  details,
   calendars: {
     type: 'array',
     minItems: 1,

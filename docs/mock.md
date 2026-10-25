@@ -23,7 +23,11 @@ each control stays visible. Its panels:
 
 - **Weather**: a scenario per condition, plus `All icons`, `Extremes` (`-12°`,
   `38°`, `100°`: layout width), `Odd data` (no temperature, an unmapped condition,
-  holes in the forecast), `No forecast` and `Short forecast`.
+  holes in the forecast, daily and hourly), `Sparse data` (no wind, humidity or
+  pressure; forecasts with only a condition and temperature), `Hourly only`,
+  `Daily only`, `No forecast` and `Short forecast`. The forecasts are in HA's
+  real shape: 49 hourly items from the current hour with some rain amounts
+  `null`, and 7 daily items dated midnight UTC. Tap the tile for the weather screen.
 - **Entity**: Unavailable, Missing (wrong or deleted ID) and Restore.
 - **Forecast fetch**: Fails keeps the last forecast on screen.
 - **Calendar**: a scenario per day shape (`Normal`, `Empty day`, `Busy day`,

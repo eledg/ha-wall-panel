@@ -106,6 +106,67 @@
                 "type": "string",
                 "minLength": 1,
                 "description": "A weather.* entity ID."
+              },
+              "sun": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A sun.* entity ID."
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "days": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 7,
+                    "default": 7,
+                    "description": "Days in the outlook, from today. 0 hides it."
+                  },
+                  "hoursStep": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "default": 3,
+                    "description": "Hours between the columns of the hourly strip."
+                  },
+                  "hoursCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 8,
+                    "default": 5,
+                    "description": "Columns in the hourly strip. 0 hides it."
+                  },
+                  "stats": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": [
+                        "wind",
+                        "feelsLike",
+                        "humidity",
+                        "uv",
+                        "pressure",
+                        "visibility",
+                        "dewPoint",
+                        "sunrise",
+                        "sunset"
+                      ]
+                    },
+                    "default": [
+                      "wind",
+                      "feelsLike",
+                      "humidity",
+                      "uv",
+                      "pressure",
+                      "visibility",
+                      "dewPoint",
+                      "sunrise",
+                      "sunset"
+                    ],
+                    "description": "The stat boxes to show, in this order. A stat the weather source does not report is left out."
+                  }
+                }
               }
             }
           },

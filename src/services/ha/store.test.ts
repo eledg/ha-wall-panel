@@ -313,9 +313,15 @@ describe('createHaStore', () => {
 
   describe('forecast refresh', () => {
     const id = entityId('weather');
-    const forecastCalls = (deps: ReturnType<typeof setup>['deps']) =>
+    // Hourly calls only, unless a type is given: each refresh makes one per type.
+    const forecastCalls = (
+      deps: ReturnType<typeof setup>['deps'],
+      type: 'hourly' | 'daily' = 'hourly',
+    ) =>
       deps.callService.mock.calls.filter(
-        ([, , service]) => service === 'get_forecasts',
+        ([, , service, data]) =>
+          service === 'get_forecasts' &&
+          (data as { type: string }).type === type,
       );
     const hourly = (features: number) => ({
       ...entity(id, 'sunny'),
@@ -349,15 +355,133 @@ describe('createHaStore', () => {
       await vi.waitFor(() => expect(forecastCalls(deps)).toHaveLength(1));
     });
 
-    it('skips entities without hourly forecasts', async () => {
+    it('asks only for the forecasts an entity supports', async () => {
       const { store, deps, push } = setup();
       await store.start(settings);
 
       push({ [id]: hourly(1) as HassEntities[string] });
       expect(forecastCalls(deps)).toHaveLength(0);
+      expect(forecastCalls(deps, 'daily')).toHaveLength(1);
 
-      push({ [id]: hourly(3) as HassEntities[string] });
+      push({ [id]: hourly(2) as HassEntities[string] });
       expect(forecastCalls(deps)).toHaveLength(1);
+      expect(forecastCalls(deps, 'daily')).toHaveLength(1);
+
+      push({ [id]: hourly(0) as HassEntities[string] });
+      expect(forecastCalls(deps)).toHaveLength(1);
+      expect(forecastCalls(deps, 'daily')).toHaveLength(1);
+    });
+
+    describe('daily forecast', () => {
+      const hours = [{ datetime: '2026-01-05T10:00:00Z', temperature: 9 }];
+      const days = [
+        { datetime: '2026-01-05T00:00:00Z', temperature: 12, templow: 4 },
+      ];
+      // Answers each call by the type asked for.
+      const answer = (
+        deps: ReturnType<typeof setup>['deps'],
+        replies: Partial<Record<'hourly' | 'daily', object | Error>>,
+      ) =>
+        deps.callService.mockImplementation(
+          (_c: unknown, _d: string, _s: string, data: { type: string }) => {
+            const reply = replies[data.type as 'hourly' | 'daily'];
+            return reply instanceof Error
+              ? Promise.reject(reply)
+              : Promise.resolve({
+                  response: { [id]: { forecast: reply } },
+                });
+          },
+        );
+
+      it('is stored apart from the hourly forecast', async () => {
+        const { store, deps, push } = setup();
+        answer(deps, { hourly: hours, daily: days });
+        await store.start(settings);
+
+        push({ [id]: hourly(7) as HassEntities[string] });
+
+        await vi.waitFor(() =>
+          expect(store.getSnapshot().dailyForecasts[id]).toEqual(days),
+        );
+        expect(store.getSnapshot().forecasts[id]).toEqual(hours);
+      });
+
+      it('keeps each forecast when the other fails', async () => {
+        const { store, deps, push } = setup();
+        answer(deps, { hourly: hours, daily: days });
+        await store.start(settings);
+        push({ [id]: hourly(7) as HassEntities[string] });
+        await vi.waitFor(() =>
+          expect(store.getSnapshot().dailyForecasts[id]).toEqual(days),
+        );
+
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        answer(deps, { hourly: new Error('boom'), daily: [] });
+        push({
+          [id]: { ...hourly(7), state: 'rainy' } as HassEntities[string],
+        });
+
+        await vi.waitFor(() => expect(error).toHaveBeenCalled());
+        expect(store.getSnapshot().forecasts[id]).toEqual(hours);
+        error.mockRestore();
+      });
+
+      it('is dropped once the entity stops supporting it', async () => {
+        const { store, deps, push } = setup();
+        answer(deps, { hourly: hours, daily: days });
+        await store.start(settings);
+        push({ [id]: hourly(7) as HassEntities[string] });
+        await vi.waitFor(() =>
+          expect(store.getSnapshot().dailyForecasts[id]).toEqual(days),
+        );
+
+        push({ [id]: hourly(2) as HassEntities[string] });
+
+        await vi.waitFor(() =>
+          expect(store.getSnapshot().dailyForecasts[id]).toBeUndefined(),
+        );
+        expect(store.getSnapshot().forecasts[id]).toEqual(hours);
+      });
+    });
+
+    describe('refreshWeather', () => {
+      const forecast = [{ datetime: '2026-01-05T10:00:00Z', temperature: 9 }];
+
+      it('refetches old forecasts but not fresh ones', async () => {
+        vi.useFakeTimers();
+        try {
+          const { store, deps, push } = setup();
+          deps.callService.mockResolvedValue({
+            response: { [id]: { forecast } },
+          });
+          await store.start(settings);
+          push({ [id]: hourly(7) as HassEntities[string] });
+          await vi.advanceTimersByTimeAsync(0);
+          expect(forecastCalls(deps)).toHaveLength(1);
+
+          await store.refreshWeather(id, 10 * 60_000);
+          expect(forecastCalls(deps)).toHaveLength(1);
+
+          await vi.advanceTimersByTimeAsync(11 * 60_000);
+          await store.refreshWeather(id, 10 * 60_000);
+          expect(forecastCalls(deps)).toHaveLength(2);
+        } finally {
+          vi.useRealTimers();
+        }
+      });
+
+      it('fetches when nothing has loaded yet, and ignores other entities', async () => {
+        const { store, deps, push } = setup();
+        await store.start(settings);
+        push({ [id]: hourly(7) as HassEntities[string] });
+        deps.callService.mockClear();
+
+        await store.refreshWeather(entityId('light'), 0);
+        expect(forecastCalls(deps)).toHaveLength(0);
+
+        await store.refreshWeather(id, 0);
+        expect(forecastCalls(deps)).toHaveLength(1);
+      });
     });
   });
 });
