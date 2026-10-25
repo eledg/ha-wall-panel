@@ -4,6 +4,7 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { FLASH_MS } from '@/config/constants.ts';
+import { expectConsole } from '@/tests/console.ts';
 
 import {
   type ClimateCommands,
@@ -90,6 +91,7 @@ describe('useClimateCommands', () => {
 
   it('flashes the control whose call failed, then stops', async () => {
     vi.useFakeTimers();
+    const error = expectConsole();
     const { draw, cmd } = setup();
     await draw();
 
@@ -99,6 +101,7 @@ describe('useClimateCommands', () => {
     });
     expect(cmd().pending).toBeUndefined();
     expect(cmd().flash).toBe('power');
+    expect(error).toHaveLength(1);
 
     await act(() => void vi.advanceTimersByTime(FLASH_MS));
     expect(cmd().flash).toBeUndefined();
@@ -120,6 +123,7 @@ describe('useClimateCommands', () => {
   });
 
   it('runs onSuccess only when the call succeeds', async () => {
+    const error = expectConsole();
     const { draw, cmd } = setup();
     await draw();
     const onSuccess = vi.fn();
@@ -133,6 +137,7 @@ describe('useClimateCommands', () => {
       cmd().send(power(true), Promise.reject(new Error('no')), onSuccess);
     });
     expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(error).toHaveLength(1);
   });
 
   it('closes on Escape and after the idle time, restarted by activity', async () => {
@@ -195,6 +200,7 @@ describe('useTargetSteps', () => {
 
   it('puts the real target back and flashes when the call fails', async () => {
     vi.useFakeTimers();
+    const error = expectConsole();
     const { draw, steps, cmd } = setup({
       call: vi.fn().mockRejectedValue(new Error('no')),
     });
@@ -208,6 +214,7 @@ describe('useTargetSteps', () => {
     expect(steps().shown).toBe(20);
     expect(cmd().flash).toBe('target');
     expect(cmd().pending).toBeUndefined();
+    expect(error).toHaveLength(1);
   });
 
   it('does nothing without a reported target', async () => {

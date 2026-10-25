@@ -8,6 +8,7 @@ import { createMockHa } from '@/dev/mock/engine.ts';
 import type { MockHeatingState } from '@/dev/mock/scenarios/heating.ts';
 import { TARGET_DEBOUNCE_MS } from '@/hooks/use-climate-commands.ts';
 import { createHaStore } from '@/services/ha/store.ts';
+import { expectConsole } from '@/tests/console.ts';
 import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { HeatingSheet, PRESS_MS } from './heating-sheet.tsx';
@@ -273,6 +274,7 @@ describe('HeatingSheet', () => {
   describe('when calls fail', () => {
     it('flashes the control that failed and reverts', async () => {
       vi.useFakeTimers();
+      const error = expectConsole();
       const { mock, press, button } = await setup();
       mock.controls.failServices(true);
 
@@ -289,6 +291,7 @@ describe('HeatingSheet', () => {
         await vi.advanceTimersByTimeAsync(0);
       });
       expect(button('Boost').className).toContain('bg-warn-soft');
+      expect(error).toHaveLength(2);
     });
   });
 
@@ -311,6 +314,7 @@ describe('HeatingSheet', () => {
     });
 
     it('shows an empty state when the fetch fails', async () => {
+      const error = expectConsole();
       const mock = createMockHa();
       mock.controls.failHistory(true);
       const store = createHaStore(mock.deps);
@@ -338,6 +342,7 @@ describe('HeatingSheet', () => {
           '[aria-label="Heating demand history"] [role="img"]',
         ),
       ).toBeNull();
+      expect(error).toHaveLength(1);
     });
   });
 
