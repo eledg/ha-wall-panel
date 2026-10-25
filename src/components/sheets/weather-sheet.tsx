@@ -297,7 +297,7 @@ export const WeatherSheet = ({
             {days.length > 0 && (
               <section
                 aria-label={`${days.length}-day outlook`}
-                class="min-h-0 flex-1 rounded-xl border border-line bg-surface-2 px-2 py-1"
+                class="rounded-xl border border-line bg-surface-2 px-2 py-1"
               >
                 <ul class="flex flex-col divide-y divide-line">
                   {days.map((day, i) => {
