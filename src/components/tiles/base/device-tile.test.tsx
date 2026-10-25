@@ -81,4 +81,21 @@ describe('DeviceTile', () => {
 
     expect(onTap).toHaveBeenCalledOnce();
   });
+
+  it('passes pressed and disabled to the button', () => {
+    mount(
+      <DeviceTile
+        place={PLACE}
+        icon={<i />}
+        label="Light"
+        onTap={() => {}}
+        pressed
+        disabled
+      />,
+    );
+
+    const button = document.querySelector('button')!;
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.disabled).toBe(true);
+  });
 });

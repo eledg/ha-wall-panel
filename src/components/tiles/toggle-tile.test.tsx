@@ -12,14 +12,17 @@ import { ToggleTile } from './toggle-tile.tsx';
 
 const id = entityId('light');
 
-const setup = async () => {
+const setup = async (w?: number) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   await act(async () => {
     await store.start(mock.getAuth);
     render(
       <HaConnection store={store}>
-        <ToggleTile tile={tileOf('toggle')} store={store} />
+        <ToggleTile
+          tile={{ ...tileOf('toggle'), ...(w && { w }) }}
+          store={store}
+        />
       </HaConnection>,
       document.body,
     );
@@ -125,5 +128,50 @@ describe('ToggleTile', () => {
     await act(async () => button().click());
     expect(button().className).toContain('bg-warn-soft');
     error.mockRestore();
+  });
+
+  describe('one column wide', () => {
+    it('stacks the label and state, and toggles on tap', async () => {
+      const { mock, button } = await setup(1);
+
+      expect(button().textContent).toContain('Office light');
+      expect(button().textContent).toContain('Off');
+      expect(button().getAttribute('aria-pressed')).toBe('false');
+      expect(button().querySelector('.flex-col')).not.toBeNull();
+
+      await act(async () => button().click());
+      expect(mock.controls.getState(id)?.state).toBe('on');
+      expect(button().textContent).toContain('On');
+      expect(button().getAttribute('aria-pressed')).toBe('true');
+      expect(button().className).toContain('bg-accent-soft');
+    });
+
+    it('is disabled while the light is unavailable', async () => {
+      const { mock, button } = await setup(1);
+
+      await act(() => mock.controls.setUnavailable(id));
+      expect(button().disabled).toBe(true);
+      expect(button().textContent).toContain('Unavailable');
+    });
+
+    it('is stale and disabled while HA is disconnected', async () => {
+      const { mock, button } = await setup(1);
+
+      await act(() => mock.controls.setConnected(false));
+      expect(button().disabled).toBe(true);
+      expect(button().textContent).toContain('stale');
+    });
+
+    it('reverts and flashes the tile when the call fails', async () => {
+      const { mock, button } = await setup(1);
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mock.controls.failServices(true);
+
+      await act(async () => button().click());
+      expect(button().textContent).toContain('Off');
+      expect(button().className).toContain('bg-warn-soft');
+      expect(button().className).not.toContain('bg-accent-soft');
+      error.mockRestore();
+    });
   });
 });
