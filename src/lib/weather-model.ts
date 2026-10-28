@@ -1,6 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 
 import { getConfig } from '@/config/config.ts';
+import type { WeatherMetric } from '@/config/config.ts';
 import { hourOf } from '@/config/datetime.ts';
 import { isUsable, num } from '@/services/ha/entity.ts';
 import type { ForecastItem } from '@/services/ha/store.ts';
@@ -74,6 +75,16 @@ export const degrees = (value: unknown) =>
 
 export const percent = (value: unknown) =>
   typeof value === 'number' ? `${Math.round(value)}%` : '–';
+
+/** A UV index as a whole number. */
+export const uvIndex = (value: unknown) =>
+  typeof value === 'number' ? `${Math.round(value)}` : '–';
+
+/** The tile's figure for one forecast period: the chance of rain, or the UV index. */
+export const metricValue = (metric: WeatherMetric, item?: ForecastItem) =>
+  metric === 'uv'
+    ? uvIndex(item?.uv_index)
+    : percent(item?.precipitation_probability);
 
 /** The hour of a forecast time on the display's clock, as two digits. */
 export const hour = (datetime: string) =>

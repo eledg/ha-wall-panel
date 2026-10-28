@@ -101,6 +101,11 @@ A `weather` tile may also name a `sun` entity (`sun.sun`). Tapping the tile open
 the weather screen, which then also shows sunrise and sunset. Without `sun`
 those two are left out.
 
+A `weather` tile shows the chance of rain beside the temperature and under each
+hour. Set `metric` to `"uv"` to show the UV index there instead; the default is
+`"rain"`. The UV index comes from the hourly forecast's `uv_index`, and the
+current figure falls back to the weather entity's `uv_index` attribute.
+
 The weather screen's contents come from an optional `details` object on the tile.
 Every setting is optional; the defaults are what the screen shows without it. The
 tile's own forecast strip is not affected.

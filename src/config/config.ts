@@ -91,7 +91,7 @@ export const COMMON_KEYS = ['id', 'type', 'label', 'col', 'row', 'w', 'h'];
 
 /** Settings beyond the common ones and the entity roles, for the types that have them. */
 export const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
-  weather: ['details'],
+  weather: ['details', 'metric'],
   calendar: ['calendars'],
   heating: ['roomLabel'],
   ac: ['roomLabel'],
@@ -126,6 +126,11 @@ export type CalendarSource = {
   /** Shortens the titles shown in the tile's rows. */
   title?: TitleRule;
 };
+
+/** What the weather tile shows beside the temperature and under each hour: the chance of rain or the UV index. */
+export const WEATHER_METRICS = ['rain', 'uv'] as const;
+export type WeatherMetric = (typeof WEATHER_METRICS)[number];
+export const DEFAULT_WEATHER_METRIC: WeatherMetric = 'rain';
 
 /** The figures the weather screen can show in its stats block, in their default order. */
 export const WEATHER_STATS = [
@@ -194,7 +199,9 @@ export type TileConfig<T extends TileType = TileType> = T extends TileType
       type: T;
       label: string;
       entities: TileEntities<T>;
-    } & (T extends 'weather' ? { details: WeatherDetailsConfig } : unknown) &
+    } & (T extends 'weather'
+        ? { details: WeatherDetailsConfig; metric: WeatherMetric }
+        : unknown) &
       (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown) &
       (T extends 'heating' | 'ac' ? { roomLabel: string } : unknown)
   : never;

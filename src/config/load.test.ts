@@ -356,6 +356,45 @@ describe('parseConfig', () => {
     ]);
   });
 
+  describe('the weather tile metric', () => {
+    const metricOf = (metric?: unknown) => {
+      const { config, issues } = parseConfig({
+        tiles: [
+          {
+            type: 'weather',
+            col: 1,
+            row: 1,
+            entity: 'weather.home',
+            ...(metric !== undefined && { metric }),
+          },
+        ],
+      });
+      const tile = config.tiles[0];
+      return {
+        issues,
+        metric: tile?.type === 'weather' ? tile.metric : undefined,
+      };
+    };
+
+    it('defaults to rain', () => {
+      expect(metricOf()).toEqual({ issues: [], metric: 'rain' });
+    });
+
+    it('accepts uv', () => {
+      expect(metricOf('uv')).toEqual({ issues: [], metric: 'uv' });
+    });
+
+    it('reports an unknown metric and falls back to rain', () => {
+      const { issues, metric } = metricOf('snow');
+      expect(metric).toBe('rain');
+      expect(issues).toHaveLength(1);
+      expect(issues[0]).toMatchObject({
+        key: 'tiles[0].metric',
+        message: 'must be one of rain, uv',
+      });
+    });
+  });
+
   describe('the weather screen settings', () => {
     const weather = { type: 'weather', col: 1, row: 1, entity: 'weather.home' };
     const detailsOf = (details?: unknown) => {

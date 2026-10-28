@@ -167,6 +167,14 @@
                     "description": "The stat boxes to show, in this order. A stat the weather source does not report is left out."
                   }
                 }
+              },
+              "metric": {
+                "enum": [
+                  "rain",
+                  "uv"
+                ],
+                "default": "rain",
+                "description": "What the tile shows beside the temperature and under each hour: the chance of rain or the UV index."
               }
             }
           },

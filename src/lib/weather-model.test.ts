@@ -9,6 +9,7 @@ import {
   dayLabel,
   degrees,
   describe as describeCondition,
+  metricValue,
   pickForecast,
   rangeBar,
   readWeather,
@@ -243,5 +244,23 @@ describe('readWeather', () => {
     expect(
       readWeather(entity('unavailable'), [], [], undefined, now).usable,
     ).toBe(false);
+  });
+});
+
+describe('metricValue', () => {
+  const item = {
+    datetime: '2025-01-01T12:00:00Z',
+    precipitation_probability: 40,
+    uv_index: 3.4,
+  } as ForecastItem;
+
+  it('gives the chance of rain or the UV index', () => {
+    expect(metricValue('rain', item)).toBe('40%');
+    expect(metricValue('uv', item)).toBe('3');
+  });
+
+  it('gives a dash for a missing figure', () => {
+    expect(metricValue('rain', undefined)).toBe('–');
+    expect(metricValue('uv', { datetime: item.datetime })).toBe('–');
   });
 });
