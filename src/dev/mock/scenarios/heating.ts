@@ -92,12 +92,12 @@ export const applyHeatingService = (
 };
 
 /** Six hours of demand: four heating cycles, minutes from the window's start. */
-const BOUNDARIES = [0, 28, 63, 112, 143, 206, 244, 302, 337, 360];
+export const DEMAND_BOUNDARIES = [0, 28, 63, 112, 143, 206, 244, 302, 337, 360];
 
 /** The recorded states of the demand sensor over the last six hours. */
 export const demandHistory = (now: number): RawHistoryState[] => {
   const start = now - 6 * 3_600_000;
-  return BOUNDARIES.slice(0, -1).map((minute, i) => ({
+  return DEMAND_BOUNDARIES.slice(0, -1).map((minute, i) => ({
     state: i % 2 === 1 ? 'on' : 'off',
     last_changed: new Date(start + minute * 60_000).toISOString(),
   }));

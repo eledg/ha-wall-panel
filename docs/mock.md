@@ -28,6 +28,11 @@ each control stays visible. Its panels:
   `Daily only`, `No forecast` and `Short forecast`. The forecasts are in HA's
   real shape: 49 hourly items from the current hour with some rain amounts
   `null`, and 7 daily items dated midnight UTC. Tap the tile for the weather screen.
+
+The room tile's climate screen reads six hours of generated temperature and
+humidity history (`src/dev/mock/scenarios/climate.ts`), ending on the live
+readings and shaped by the mock heating demand and AC runs.
+
 - **Entity**: Unavailable, Missing (wrong or deleted ID) and Restore.
 - **Forecast fetch**: Fails keeps the last forecast on screen.
 - **Calendar**: a scenario per day shape (`Normal`, `Empty day`, `Busy day`,

@@ -144,6 +144,17 @@ temperature shows "— n/a"; an unusable humidity shows "—" and leaves the
 temperature alone. `battery` is subscribed too, but only so the diagnostics
 screen lists it (`100 %`); no tile shows it.
 
+Tapping the tile opens the climate sheet (`components/sheets/room-sheet.tsx`): the
+temperature and humidity with a comfort label (`Humid` above 65%, `Dry air`
+below 30%, `Cool` below 18°, `Warm` above 25°), and the last six hours of both as
+a chart. The history is read from HA's history API (`/api/history/period`) for the
+two sensors on open and every minute while open; a failed refresh keeps what is
+shown. The sheet links to the panel's own `heating` and `ac` tiles, if it has
+them (the first of each type): their buttons open those sheets, the heating
+demand history and the AC's `off` / not-`off` history are shaded behind the
+chart, and their targets are drawn as dashed lines while they are on. With no
+heating or AC tile the sheet shows the sensors alone. No setting is needed.
+
 ## Heating
 
 The Heating tile (`components/tiles/heating-tile.tsx`) and its sheet
