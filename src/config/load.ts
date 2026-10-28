@@ -6,11 +6,13 @@ import {
   DEFAULT_NIGHT,
   DEFAULT_ROOM_LABEL,
   DEFAULT_WEATHER_DETAILS,
+  DEFAULT_WEATHER_METRIC,
   EXTRA_KEYS,
   markConfigUnavailable,
   TILE_ROLES,
   TILE_TYPES,
   WEATHER_DETAILS_LIMITS,
+  WEATHER_METRICS,
   WEATHER_STATS,
 } from './config.ts';
 import type {
@@ -252,7 +254,12 @@ const parseExtras = (
   problem: Problem,
 ) => {
   if (type === 'weather')
-    return { details: parseWeatherDetails(raw.details, at, problem) };
+    return {
+      details: parseWeatherDetails(raw.details, at, problem),
+      metric:
+        oneOf(WEATHER_METRICS, raw.metric, `${at}.metric`, problem) ??
+        DEFAULT_WEATHER_METRIC,
+    };
   if (type === 'calendar')
     return { calendars: parseCalendars(raw.calendars, at, problem) };
   if (type === 'heating' || type === 'ac')

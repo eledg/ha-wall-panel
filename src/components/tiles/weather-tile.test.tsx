@@ -37,6 +37,24 @@ describe('WeatherTile', () => {
     expect(text()).toMatch(/\d+%/);
   });
 
+  it('shows the UV index instead of the rain chance when metric is uv', async () => {
+    const mock = createMockHa();
+    const store = createHaStore(mock.deps);
+    await act(async () => {
+      await store.start(mock.getAuth);
+      render(
+        <WeatherTile
+          tile={{ ...tileOf('weather'), metric: 'uv' }}
+          store={store}
+        />,
+        document.body,
+      );
+    });
+
+    expect(text()).toContain('Sunny');
+    expect(text()).not.toMatch(/\d+%/);
+  });
+
   it('follows the entity', async () => {
     const { mock } = await setup();
 

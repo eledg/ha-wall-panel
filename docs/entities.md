@@ -92,8 +92,8 @@ optional: the screen shows only what is reported.
   `{ [entity_id]: { forecast: [...] } }`: about 49 items, one per hour, starting
   from the current hour, with UTC `datetime`s. Fields read: `condition`,
   `temperature`, `apparent_temperature` (the screen's "feels like"),
-  `precipitation_probability`, `precipitation` (mm, `null` when unknown) and
-  `wind_gust_speed`.
+  `precipitation_probability`, `precipitation` (mm, `null` when unknown),
+  `uv_index` and `wind_gust_speed`.
 - **Daily forecast** is the same call with `{ type: 'daily' }`: 7 days including
   today, each dated midnight UTC (so the weekday is the UTC date). Fields read:
   `condition`, `temperature` (the high), `templow`, `precipitation_probability`.

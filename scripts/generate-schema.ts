@@ -4,10 +4,12 @@ import {
   CALENDAR_COLORS,
   DEFAULT_NIGHT,
   DEFAULT_WEATHER_DETAILS,
+  DEFAULT_WEATHER_METRIC,
   EXTRA_KEYS,
   TILE_ROLES,
   TILE_TYPES,
   WEATHER_DETAILS_LIMITS,
+  WEATHER_METRICS,
   WEATHER_STATS,
 } from '../src/config/config.ts';
 import type { TileType } from '../src/config/config.ts';
@@ -103,6 +105,12 @@ const details: Json = {
 
 const extras: Json = {
   details,
+  metric: {
+    enum: [...WEATHER_METRICS],
+    default: DEFAULT_WEATHER_METRIC,
+    description:
+      'What the tile shows beside the temperature and under each hour: the chance of rain or the UV index.',
+  },
   calendars: {
     type: 'array',
     minItems: 1,

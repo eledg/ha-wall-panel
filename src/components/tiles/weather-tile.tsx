@@ -10,8 +10,9 @@ import {
   degrees,
   describe,
   hour,
-  percent,
+  metricValue,
   pickForecast,
+  uvIndex,
 } from '@/lib/weather-model.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
@@ -68,7 +69,18 @@ export const WeatherTile = ({
   const [icon, label] = describe(entity.state);
   const at = now();
   const periods = pickForecast(forecast ?? [], at);
-  const rainNow = currentPeriod(forecast ?? [], at)?.precipitation_probability;
+  const metric = tile.metric;
+  const nowPeriod = currentPeriod(forecast ?? [], at);
+  const metricNow =
+    metric === 'uv'
+      ? uvIndex(nowPeriod?.uv_index ?? entity.attributes.uv_index)
+      : metricValue(metric, nowPeriod);
+  const metricIcon = (cls: string) =>
+    metric === 'uv' ? (
+      <WeatherIcon condition="sunny" class={cls} />
+    ) : (
+      <DropletIcon class={cls} />
+    );
   return (
     <>
       <Tile place={tile} state={state} onTap={() => setOpen(true)}>
@@ -81,8 +93,8 @@ export const WeatherTile = ({
               </div>
               <div class="mt-1 w-28 truncate text-sm text-fg-dim">{label}</div>
               <div class="mt-1 flex items-center gap-1 text-sm text-fg-dim">
-                <DropletIcon class="size-3.5" />
-                <span class="tnum">{percent(rainNow)}</span>
+                {metricIcon('size-3.5')}
+                <span class="tnum">{metricNow}</span>
               </div>
             </div>
           </div>
@@ -113,13 +125,13 @@ export const WeatherTile = ({
                 {degrees(period.temperature)}
               </span>
             ))}
-            <DropletIcon class="size-3 text-fg-dim" />
+            {metricIcon('size-3 text-fg-dim')}
             {periods.map((period) => (
               <span
                 key={period.datetime}
                 class="tnum text-center text-xs text-fg-dim"
               >
-                {percent(period.precipitation_probability)}
+                {metricValue(metric, period)}
               </span>
             ))}
           </div>
