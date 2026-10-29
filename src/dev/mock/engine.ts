@@ -16,9 +16,11 @@ import {
   applyClimateService,
 } from '@/dev/mock/scenarios/ac.ts';
 import { calendarScenarios } from '@/dev/mock/scenarios/calendar.ts';
+import { acHistory, climateHistory } from '@/dev/mock/scenarios/climate.ts';
 import {
   applyHeatingService,
   BOOST_TARGET,
+  DEMAND_BOUNDARIES,
   demandHistory,
   heatingAttributes,
   heatingFixture,
@@ -388,9 +390,22 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       if (historyFails) {
         return Promise.reject(new Error('Mock HA: history failed'));
       }
-      return Promise.resolve(
-        entityId === heatingDemand ? demandHistory(Date.now()) : [],
-      );
+      const now = Date.now();
+      if (entityId === heatingDemand)
+        return Promise.resolve(demandHistory(now));
+      if (entityId === ac) return Promise.resolve(acHistory(now));
+      if (entityId === roomTemp || entityId === room.humidity) {
+        const reading = (id: string, fallback: number) =>
+          Number(entities.get(id)?.state) || fallback;
+        const history = climateHistory(now, DEMAND_BOUNDARIES, {
+          temperature: reading(roomTemp, 22),
+          humidity: reading(room.humidity, 50),
+        });
+        return Promise.resolve(
+          entityId === roomTemp ? history.temperature : history.humidity,
+        );
+      }
+      return Promise.resolve([]);
     },
     callService: (_conn, domain, service, data, target) => {
       if (!connected) return fail('connection lost');

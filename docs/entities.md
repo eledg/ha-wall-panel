@@ -17,7 +17,7 @@ domain shown. A tile type may appear any number of times.
 |               | `economy`     | `switch`        | `state`                                                                                                                                 | AC economy mode.                                                        |
 |               | `quietFan`    | `switch`        | `state`                                                                                                                                 | AC quiet fan.                                                           |
 |               | `room`        | `sensor`        | `state`                                                                                                                                 | Optional. The room temperature shown beside the target in the AC sheet. |
-| `temperature` | `temperature` | `sensor`        | `state`                                                                                                                                 | Room temperature. See [Room temperature](#room-temperature).            |
+| `temperature` | `temperature` | `sensor`        | `state`                                                                                                                                 | Room temperature + sheet. See [Room temperature](#room-temperature).    |
 |               | `humidity`    | `sensor`        | `state`                                                                                                                                 | Room humidity.                                                          |
 |               | `battery`     | `sensor`        | `state`                                                                                                                                 | Optional. Room sensor battery; diagnostics only.                        |
 | `heating`     | `climate`     | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating. See [Heating](#heating).                               |
@@ -143,6 +143,24 @@ temperature). A missing, `unavailable` or non-numeric
 temperature shows "— n/a"; an unusable humidity shows "—" and leaves the
 temperature alone. `battery` is subscribed too, but only so the diagnostics
 screen lists it (`100 %`); no tile shows it.
+
+Tapping the tile opens the climate sheet (`components/sheets/room-sheet.tsx`),
+built from the same two sensors:
+
+- **Comfort label** under the reading: `Humid` above 65%, `Dry air` below 30%,
+  `Cool` below 18°, `Warm` above 25°, else `Comfortable` (`room-model.ts`). An
+  unavailable temperature shows "unavailable" in the status line, but the sheet
+  still opens.
+- **History** of both sensors over the last six hours is read from
+  `/api/history/period` when the sheet opens and every minute while it is open
+  (`services/ha/history.ts`). An empty or failed first read shows "No climate
+  history available"; a failed refresh keeps the last chart.
+- **Linked tiles:** the sheet uses the panel's first `heating` and first `ac`
+  tile, if it has them; no setting is needed. Their buttons open those sheets.
+  The heating `demand` history and the AC `climate` history (any state but `off`
+  is a run) are shaded behind the chart, and their targets are drawn as dashed
+  lines while they are on. Without a heating or AC tile the sheet shows the
+  sensors alone.
 
 ## Heating
 

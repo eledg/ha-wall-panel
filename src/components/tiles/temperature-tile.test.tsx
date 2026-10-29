@@ -89,4 +89,59 @@ describe('TemperatureTile', () => {
 
     expect(document.body.textContent).toContain('stale');
   });
+
+  describe('the climate sheet', () => {
+    const tap = () =>
+      act(() => {
+        document.querySelector<HTMLButtonElement>('button')!.click();
+      });
+    const press = (name: string) =>
+      act(() => {
+        [...document.querySelectorAll('button')]
+          .find((b) => b.textContent?.includes(name))!
+          .click();
+      });
+
+    it('opens when the tile is tapped and closes with Close', async () => {
+      await setup();
+      expect(document.querySelector('dialog')).toBeNull();
+
+      await tap();
+      expect(document.body.textContent).toContain('Office climate');
+
+      await act(() => {
+        document
+          .querySelector<HTMLButtonElement>('[aria-label="Close"]')!
+          .click();
+      });
+      expect(document.querySelector('dialog')).toBeNull();
+    });
+
+    it('swaps to the heating sheet and the AC sheet from its shortcuts', async () => {
+      await setup();
+
+      await tap();
+      await press('Central heating');
+      expect(document.body.textContent).not.toContain('Office climate');
+      expect(document.body.textContent).toContain('Following schedule');
+
+      await act(() => {
+        document
+          .querySelector<HTMLButtonElement>('[aria-label="Close"]')!
+          .click();
+      });
+      await tap();
+      await press('AC');
+      expect(document.body.textContent).toContain('AC off');
+    });
+
+    it('still opens when the sensor is unavailable, and says so', async () => {
+      const { mock } = await setup();
+
+      await act(() => mock.controls.setUnavailable(TEMP));
+      await tap();
+
+      expect(document.body.textContent).toContain('Office unavailable');
+    });
+  });
 });

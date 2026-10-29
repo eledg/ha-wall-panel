@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { fetchHistory, toIntervals } from './history.ts';
+import { fetchHistory, toIntervals, toSeries } from './history.ts';
 
 const T = (minute: number) => Date.UTC(2026, 9, 18, 12, minute);
 const row = (state: string, minute: number) => ({
@@ -101,5 +101,48 @@ describe('fetchHistory', () => {
       ),
     ).toEqual([]);
     vi.unstubAllGlobals();
+  });
+});
+
+describe('toIntervals with a custom predicate', () => {
+  it('counts any state but off as on', () => {
+    expect(
+      toIntervals(
+        [row('off', 0), row('cool', 20)],
+        T(0),
+        T(60),
+        (s) => s !== 'off',
+      ),
+    ).toEqual([
+      { start: T(0), end: T(20), on: false },
+      { start: T(20), end: T(60), on: true },
+    ]);
+  });
+});
+
+describe('toSeries', () => {
+  it('reads numbers, skips unusable states and clips to the window', () => {
+    expect(
+      toSeries(
+        [
+          row('20.5', -90),
+          row('unavailable', 10),
+          row('unknown', 15),
+          row('21.0', 30),
+          row('22.0', 70),
+        ],
+        T(0),
+        T(60),
+      ),
+    ).toEqual([
+      { at: T(0), value: 20.5 },
+      { at: T(30), value: 21 },
+    ]);
+  });
+
+  it('sorts oldest first', () => {
+    expect(
+      toSeries([row('2', 20), row('1', 10)], T(0), T(60)).map((s) => s.value),
+    ).toEqual([1, 2]);
   });
 });

@@ -1,5 +1,7 @@
 import type { Auth } from 'home-assistant-js-websocket';
 
+import { parseNumber } from './entity.ts';
+
 /** A state from `GET /api/history/period`, as far as the store reads it. */
 export type RawHistoryState = { state: string; last_changed: string };
 
@@ -36,18 +38,20 @@ export const fetchHistory = async (
 /**
  * Turns recorded states into back-to-back on/off intervals covering
  * `start`..`end`. States before `start` are clipped; `unavailable` and
- * `unknown` count as off. Returns `[]` when nothing was recorded, so the
+ * `unknown` count as off (`isOn` decides what is on; by default the state
+ * `on`). Returns `[]` when nothing was recorded, so the
  * sheet can show an empty state instead of a blank bar.
  */
 export const toIntervals = (
   rows: RawHistoryState[],
   start: number,
   end: number,
+  isOn: (state: string) => boolean = (state) => state === 'on',
 ): Interval[] => {
   const points = rows
     .map((row) => ({
       at: Math.max(start, Date.parse(row.last_changed)),
-      on: row.state === 'on',
+      on: isOn(row.state),
     }))
     .filter(({ at }) => Number.isFinite(at) && at < end)
     .sort((a, b) => a.at - b.at);
@@ -62,3 +66,26 @@ export const toIntervals = (
   });
   return intervals;
 };
+
+/** A numeric sensor's reading at one moment (epoch ms). */
+export type Sample = { at: number; value: number };
+
+/**
+ * Turns a numeric sensor's recorded states into samples within `start`..`end`,
+ * oldest first. A state before `start` is clipped to it; `unavailable`,
+ * `unknown` and anything that is not a number are skipped.
+ */
+export const toSeries = (
+  rows: RawHistoryState[],
+  start: number,
+  end: number,
+): Sample[] =>
+  rows
+    .flatMap((row) => {
+      const value = parseNumber(row.state);
+      const at = Math.max(start, Date.parse(row.last_changed));
+      return value === undefined || !Number.isFinite(at) || at >= end
+        ? []
+        : [{ at, value }];
+    })
+    .sort((a, b) => a.at - b.at);
