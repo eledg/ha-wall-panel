@@ -90,7 +90,7 @@ export const ClimateSheet = ({
     aria-modal="true"
     aria-labelledby={titleId}
     data-blocks-reload
-    class="fixed inset-0 m-0 size-full max-h-none max-w-none border-0 text-fg z-20 bg-bg/90 p-6"
+    class="fixed inset-0 m-0 size-full max-h-none max-w-none border-0 text-fg z-20 bg-bg/90 p-3"
     onPointerDown={onActivity}
   >
     <div class="flex h-full flex-col rounded-tile border border-line bg-surface p-5">
