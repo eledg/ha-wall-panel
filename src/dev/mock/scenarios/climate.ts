@@ -24,6 +24,13 @@ const isOn = (boundaries: number[], minute: number) =>
     2 ===
   1;
 
+/** How much the room changes in ten minutes: the AC cools and dries, the heating warms. */
+const drift = (heating: boolean, cooling: boolean) => {
+  if (cooling) return { dTemperature: -0.22, dHumidity: -0.6 };
+  if (heating) return { dTemperature: 0.18, dHumidity: -0.15 };
+  return { dTemperature: -0.05, dHumidity: 0.12 };
+};
+
 /**
  * Six hours of room temperature and humidity that react to the heating and
  * the AC, shifted so the last sample is the live reading. `heating` is the
@@ -41,8 +48,9 @@ export const climateHistory = (
     const minute = (i * STEP_MS) / 60_000;
     const heating = isOn(heatingBoundaries, minute);
     const cooling = isOn(AC_BOUNDARIES, minute);
-    temperature += cooling ? -0.22 : heating ? 0.18 : -0.05;
-    humidity += cooling ? -0.6 : heating ? -0.15 : 0.12;
+    const { dTemperature, dHumidity } = drift(heating, cooling);
+    temperature += dTemperature;
+    humidity += dHumidity;
     return {
       at: start + i * STEP_MS,
       temperature: temperature + Math.sin(i / 2) * 0.1,

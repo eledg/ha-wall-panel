@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'preact/hooks';
-
 import {
   ClimateButton,
   ClimateSheet,
@@ -14,6 +12,7 @@ import type { TileConfig } from '@/config/config.ts';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import { useIdleClose } from '@/hooks/use-idle-close.ts';
 import { useOffline } from '@/hooks/use-offline.ts';
+import { useRoomHistory } from '@/hooks/use-room-history.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { readAc } from '@/lib/climate/ac-model.ts';
 import { readHeating } from '@/lib/climate/heating-model.ts';
@@ -22,31 +21,14 @@ import {
   comfort,
   extent,
   heatingLine,
+  roomStatus,
 } from '@/lib/climate/room-model.ts';
 import { readTemperature } from '@/lib/climate/temperature-model.ts';
 import { formatHumidity, formatTemp } from '@/lib/format.ts';
-import {
-  type Interval,
-  type Sample,
-  toIntervals,
-  toSeries,
-} from '@/services/ha/history.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
-/** The history is re-read this often while the sheet is open. */
-export const HISTORY_REFRESH_MS = 60_000;
-
-type Window = {
-  start: number;
-  end: number;
-  temps: Sample[] | undefined;
-  humidity: Sample[] | undefined;
-  heating: Interval[] | undefined;
-  ac: Interval[] | undefined;
-};
-
-const notOff = (state: string) => state !== 'off';
+export { HISTORY_REFRESH_MS } from '@/hooks/use-room-history.ts';
 
 /**
  * Full-screen room climate, as in the design: the temperature and humidity now
@@ -97,7 +79,12 @@ export const RoomSheet = ({
   const [climate, schedule, demand, cloud, power, acEntity] = rest;
   const offline = useOffline();
   const onActivity = useIdleClose(onClose, idleMs);
-  const [history, setHistory] = useState<Window>();
+  const history = useRoomHistory(store, HISTORY_HOURS, {
+    temperature: temperatureId,
+    humidity: humidityId,
+    demand: heatingIds?.demand,
+    ac: acId,
+  });
 
   const { value: temperature } = readTemperature(temperatureEntity);
   const { value: humidity } = readTemperature(humidityEntity);
@@ -108,77 +95,18 @@ export const RoomSheet = ({
   const heatingLinked = heating?.usable === true;
   const acLinked = ac?.usable === true;
 
-  const demandId = heatingIds?.demand;
-  useEffect(() => {
-    let cancelled = false;
-    const load = () => {
-      const end = Date.now();
-      const start = end - HISTORY_HOURS * 3_600_000;
-      const read = <T,>(
-        id: string | undefined,
-        parse: (rows: Awaited<ReturnType<HaStore['history']>>) => T,
-      ) =>
-        id === undefined
-          ? Promise.resolve(undefined)
-          : store
-              .history(id, new Date(start), new Date(end))
-              .then(parse, (err: unknown) => {
-                console.error(`Climate history of ${id} failed`, err);
-                return undefined;
-              });
-      void Promise.all([
-        read(temperatureId, (rows) => toSeries(rows, start, end)),
-        read(humidityId, (rows) => toSeries(rows, start, end)),
-        read(demandId, (rows) => toIntervals(rows, start, end)),
-        read(acId, (rows) => toIntervals(rows, start, end, notOff)),
-      ]).then(([temps, humidities, heatingRuns, acRuns]) => {
-        if (cancelled) return;
-        // A failed refresh keeps what is shown; a failed first read is empty.
-        const keep = <T,>(next: T | undefined, before: T | undefined) =>
-          next ?? before;
-        setHistory((previous) => ({
-          start,
-          end,
-          temps: keep(temps, previous?.temps) ?? [],
-          humidity: keep(humidities, previous?.humidity) ?? [],
-          heating: keep(heatingRuns, previous?.heating),
-          ac: keep(acRuns, previous?.ac),
-        }));
-      });
-    };
-    load();
-    const timer = setInterval(load, HISTORY_REFRESH_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [store, temperatureId, humidityId, demandId, acId]);
-
   const feel = comfort(temperature, humidity);
   const tempRange = extent(history?.temps);
   const humidityRange = extent(history?.humidity);
-  const usable = temperature !== undefined;
 
-  let status = `${tile.label} unavailable`;
-  if (usable) {
-    status = [
-      `${formatTemp(temperature)}°`,
-      humidity === undefined
-        ? undefined
-        : `${formatHumidity(humidity)} humidity`,
-      feel.label,
-    ]
-      .filter(Boolean)
-      .join(' · ');
-    if (offline) status = `Offline · ${status}`;
-  }
+  const status = roomStatus(tile.label, temperature, humidity, feel, offline);
 
   return (
     <ClimateSheet
       title={`${tile.label} climate`}
       titleId="room-title"
       status={status}
-      warning={!usable || feel.warn}
+      warning={temperature === undefined || feel.warn}
       onClose={onClose}
       onActivity={onActivity}
     >

@@ -19,7 +19,7 @@ const GRID = [0.25, 0.5, 0.75];
 const Swatch = ({ tone, label }: { tone: string; label: string }) => (
   <span class="flex items-center gap-1">
     <span class={`size-3 rounded-sm ${tone}`} />
-    {label}
+    <span>{label}</span>
   </span>
 );
 
@@ -67,11 +67,11 @@ export const RoomChart = ({
         <div class="flex items-center gap-3">
           <span class="flex items-center gap-1">
             <span class="h-0.5 w-4 bg-fg" />
-            Temp
+            <span>Temp</span>
           </span>
           <span class="flex items-center gap-1">
             <span class="w-4 border-t-2 border-dashed border-humidity" />
-            Humidity
+            <span>Humidity</span>
           </span>
           {heating && <Swatch tone="bg-accent-soft" label="Heating" />}
           {ac && <Swatch tone="bg-cool-soft" label="AC" />}

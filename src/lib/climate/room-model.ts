@@ -1,4 +1,4 @@
-import { formatTemp } from '@/lib/format.ts';
+import { formatHumidity, formatTemp } from '@/lib/format.ts';
 import type { Interval, Sample } from '@/services/ha/history.ts';
 
 import { modeLabel } from './ac-model.ts';
@@ -98,4 +98,21 @@ export const acLine = (view: AcView) => {
   return view.target === undefined
     ? mode
     : `${mode} · target ${formatTemp(view.target)}°`;
+};
+
+/** The line under the sheet's title: the reading, then how the room feels. */
+export const roomStatus = (
+  label: string,
+  temperature: number | undefined,
+  humidity: number | undefined,
+  feel: Comfort,
+  offline: boolean,
+) => {
+  if (temperature === undefined) return `${label} unavailable`;
+  const parts = [`${formatTemp(temperature)}°`];
+  if (humidity !== undefined)
+    parts.push(`${formatHumidity(humidity)} humidity`);
+  parts.push(feel.label);
+  const status = parts.join(' · ');
+  return offline ? `Offline · ${status}` : status;
 };

@@ -9,6 +9,7 @@ import {
   extent,
   heatingLine,
   linePath,
+  roomStatus,
   targetY,
   tempScale,
 } from './room-model.ts';
@@ -112,5 +113,27 @@ describe('button lines', () => {
     expect(acLine(ac({}))).toBe('Cool · target 22.0°');
     expect(acLine(ac({ target: undefined }))).toBe('Cool');
     expect(acLine(ac({ on: false }))).toBe('Off');
+  });
+});
+
+describe('roomStatus', () => {
+  const feel = { label: 'Comfortable', warn: false };
+
+  it('gives the reading and how the room feels', () => {
+    expect(roomStatus('Office', 21.44, 48.2, feel, false)).toBe(
+      '21.4° · 48% humidity · Comfortable',
+    );
+  });
+
+  it('leaves out an unusable humidity and flags offline', () => {
+    expect(roomStatus('Office', 21, undefined, feel, true)).toBe(
+      'Offline · 21.0° · Comfortable',
+    );
+  });
+
+  it('says so when the temperature is missing', () => {
+    expect(roomStatus('Office', undefined, 48, feel, false)).toBe(
+      'Office unavailable',
+    );
   });
 });

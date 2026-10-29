@@ -89,8 +89,8 @@ describe('RoomSheet', () => {
     expect(document.body.textContent).toContain('Target 20.0° · heating');
     expect(document.body.textContent).toContain('AC');
     expect(document.body.textContent).toContain('Off');
-    expect(document.querySelectorAll('rect.fill-accent-soft').length).toBe(4);
-    expect(document.querySelectorAll('rect.fill-cool-soft').length).toBe(2);
+    expect(document.querySelectorAll('rect.fill-accent-soft')).toHaveLength(4);
+    expect(document.querySelectorAll('rect.fill-cool-soft')).toHaveLength(2);
   });
 
   it('opens the heating and AC sheets from their buttons', async () => {
