@@ -67,6 +67,33 @@ describe('RoomChart', () => {
     expect(document.body.textContent).toContain('AC');
   });
 
+  it('draws heating power as a stepped area in place of the runs', () => {
+    draw({
+      heating: {
+        intervals: [{ start: at(1), end: at(2), on: true }],
+        power: [
+          { at: at(1), value: 40 },
+          { at: at(2), value: 0 },
+        ],
+      },
+    });
+
+    expect(document.querySelectorAll('path.fill-accent-soft')).toHaveLength(1);
+    expect(document.querySelectorAll('rect.fill-accent-soft')).toHaveLength(0);
+  });
+
+  it('keeps the runs when there is no power history', () => {
+    draw({
+      heating: {
+        intervals: [{ start: at(1), end: at(2), on: true }],
+        power: [],
+      },
+    });
+
+    expect(document.querySelectorAll('path.fill-accent-soft')).toHaveLength(0);
+    expect(document.querySelectorAll('rect.fill-accent-soft')).toHaveLength(1);
+  });
+
   it('leaves out a target outside the axis', () => {
     draw({ heating: { intervals: [], target: 30 } });
 

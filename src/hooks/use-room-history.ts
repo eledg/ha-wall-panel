@@ -18,6 +18,8 @@ export type RoomHistory = {
   temps: Sample[] | undefined;
   humidity: Sample[] | undefined;
   heating: Interval[] | undefined;
+  /** Heating power in percent, when the heating tile has a power sensor. */
+  power: Sample[] | undefined;
   ac: Interval[] | undefined;
 };
 
@@ -40,11 +42,12 @@ export const useRoomHistory = (
     temperature: string;
     humidity: string;
     demand?: string;
+    power?: string;
     ac?: string;
   },
 ) => {
   const [history, setHistory] = useState<RoomHistory>();
-  const { temperature, humidity, demand, ac } = ids;
+  const { temperature, humidity, demand, power, ac } = ids;
 
   useEffect(() => {
     let cancelled = false;
@@ -67,8 +70,9 @@ export const useRoomHistory = (
         read(temperature, (rows) => toSeries(rows, start, end)),
         read(humidity, (rows) => toSeries(rows, start, end)),
         read(demand, (rows) => toIntervals(rows, start, end)),
+        read(power, (rows) => toSeries(rows, start, end)),
         read(ac, (rows) => toIntervals(rows, start, end, notOff)),
-      ]).then(([temps, humidities, heatingRuns, acRuns]) => {
+      ]).then(([temps, humidities, heatingRuns, powers, acRuns]) => {
         if (cancelled) return;
         setHistory((previous) => ({
           start,
@@ -76,6 +80,7 @@ export const useRoomHistory = (
           temps: keep(temps, previous?.temps) ?? [],
           humidity: keep(humidities, previous?.humidity) ?? [],
           heating: keep(heatingRuns, previous?.heating),
+          power: keep(powers, previous?.power),
           ac: keep(acRuns, previous?.ac),
         }));
       });
@@ -86,7 +91,7 @@ export const useRoomHistory = (
       cancelled = true;
       clearInterval(timer);
     };
-  }, [store, hours, temperature, humidity, demand, ac]);
+  }, [store, hours, temperature, humidity, demand, power, ac]);
 
   return history;
 };

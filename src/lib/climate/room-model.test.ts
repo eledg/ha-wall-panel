@@ -10,6 +10,7 @@ import {
   heatingLine,
   linePath,
   roomStatus,
+  stepArea,
   targetY,
   tempScale,
 } from './room-model.ts';
@@ -82,6 +83,26 @@ describe('bands', () => {
   });
 });
 
+describe('stepArea', () => {
+  it('steps from each reading to the next and closes along the bottom', () => {
+    expect(
+      stepArea(
+        [
+          { at: 0, value: 0 },
+          { at: 50, value: 50 },
+        ],
+        0,
+        100,
+      ),
+    ).toBe('M0 200 L300 200 L300 100 L600 100 L600 200 L0 200 Z');
+  });
+
+  it('clamps to the axis and is empty without samples', () => {
+    expect(stepArea([{ at: 0, value: 140 }], 0, 100)).toContain('M0 0');
+    expect(stepArea([], 0, 100)).toBe('');
+  });
+});
+
 describe('targetY', () => {
   it('is undefined outside the axis or without a target', () => {
     expect(targetY(15, 10, 20)).toBe(100);
@@ -105,10 +126,6 @@ describe('button lines', () => {
   it('describes the heating', () => {
     expect(heatingLine(heating({}))).toBe('Target 20.0° · heating');
     expect(heatingLine(heating({ demand: false }))).toBe('Target 20.0° · idle');
-    expect(heatingLine(heating({ power: 45 }))).toBe(
-      'Target 20.0° · heating 45%',
-    );
-    expect(heatingLine(heating({ power: 0 }))).toBe('Target 20.0° · idle');
     expect(heatingLine(heating({ on: false, state: 'off' }))).toBe('Off');
     expect(heatingLine(heating({ on: false, state: 'paused' }))).toBe('Paused');
   });

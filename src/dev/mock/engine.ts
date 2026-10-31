@@ -26,6 +26,7 @@ import {
   heatingFixture,
   heatingStateOf,
   type MockHeatingState,
+  powerHistory,
   SCHEDULED_TARGET,
 } from '@/dev/mock/scenarios/heating.ts';
 import {
@@ -393,6 +394,7 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       const now = Date.now();
       if (entityId === heatingDemand)
         return Promise.resolve(demandHistory(now));
+      if (entityId === heatingPower) return Promise.resolve(powerHistory(now));
       if (entityId === ac) return Promise.resolve(acHistory(now));
       if (entityId === roomTemp || entityId === room.humidity) {
         const reading = (id: string, fallback: number) =>
