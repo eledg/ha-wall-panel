@@ -74,12 +74,15 @@ export const ClimateSheet = ({
   warning = false,
   onClose,
   onActivity,
+  headerAction,
   children,
 }: {
   title: string;
   titleId: string;
   status: ComponentChildren;
   warning?: boolean;
+  /** A control shown in the header, before Close. */
+  headerAction?: ComponentChildren;
   onClose: () => void;
   /** Called on every touch inside the sheet, e.g. to restart an idle timer. */
   onActivity?: () => void;
@@ -106,13 +109,16 @@ export const ClimateSheet = ({
             {status}
           </div>
         </div>
-        <ClimateButton
-          aria-label="Close"
-          onClick={onClose}
-          class="grid size-14 shrink-0 place-items-center rounded-full"
-        >
-          <XIcon class="size-7" />
-        </ClimateButton>
+        <div class="flex min-w-0 items-center gap-3">
+          {headerAction}
+          <ClimateButton
+            aria-label="Close"
+            onClick={onClose}
+            class="grid size-14 shrink-0 place-items-center rounded-full"
+          >
+            <XIcon class="size-7" />
+          </ClimateButton>
+        </div>
       </header>
       <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
         {children}

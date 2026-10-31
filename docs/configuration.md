@@ -101,6 +101,12 @@ A `weather` tile may also name a `sun` entity (`sun.sun`). Tapping the tile open
 the weather screen, which then also shows sunrise and sunset. Without `sun`
 those two are left out.
 
+A `weather` tile may also name an `alerts` sensor listing the official weather
+warnings; they show as a badge on the tile and a control on the weather screen.
+HA does not provide such a sensor itself: see
+[Weather warnings](entities.md#weather-warnings) for its attributes and a Met
+Office example.
+
 A `weather` tile shows the chance of rain beside the temperature and under each
 hour. Set `metric` to `"uv"` to show the UV index there instead; the default is
 `"rain"`. The UV index comes from the hourly forecast's `uv_index`, and the

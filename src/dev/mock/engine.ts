@@ -33,6 +33,8 @@ import {
   dailyFor,
   forecastFor,
   sunAttributes,
+  warningAttributes,
+  warningScenarios,
   weatherScenarios,
 } from '@/dev/mock/scenarios/weather.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
@@ -77,6 +79,12 @@ export type MockControls = {
   getWeatherScenario: () => string;
   /** Ids and labels only: the data stays in mock code, out of the production bundle. */
   weatherScenarios: { id: string; label: string }[];
+  /** Switches the weather warnings sensor to a scenario. */
+  setWarnings: (scenarioId: string) => void;
+  /** The id of the current warnings scenario. */
+  getWarningsScenario: () => string;
+  /** Ids and labels only, as for weather. */
+  warningScenarios: { id: string; label: string }[];
   /** Switches every calendar's events to a scenario. */
   setCalendar: (scenarioId: string) => void;
   /** The id of the current calendar scenario. */
@@ -175,6 +183,19 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   const sun = mockTile('weather').entities.sun;
   if (sun)
     entities.set(sun, make(sun, 'above_horizon', sunAttributes(Date.now())));
+  const alerts = mockTile('weather').entities.alerts;
+  let warningScenario = warningScenarios[0]!;
+  const warningsState = () =>
+    warningAttributes(warningScenario.id, Date.now()).warnings.length;
+  if (alerts)
+    entities.set(
+      alerts,
+      make(
+        alerts,
+        String(warningsState()),
+        warningAttributes(warningScenario.id, Date.now()),
+      ),
+    );
   let calendarScenario = calendarScenarios[0]!;
   let calendarFails = false;
   // The scenarios name their calendars: any other is the family's.
@@ -503,6 +524,18 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       scenario = scenarios.find((s) => s.id === id) ?? scenario;
       setState(weather, scenario.state, scenario.attributes);
     },
+    getWarningsScenario: () => warningScenario.id,
+    setWarnings: (id) => {
+      warningScenario =
+        warningScenarios.find((s) => s.id === id) ?? warningScenario;
+      if (alerts)
+        setState(
+          alerts,
+          String(warningsState()),
+          warningAttributes(warningScenario.id, Date.now()),
+        );
+    },
+    warningScenarios: warningScenarios.map(({ id, label }) => ({ id, label })),
     getCalendarScenario: () => calendarScenario.id,
     setCalendar: (id) => {
       calendarScenario =

@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 
 import { ClimateSheet } from '@/components/climate/climate-controls.tsx';
 import { ArrowIcon } from '@/components/icons/arrow-icon.tsx';
@@ -11,12 +11,20 @@ import { SunsetIcon } from '@/components/icons/sunset-icon.tsx';
 import { ThermoIcon } from '@/components/icons/thermo-icon.tsx';
 import { WeatherIcon } from '@/components/icons/weather-icon.tsx';
 import { WindIcon } from '@/components/icons/wind-icon.tsx';
+import {
+  WeatherAlertControl,
+  WeatherAlertDetails,
+} from '@/components/sheets/weather-alerts.tsx';
 import type { TileConfig, WeatherStat } from '@/config/config.ts';
 import { IDLE_CLOSE_MS } from '@/config/constants.ts';
 import { useIdleClose } from '@/hooks/use-idle-close.ts';
 import { useOffline } from '@/hooks/use-offline.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
 import { formatTime } from '@/lib/format.ts';
+import {
+  readWeatherAlerts,
+  relevantWeatherAlerts,
+} from '@/lib/weather-alerts.ts';
 import {
   dayLabel,
   degrees,
@@ -100,9 +108,9 @@ export const WeatherSheet = ({
   now?: () => Date;
   idleMs?: number;
 }) => {
-  const { entity: id, sun: sunId } = tile.entities;
+  const { entity: id, sun: sunId, alerts: alertsId } = tile.entities;
   const { details } = tile;
-  const [entity, hourly, daily, sun] = useSnapshot(
+  const [entity, hourly, daily, sun, alertsEntity] = useSnapshot(
     store,
     (s) =>
       [
@@ -110,8 +118,10 @@ export const WeatherSheet = ({
         s.forecasts[id],
         s.dailyForecasts[id],
         s.entities[sunId ?? ''],
+        s.entities[alertsId ?? ''],
       ] as const,
   );
+  const [alertsOpen, setAlertsOpen] = useState(false);
   const offline = useOffline();
   const onActivity = useIdleClose(onClose, idleMs);
 
@@ -121,6 +131,7 @@ export const WeatherSheet = ({
 
   const at = now();
   const view = readWeather(entity, hourly, daily, sun, at);
+  const alerts = relevantWeatherAlerts(readWeatherAlerts(alertsEntity), at);
   if (!view.usable || !entity) {
     return (
       <ClimateSheet
@@ -223,6 +234,12 @@ export const WeatherSheet = ({
       title="Weather"
       titleId="weather-title"
       status={`${view.label} · ${offline ? 'stale, last updated' : 'updated'} ${updated}`}
+      headerAction={
+        <WeatherAlertControl
+          alerts={alerts}
+          onOpen={() => setAlertsOpen(true)}
+        />
+      }
       onClose={onClose}
       onActivity={onActivity}
     >
@@ -349,6 +366,13 @@ export const WeatherSheet = ({
           </div>
         )}
       </div>
+      {alertsOpen && alerts.length > 0 && (
+        <WeatherAlertDetails
+          alerts={alerts}
+          now={at}
+          onClose={() => setAlertsOpen(false)}
+        />
+      )}
     </ClimateSheet>
   );
 };

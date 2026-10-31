@@ -9,7 +9,7 @@ are enforced by the build; the rest are read on the display from the
 | Measure                | Budget                               | Enforced by                |
 | ---------------------- | ------------------------------------ | -------------------------- |
 | JS, as served          | 150 KB                               | build (`bundle-budget.ts`) |
-| JS, gzipped            | 36 KB                                | build                      |
+| JS, gzipped            | 38 KB                                | build                      |
 | CSS, gzipped           | 12 KB                                | build                      |
 | First render           | 2 s from navigation start            | read on the display        |
 | First paint            | 2 s from navigation start            | read on the display        |
@@ -27,7 +27,9 @@ The JS limit was raised from 80 KB to 150 KB for the heating tile and sheet
 the tiles still to come. Gzipped JS stayed at 30 KB until the zone-aware
 date helpers (`src/config/datetime.ts`, for the `locale` and `timeZone` settings)
 took it just over; it was then 32 KB. The weather sheet (about 2 KB gzipped:
-the sheet, its model and six icons) took it over again, so it is now 36 KB.
+the sheet, its model and six icons) took it over again, so it was then 36 KB.
+The weather warnings (about 1.3 KB gzipped: the model, the tile badge and the
+details dialog) took it over once more, so it is now 38 KB.
 
 The store-updates limit was raised from 10 to 20 per minute after the display
 idled at 10 to 15. A store update only costs a snapshot copy and a selector

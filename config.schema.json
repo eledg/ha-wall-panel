@@ -112,6 +112,11 @@
                 "minLength": 1,
                 "description": "A sun.* entity ID."
               },
+              "alerts": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A sensor.* entity ID."
+              },
               "details": {
                 "type": "object",
                 "additionalProperties": false,

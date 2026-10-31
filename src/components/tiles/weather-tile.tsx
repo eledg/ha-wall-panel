@@ -1,10 +1,15 @@
 import { useState } from 'preact/hooks';
 
 import { DropletIcon } from '@/components/icons/droplet-icon.tsx';
+import { WeatherAlertBadge } from '@/components/icons/weather-alert-badge.tsx';
 import { WeatherIcon } from '@/components/icons/weather-icon.tsx';
 import { WeatherSheet } from '@/components/sheets/weather-sheet.tsx';
 import type { TileConfig } from '@/config/config.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
+import {
+  readWeatherAlerts,
+  relevantWeatherAlerts,
+} from '@/lib/weather-alerts.ts';
 import {
   currentPeriod,
   degrees,
@@ -36,9 +41,17 @@ export const WeatherTile = ({
 }) => {
   const id = tile.entities.entity;
   const [open, setOpen] = useState(false);
-  const [status, subscribed, entity, forecast] = useSnapshot(
+  const alertsId = tile.entities.alerts;
+  const [status, subscribed, entity, forecast, alertsEntity] = useSnapshot(
     store,
-    (s) => [s.status, s.subscribed, s.entities[id], s.forecasts[id]] as const,
+    (s) =>
+      [
+        s.status,
+        s.subscribed,
+        s.entities[id],
+        s.forecasts[id],
+        alertsId ? s.entities[alertsId] : undefined,
+      ] as const,
   );
   const usable =
     entity !== undefined &&
@@ -68,6 +81,7 @@ export const WeatherTile = ({
 
   const [icon, label] = describe(entity.state);
   const at = now();
+  const alerts = relevantWeatherAlerts(readWeatherAlerts(alertsEntity), at);
   const periods = pickForecast(forecast ?? [], at);
   const metric = tile.metric;
   const nowPeriod = currentPeriod(forecast ?? [], at);
@@ -88,8 +102,11 @@ export const WeatherTile = ({
           <div class="flex shrink-0 items-center gap-3">
             <WeatherIcon condition={icon} class="size-16 text-fg" />
             <div>
-              <div class="tnum text-5xl leading-none font-semibold">
-                {degrees(entity.attributes.temperature)}
+              <div class="flex items-start justify-between gap-1">
+                <div class="tnum text-5xl leading-none font-semibold">
+                  {degrees(entity.attributes.temperature)}
+                </div>
+                <WeatherAlertBadge alerts={alerts} />
               </div>
               <div class="mt-1 w-28 truncate text-sm text-fg-dim">{label}</div>
               <div class="mt-1 flex items-center gap-1 text-sm text-fg-dim">

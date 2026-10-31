@@ -48,6 +48,7 @@ describe('createMockHa', () => {
         LIGHT,
         WEATHER,
         entityId('weatherSun'),
+        entityId('weatherAlerts'),
         AC,
         ...AC_SWITCHES,
         entityId('roomTemperature'),

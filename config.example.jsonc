@@ -32,6 +32,7 @@
       "w": 3,
       "entity": "weather.home", // weather.*
       "sun": "sun.sun", // optional sun.*: adds sunrise and sunset to the weather screen
+      "alerts": "sensor.weather_warnings", // optional sensor.*: official warnings (docs/entities.md#weather-warnings)
 
       // Optional: "rain" (default) or "uv": the figure shown on the tile beside the temperature and under each hour
       "metric": "rain",

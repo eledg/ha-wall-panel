@@ -315,3 +315,82 @@ describe('WeatherSheet', () => {
     });
   });
 });
+
+describe('weather warnings', () => {
+  const control = () =>
+    document.body.querySelector<HTMLButtonElement>('[aria-label^="View "]');
+  const details = () =>
+    document.body.querySelector(
+      'dialog[aria-labelledby="weather-alert-title"]',
+    );
+  const press = (key: string) =>
+    act(() => {
+      (document.activeElement ?? document.body).dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true }),
+      );
+    });
+
+  it('has no control without warnings', async () => {
+    await setup();
+
+    expect(control()).toBeNull();
+  });
+
+  it('opens the details from the header control', async () => {
+    const { mock } = await setup();
+    await act(async () => mock.controls.setWarnings('multiple'));
+
+    expect(control()?.getAttribute('aria-label')).toBe(
+      'View amber warning: Rain',
+    );
+    expect(control()?.textContent).toContain('Amber warning: Rain +1');
+    await act(() => control()?.click());
+
+    expect(details()).not.toBeNull();
+    expect(text()).toContain('Weather warnings');
+    expect(text()).toContain('Heavy rain');
+    expect(text()).toContain('Yellow warning: Strong winds');
+    expect(text()).toContain('Active');
+    expect(text()).toContain('Berkhamsted');
+  });
+
+  it('closes only the details on Escape', async () => {
+    const { mock, onClose } = await setup();
+    await act(async () => mock.controls.setWarnings('yellow'));
+    await act(() => control()?.click());
+
+    await press('Escape');
+
+    expect(details()).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(text()).toContain('Weather');
+  });
+
+  it('closes the details with its Close button', async () => {
+    const { mock, onClose } = await setup();
+    await act(async () => mock.controls.setWarnings('red'));
+    await act(() => control()?.click());
+
+    await act(() =>
+      document.body
+        .querySelector<HTMLButtonElement>(
+          '[aria-label="Close warning details"]',
+        )
+        ?.click(),
+    );
+
+    expect(details()).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('closes the details when the warnings end', async () => {
+    const { mock } = await setup();
+    await act(async () => mock.controls.setWarnings('red'));
+    await act(() => control()?.click());
+
+    await act(async () => mock.controls.setWarnings('none'));
+
+    expect(details()).toBeNull();
+    expect(control()).toBeNull();
+  });
+});

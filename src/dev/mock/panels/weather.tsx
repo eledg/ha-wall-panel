@@ -10,6 +10,8 @@ export const weatherPanel: MockPanel = {
     useMockChanges(mock);
     const id = entitiesOf('weather').entity;
     const scenario = mock.getWeatherScenario();
+    const alertsId = entitiesOf('weather').alerts;
+    const warnings = mock.getWarningsScenario();
     const failing = mock.isForecastFailing();
     return (
       <>
@@ -32,6 +34,22 @@ export const weatherPanel: MockPanel = {
           <Chip onClick={() => mock.removeEntity(id)}>Missing</Chip>
           <Chip onClick={() => mock.setWeather(scenario)}>Restore</Chip>
         </Group>
+        {alertsId && (
+          <Group label="Warnings">
+            {mock.warningScenarios.map(({ id: key, label }) => (
+              <Chip
+                key={key}
+                active={warnings === key}
+                onClick={() => mock.setWarnings(key)}
+              >
+                {label}
+              </Chip>
+            ))}
+            <Chip onClick={() => mock.setUnavailable(alertsId)}>
+              Unavailable
+            </Chip>
+          </Group>
+        )}
         <Group label="Forecast fetch">
           <Chip active={!failing} onClick={() => mock.failForecast(false)}>
             Works

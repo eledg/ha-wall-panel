@@ -30,7 +30,11 @@ export const mockConfig: RuntimeConfig = {
       row: 2,
       w: 3,
       h: 1,
-      entities: { entity: 'weather.home', sun: 'sun.sun' },
+      entities: {
+        entity: 'weather.home',
+        sun: 'sun.sun',
+        alerts: 'sensor.weather_warnings',
+      },
       details: DEFAULT_WEATHER_DETAILS,
       metric: DEFAULT_WEATHER_METRIC,
     },

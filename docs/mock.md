@@ -28,6 +28,9 @@ each control stays visible. Its panels:
   `Daily only`, `No forecast` and `Short forecast`. The forecasts are in HA's
   real shape: 49 hourly items from the current hour with some rain amounts
   `null`, and 7 daily items dated midnight UTC. Tap the tile for the weather screen.
+- **Warnings** (None, Yellow, Amber, Red, Multiple, Unavailable) drive the optional
+  `alerts` sensor with sample warnings, which show as the tile badge and the weather
+  screen's header control. They are samples, never real alerts.
 
 The room tile's climate screen reads six hours of generated temperature and
 humidity history (`src/dev/mock/scenarios/climate.ts`), ending on the live
