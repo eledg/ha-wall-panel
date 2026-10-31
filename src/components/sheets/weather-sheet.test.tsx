@@ -393,4 +393,43 @@ describe('weather warnings', () => {
     expect(details()).toBeNull();
     expect(control()).toBeNull();
   });
+
+  it('counts a touch inside the details as activity', async () => {
+    vi.useFakeTimers();
+    const { mock, onClose } = await setup({ idleMs: 1000 });
+    await act(async () => mock.controls.setWarnings('yellow'));
+    await act(() => control()?.click());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    await act(() => {
+      details()!
+        .querySelector('section')!
+        .dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('returns focus to the header control each time the details close', async () => {
+    const { mock } = await setup();
+    await act(async () => mock.controls.setWarnings('yellow'));
+
+    for (let round = 0; round < 2; round++) {
+      control()!.focus();
+      await act(() => control()?.click());
+      expect(document.activeElement?.getAttribute('aria-label')).toBe(
+        'Close warning details',
+      );
+
+      await press('Escape');
+
+      expect(details()).toBeNull();
+      expect(document.activeElement).toBe(control());
+    }
+  });
 });

@@ -131,12 +131,18 @@ unavailable or missing sensor shows no warnings.
 
 #### Example: Met Office warnings from the RSS feed
 
-The Met Office publishes a warnings RSS feed per region
-(`https://www.metoffice.gov.uk/public/data/PWSCache/WarningsRSS/Region/se` is
-London and the South East; other regions are linked from its warnings page).
-This builds the sensor from it in `configuration.yaml`. The feed has no year, no
-time zone and no advice text, so the template assumes the current year and your
-HA time zone, and leaves `guidance` empty.
+The Met Office publishes a warnings RSS feed per region, at
+`https://www.metoffice.gov.uk/public/data/PWSCache/WarningsRSS/Region/<code>`
+(`se` is London and the South East, `ee` the East of England; the other regions
+are linked from its warnings page). **Pick the region your location is in**: a
+county can sit in a different region than you would expect (Hertfordshire is in
+`ee`, not `se`), and a warning is issued per region. The example uses `se`;
+change the URL and the `area` text in the template together. The panel does not
+know your location: it shows whatever the sensor lists.
+
+This builds the sensor from the feed in `configuration.yaml`. The feed has no
+year, no time zone and no advice text, so the template assumes the current year
+and your HA time zone, and leaves `guidance` empty.
 
 ```yaml
 rest_command:
@@ -191,7 +197,11 @@ template:
 ```
 
 If you already have a `rest_command` that returns the feed as `content`, use it
-instead of `fetch_rss`. If the fetch fails the sensor keeps its last value, and
+instead of `fetch_rss`. If `configuration.yaml` already has a `template:` list,
+add this as **its own item** of that list, with its own `triggers`: placed under
+another item's trigger, the sensor would never run the fetch. The `homeassistant`
+start trigger fills the sensor as soon as HA starts; a template reload alone
+leaves it `unknown` until the next quarter hour. If the fetch fails the sensor keeps its last value, and
 the panel hides a warning once its `ends` time passes. Reload with
 Developer tools → YAML → Template entities, then check the attribute under
 Developer tools → States. Then point the tile at it:

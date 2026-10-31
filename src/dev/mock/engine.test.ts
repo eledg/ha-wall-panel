@@ -259,6 +259,63 @@ describe('mock service failures', () => {
   });
 });
 
+describe('mock weather warnings', () => {
+  const alertsId = entityId('weatherAlerts');
+  const setup = async () => {
+    const mock = createMockHa();
+    const store = createHaStore(mock.deps);
+    await store.start(mock.getAuth);
+    const warnings = () =>
+      store.getSnapshot().entities[alertsId]?.attributes.warnings as
+        { severity: string }[] | undefined;
+    return { mock, store, warnings };
+  };
+
+  it('starts with none', async () => {
+    const { mock, store, warnings } = await setup();
+
+    expect(mock.controls.getWarningsScenario()).toBe('none');
+    expect(store.getSnapshot().entities[alertsId]?.state).toBe('0');
+    expect(warnings()).toEqual([]);
+  });
+
+  it('switches scenario: the count and the warnings follow', async () => {
+    const { mock, store, warnings } = await setup();
+
+    mock.controls.setWarnings('multiple');
+
+    await vi.waitFor(() => expect(warnings()).toHaveLength(2));
+    expect(store.getSnapshot().entities[alertsId]?.state).toBe('2');
+    expect(warnings()?.map((w) => w.severity)).toEqual(['yellow', 'amber']);
+    expect(mock.controls.getWarningsScenario()).toBe('multiple');
+
+    mock.controls.setWarnings('red');
+    await vi.waitFor(() => expect(warnings()).toHaveLength(1));
+    expect(warnings()?.[0]?.severity).toBe('red');
+  });
+
+  it('keeps the scenario for an unknown id', () => {
+    const { controls } = createMockHa();
+
+    controls.setWarnings('amber');
+    controls.setWarnings('nonsense');
+
+    expect(controls.getWarningsScenario()).toBe('amber');
+  });
+
+  it('offers ids and labels for the overlay', () => {
+    const { controls } = createMockHa();
+
+    expect(controls.warningScenarios.map(({ id }) => id)).toEqual([
+      'none',
+      'yellow',
+      'amber',
+      'red',
+      'multiple',
+    ]);
+  });
+});
+
 describe('mock weather controls', () => {
   const setup = async () => {
     const mock = createMockHa();
