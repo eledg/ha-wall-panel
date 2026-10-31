@@ -102,3 +102,13 @@ export const demandHistory = (now: number): RawHistoryState[] => {
     last_changed: new Date(start + minute * 60_000).toISOString(),
   }));
 };
+
+/** Heating power for each heating cycle, in percent. */
+const CYCLE_POWER = [45, 80, 100, 60];
+
+/** The recorded states of the power sensor: 0 between cycles, a level during each. */
+export const powerHistory = (now: number): RawHistoryState[] =>
+  demandHistory(now).map((row, i) => ({
+    ...row,
+    state: i % 2 === 1 ? String(CYCLE_POWER[(i - 1) / 2]) : '0',
+  }));

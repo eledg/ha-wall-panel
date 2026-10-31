@@ -10,6 +10,7 @@ import {
   heatingLine,
   linePath,
   roomStatus,
+  stepArea,
   targetY,
   tempScale,
 } from './room-model.ts';
@@ -79,6 +80,26 @@ describe('bands', () => {
         100,
       ),
     ).toEqual([{ x: 150, width: 150 }]);
+  });
+});
+
+describe('stepArea', () => {
+  it('steps from each reading to the next and closes along the bottom', () => {
+    expect(
+      stepArea(
+        [
+          { at: 0, value: 0 },
+          { at: 50, value: 50 },
+        ],
+        0,
+        100,
+      ),
+    ).toBe('M0 200 L300 200 L300 100 L600 100 L600 200 L0 200 Z');
+  });
+
+  it('clamps to the axis and is empty without samples', () => {
+    expect(stepArea([{ at: 0, value: 140 }], 0, 100)).toContain('M0 0');
+    expect(stepArea([], 0, 100)).toBe('');
   });
 });
 

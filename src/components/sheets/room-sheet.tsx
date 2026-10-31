@@ -83,6 +83,7 @@ export const RoomSheet = ({
     temperature: temperatureId,
     humidity: humidityId,
     demand: heatingIds?.demand,
+    power: heatingIds?.power,
     ac: acId,
   });
 
@@ -175,6 +176,7 @@ export const RoomSheet = ({
             heatingLinked && history?.heating
               ? {
                   intervals: history.heating,
+                  power: history.power,
                   target: heating?.on ? heating.target : undefined,
                 }
               : undefined

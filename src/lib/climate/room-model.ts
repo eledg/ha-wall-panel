@@ -67,6 +67,28 @@ export const linePath = (
     )
     .join(' ');
 
+/**
+ * A closed SVG path for a percentage series drawn as steps from the bottom:
+ * each reading holds until the next, the last until `end`. Empty for no samples.
+ */
+export const stepArea = (samples: Sample[], start: number, end: number) => {
+  if (samples.length === 0) return '';
+  const top = (value: number) =>
+    round(y(Math.min(100, Math.max(0, value)), 0, 100));
+  const joined = samples
+    .map((s, i) => {
+      const at = round(x(s.at, start, end));
+      const prev = samples[i - 1];
+      return i === 0
+        ? `M${at} ${top(s.value)}`
+        : `L${at} ${top(prev!.value)} L${at} ${top(s.value)}`;
+    })
+    .join(' ');
+  const lastAt = round(x(end, start, end));
+  const first = round(x(samples[0]!.at, start, end));
+  return `${joined} L${lastAt} ${top(samples.at(-1)!.value)} L${lastAt} ${CHART_H} L${first} ${CHART_H} Z`;
+};
+
 /** Where the "on" stretches sit across the chart's width. */
 export const bands = (intervals: Interval[], start: number, end: number) =>
   intervals

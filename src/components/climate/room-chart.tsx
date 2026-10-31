@@ -5,14 +5,22 @@ import {
   CHART_W,
   extent,
   linePath,
+  stepArea,
   targetY,
   tempScale,
 } from '@/lib/climate/room-model.ts';
 import { formatTime } from '@/lib/format.ts';
 import type { Interval, Sample } from '@/services/ha/history.ts';
 
-/** A run of heating or AC history, with the target to draw while it is on. */
-export type Demand = { intervals: Interval[]; target?: number };
+/**
+ * A run of heating or AC history, with the target to draw while it is on. A
+ * `power` series (percent) is drawn as a stepped area in place of the runs.
+ */
+export type Demand = {
+  intervals: Interval[];
+  power?: Sample[];
+  target?: number;
+};
 
 const GRID = [0.25, 0.5, 0.75];
 
@@ -25,7 +33,8 @@ const Swatch = ({ tone, label }: { tone: string; label: string }) => (
 
 /**
  * Temperature (solid) and humidity (dashed) over the history window, with the
- * stretches the heating or AC ran shaded behind and, while one is on, its
+ * stretches the heating or AC ran shaded behind (heating as steps of its power
+ * in percent when it has that) and, while one is on, its
  * target as a dashed line. `undefined` means still loading; no temperature
  * samples shows the empty state. Drawn as plain SVG stretched to fit, with
  * non-scaling strokes.
@@ -93,8 +102,17 @@ export const RoomChart = ({
                 role="img"
                 aria-label="Temperature and humidity chart"
               >
+                {heating?.power && heating.power.length > 0 && (
+                  <path
+                    d={stepArea(heating.power, start, end)}
+                    class="fill-accent-soft"
+                  />
+                )}
                 {[
-                  { demand: heating, tone: 'fill-accent-soft' },
+                  {
+                    demand: heating?.power?.length ? undefined : heating,
+                    tone: 'fill-accent-soft',
+                  },
                   { demand: ac, tone: 'fill-cool-soft' },
                 ].flatMap(({ demand, tone }) =>
                   demand

@@ -161,6 +161,10 @@ built from the same two sensors:
   is a run) are shaded behind the chart, and their targets are drawn as dashed
   lines while they are on. Without a heating or AC tile the sheet shows the
   sensors alone.
+- **Heating power:** when the heating tile has the optional `power` sensor, its
+  history is drawn as a stepped area from the bottom, scaled on the right-hand
+  0–100% axis, in place of the full-height `demand` bands. Without a `power`
+  sensor, or with no history for it, the `demand` bands stay.
 
 ## Heating
 
