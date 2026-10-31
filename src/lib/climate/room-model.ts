@@ -1,4 +1,4 @@
-import { formatHumidity, formatTemp } from '@/lib/format.ts';
+import { formatHumidity, formatPercent, formatTemp } from '@/lib/format.ts';
 import type { Interval, Sample } from '@/services/ha/history.ts';
 
 import { modeLabel } from './ac-model.ts';
@@ -88,6 +88,9 @@ export const heatingLine = (view: HeatingView) => {
   if (!view.on) return 'Off';
   const target =
     view.target === undefined ? '' : `Target ${formatTemp(view.target)}° · `;
+  if (view.power !== undefined) {
+    return `${target}${view.power > 0 ? `heating ${formatPercent(view.power)}` : 'idle'}`;
+  }
   return `${target}${view.demand ? 'heating' : 'idle'}`;
 };
 

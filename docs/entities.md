@@ -161,6 +161,10 @@ built from the same two sensors:
   is a run) are shaded behind the chart, and their targets are drawn as dashed
   lines while they are on. Without a heating or AC tile the sheet shows the
   sensors alone.
+- **Central heating button:** shows the target and the heating power requested
+  (`Target 20.0° · heating 45%`) from the heating tile's optional `power`
+  sensor; `idle` at 0%. Without a numeric `power` it falls back to `heating` or
+  `idle` from the `demand` sensor.
 
 ## Heating
 

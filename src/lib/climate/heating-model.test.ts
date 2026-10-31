@@ -76,6 +76,19 @@ describe('readHeating', () => {
     );
   });
 
+  it('exposes the requested power, clamped, only when it reads a number', () => {
+    expect(read('heat', 'on', { percent: '59' }).power).toBe(59);
+    expect(read('heat', 'on', { percent: '140' }).power).toBe(100);
+    expect(read('heat', 'on', { percent: '-5' }).power).toBe(0);
+    expect(read('heat', 'on').power).toBeUndefined();
+    for (const percent of ['unavailable', 'unknown', 'n/a', '']) {
+      expect(read('heat', 'on', { percent }).power).toBeUndefined();
+    }
+    expect(
+      read('heat', 'on', { percent: '90', cloud: 'off' }).power,
+    ).toBeUndefined();
+  });
+
   it('falls back to all or none by the demand flag without a usable power', () => {
     expect(read('heat', 'on', { demand: 'on' }).demandLevel).toBe(3);
     expect(read('heat', 'on').demandLevel).toBe(0);

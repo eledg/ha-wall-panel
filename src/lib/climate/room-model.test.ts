@@ -105,6 +105,10 @@ describe('button lines', () => {
   it('describes the heating', () => {
     expect(heatingLine(heating({}))).toBe('Target 20.0° · heating');
     expect(heatingLine(heating({ demand: false }))).toBe('Target 20.0° · idle');
+    expect(heatingLine(heating({ power: 45 }))).toBe(
+      'Target 20.0° · heating 45%',
+    );
+    expect(heatingLine(heating({ power: 0 }))).toBe('Target 20.0° · idle');
     expect(heatingLine(heating({ on: false, state: 'off' }))).toBe('Off');
     expect(heatingLine(heating({ on: false, state: 'paused' }))).toBe('Paused');
   });

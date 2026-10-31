@@ -43,6 +43,8 @@ export type HeatingView = {
    * else all or none by `demand`. 0 unless usable.
    */
   demandLevel: DemandLevel;
+  /** Heating power requested, 0–100, from the `power` sensor. Undefined without a numeric reading, or unless usable. */
+  power: number | undefined;
   target: number | undefined;
   /** The living room reading from the Tado sensor. */
   current: number | undefined;
@@ -83,6 +85,10 @@ export const readHeating = (
     state,
     demand: demanded,
     demandLevel,
+    power:
+      usable && percent !== undefined
+        ? Math.min(100, Math.max(0, percent))
+        : undefined,
     target: num(attrs.temperature),
     current: num(attrs.current_temperature),
     min: num(attrs.min_temp) ?? DEFAULT_MIN,
