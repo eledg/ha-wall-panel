@@ -28,6 +28,8 @@ export const TILE_ROLES = {
   weather: {
     entity: { domain: 'weather' },
     sun: { domain: 'sun', optional: true },
+    /** A sensor whose `warnings` attribute lists the official weather warnings (see `docs/entities.md`). */
+    alerts: { domain: 'sensor', optional: true },
   },
   /** One or more calendars, merged into an agenda. */
   calendar: {},

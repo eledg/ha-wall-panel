@@ -313,3 +313,52 @@ export const sunAttributes = (now: number) => ({
   next_rising: nextAt(now, 6.8),
   next_setting: nextAt(now, 16.5),
 });
+
+export type WarningScenario = { id: string; label: string };
+
+export const warningScenarios: WarningScenario[] = [
+  { id: 'none', label: 'None' },
+  { id: 'yellow', label: 'Yellow' },
+  { id: 'amber', label: 'Amber' },
+  { id: 'red', label: 'Red' },
+  { id: 'multiple', label: 'Multiple' },
+];
+
+const WARNING_TEXT: Record<string, Record<string, string>> = {
+  Wind: {
+    title: 'Strong winds',
+    description:
+      'Strong gusts may cause travel disruption and damage to exposed trees. Some short power interruptions are possible.',
+    guidance:
+      'Secure loose outdoor items. Allow extra time for travel and check conditions before setting out.',
+  },
+  Rain: {
+    title: 'Heavy rain',
+    description:
+      'Heavy rain may cause surface-water flooding and difficult driving conditions.',
+    guidance:
+      'Check your journey before travelling. Do not drive through floodwater.',
+  },
+};
+
+const warning = (severity: string, event: string, now: number) => ({
+  id: `sample-${severity}-${event}`,
+  severity,
+  event,
+  ...WARNING_TEXT[event],
+  starts: new Date(now - HOUR).toISOString(),
+  ends: new Date(now + 5 * HOUR).toISOString(),
+  area: 'Berkhamsted · Hertfordshire',
+  source: 'Sample warning · not a live Met Office alert',
+});
+
+/** The alerts sensor's attributes for a scenario: sample warnings only, never real ones. */
+export const warningAttributes = (scenarioId: string, now: number) => {
+  let warnings: ReturnType<typeof warning>[] = [];
+  if (scenarioId === 'multiple') {
+    warnings = [warning('yellow', 'Wind', now), warning('amber', 'Rain', now)];
+  } else if (scenarioId !== 'none') {
+    warnings = [warning(scenarioId, 'Wind', now)];
+  }
+  return { warnings };
+};

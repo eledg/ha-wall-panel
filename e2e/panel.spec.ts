@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 // A fixed instant, so the clock, date and forecast hours never drift.
 const NOW = new Date('2026-03-14T09:41:00Z');
@@ -67,6 +68,33 @@ test('weather: the sheet', async ({ page }) => {
   await expect(page.getByLabel('7-day outlook')).toBeVisible();
   await expect(page.getByLabel('Next hours')).toBeVisible();
   await expect(page).toHaveScreenshot('weather-sheet.png');
+});
+
+// The mock overlay is hidden for the screenshots, so open it and press its chip
+// with a dispatched click, which works on hidden elements.
+const setWarnings = async (page: Page, label: string) => {
+  const overlay = page.locator('#mock-overlay');
+  await overlay.locator('button[aria-expanded]').dispatchEvent('click');
+  await overlay
+    .locator('button', { hasText: new RegExp(`^${label}$`) })
+    .dispatchEvent('click');
+};
+
+test('weather: warnings on the tile', async ({ page }) => {
+  await setWarnings(page, 'Multiple');
+  const badge = page.getByRole('img', { name: /Amber warning: Rain/ });
+  await expect(badge).toBeVisible();
+  await expect(
+    page.locator('.rounded-tile').filter({ has: badge }),
+  ).toHaveScreenshot('weather-tile-warnings.png');
+});
+
+test('weather: the warning details', async ({ page }) => {
+  await setWarnings(page, 'Multiple');
+  await page.getByRole('button', { name: /Sunny/ }).click();
+  await page.getByRole('button', { name: /View amber warning/ }).click();
+  await expect(page.getByText('Weather warnings')).toBeVisible();
+  await expect(page).toHaveScreenshot('weather-warnings.png');
 });
 
 test('climate: the sheet', async ({ page }) => {

@@ -5,28 +5,29 @@ The entities each tile reads. A tile in `config.json` (see
 below; you supply the Home Assistant entity ID for each, and it must be in the
 domain shown. A tile type may appear any number of times.
 
-| Tile type     | Setting       | Domain          | Attributes read                                                                                                                         | Notes                                                                   |
-| ------------- | ------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `clock`       | none          |                 |                                                                                                                                         | The time and date.                                                      |
-| `toggle`      | `entity`      | `switch`        | `state`                                                                                                                                 | A room light. A plain switch: no dimming.                               |
-| `weather`     | `entity`      | `weather`       | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Current conditions plus an hourly forecast. See [Weather](#weather).    |
-|               | `sun`         | `sun`           | `next_rising`, `next_setting`                                                                                                           | Optional. Sunrise and sunset on the weather screen.                     |
-| `calendar`    | `calendars`   | `calendar`      | `state`; events via REST                                                                                                                | A list of calendars, each with `entity`. See [Calendars](#calendars).   |
-| `ac`          | `climate`     | `climate`       | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | The air conditioner. See [Air conditioning](#air-conditioning).         |
-|               | `powerful`    | `switch`        | `state`                                                                                                                                 | AC Powerful boost.                                                      |
-|               | `economy`     | `switch`        | `state`                                                                                                                                 | AC economy mode.                                                        |
-|               | `quietFan`    | `switch`        | `state`                                                                                                                                 | AC quiet fan.                                                           |
-|               | `room`        | `sensor`        | `state`                                                                                                                                 | Optional. The room temperature shown beside the target in the AC sheet. |
-| `temperature` | `temperature` | `sensor`        | `state`                                                                                                                                 | Room temperature + sheet. See [Room temperature](#room-temperature).    |
-|               | `humidity`    | `sensor`        | `state`                                                                                                                                 | Room humidity.                                                          |
-|               | `battery`     | `sensor`        | `state`                                                                                                                                 | Optional. Room sensor battery; diagnostics only.                        |
-| `heating`     | `climate`     | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating. See [Heating](#heating).                               |
-|               | `schedule`    | `switch`        | `state`                                                                                                                                 | Heating control: on follows the schedule.                               |
-|               | `demand`      | `binary_sensor` | `state`                                                                                                                                 | Boiler demand, whole house.                                             |
-|               | `power`       | `sensor`        | `state`                                                                                                                                 | Optional. Heating power in percent; grades the heat waves.              |
-|               | `cloud`       | `binary_sensor` | `state`                                                                                                                                 | Heating cloud link; `off` makes the heating unavailable.                |
-|               | `resume`      | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                                               |
-|               | `boost`       | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                                         |
+| Tile type     | Setting       | Domain          | Attributes read                                                                                                                         | Notes                                                                           |
+| ------------- | ------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `clock`       | none          |                 |                                                                                                                                         | The time and date.                                                              |
+| `toggle`      | `entity`      | `switch`        | `state`                                                                                                                                 | A room light. A plain switch: no dimming.                                       |
+| `weather`     | `entity`      | `weather`       | `state`, `temperature`, `supported_features`; forecast via `weather.get_forecasts`                                                      | Current conditions plus an hourly forecast. See [Weather](#weather).            |
+|               | `sun`         | `sun`           | `next_rising`, `next_setting`                                                                                                           | Optional. Sunrise and sunset on the weather screen.                             |
+|               | `alerts`      | `sensor`        | `warnings`                                                                                                                              | Optional. Official weather warnings. See [Weather warnings](#weather-warnings). |
+| `calendar`    | `calendars`   | `calendar`      | `state`; events via REST                                                                                                                | A list of calendars, each with `entity`. See [Calendars](#calendars).           |
+| `ac`          | `climate`     | `climate`       | `state`, `hvac_modes`, `temperature`, `current_temperature`, `min_temp`, `max_temp`, `target_temp_step`, `fan_mode(s)`, `swing_mode(s)` | The air conditioner. See [Air conditioning](#air-conditioning).                 |
+|               | `powerful`    | `switch`        | `state`                                                                                                                                 | AC Powerful boost.                                                              |
+|               | `economy`     | `switch`        | `state`                                                                                                                                 | AC economy mode.                                                                |
+|               | `quietFan`    | `switch`        | `state`                                                                                                                                 | AC quiet fan.                                                                   |
+|               | `room`        | `sensor`        | `state`                                                                                                                                 | Optional. The room temperature shown beside the target in the AC sheet.         |
+| `temperature` | `temperature` | `sensor`        | `state`                                                                                                                                 | Room temperature + sheet. See [Room temperature](#room-temperature).            |
+|               | `humidity`    | `sensor`        | `state`                                                                                                                                 | Room humidity.                                                                  |
+|               | `battery`     | `sensor`        | `state`                                                                                                                                 | Optional. Room sensor battery; diagnostics only.                                |
+| `heating`     | `climate`     | `climate`       | `state`, `temperature`, `current_temperature`, `min_temp`, `max_temp`                                                                   | Central heating. See [Heating](#heating).                                       |
+|               | `schedule`    | `switch`        | `state`                                                                                                                                 | Heating control: on follows the schedule.                                       |
+|               | `demand`      | `binary_sensor` | `state`                                                                                                                                 | Boiler demand, whole house.                                                     |
+|               | `power`       | `sensor`        | `state`                                                                                                                                 | Optional. Heating power in percent; grades the heat waves.                      |
+|               | `cloud`       | `binary_sensor` | `state`                                                                                                                                 | Heating cloud link; `off` makes the heating unavailable.                        |
+|               | `resume`      | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                                                       |
+|               | `boost`       | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                                                 |
 
 ## Calendars
 
@@ -106,6 +107,108 @@ optional: the screen shows only what is reported.
 - HA sends no event when a forecast changes, so the store refetches on entity
   changes, on reconnect, and every 30 minutes. Opening the weather screen
   refetches when the forecasts are over 10 minutes old.
+
+### Weather warnings
+
+The tile shows a severity-coloured badge and the weather screen a header
+control (tap for the details) when the optional `alerts` sensor lists a warning
+that is in force or still to come. Home Assistant's core Met Office integration
+provides **no warnings**, so the panel reads a sensor you add. Warnings are
+never inferred from the forecast.
+
+The sensor's state is not read (use the count). Its **`warnings` attribute** is
+a list; each item has:
+
+| Field                                                      | Notes                                                                                   |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `severity`                                                 | Required: `yellow`, `amber` or `red`. Items with another value are skipped.             |
+| `event`                                                    | Required. The short hazard, e.g. `Wind`; shown on the tile and header.                  |
+| `starts`, `ends`                                           | ISO 8601 with a time zone. A warning that has ended, or has no usable times, is hidden. |
+| `id`, `title`, `area`, `description`, `guidance`, `source` | Optional text for the details; blank ones are left out.                                 |
+
+Most severe first, then earliest start; the most severe is the headline. An
+unavailable or missing sensor shows no warnings.
+
+#### Example: Met Office warnings from the RSS feed
+
+The Met Office publishes a warnings RSS feed per region, at
+`https://www.metoffice.gov.uk/public/data/PWSCache/WarningsRSS/Region/<code>`
+(`se` is London and the South East, `ee` the East of England; the other regions
+are linked from its warnings page). **Pick the region your location is in**: a
+county can sit in a different region than you would expect (Hertfordshire is in
+`ee`, not `se`), and a warning is issued per region. The example uses `se`;
+change the URL and the `area` text in the template together. The panel does not
+know your location: it shows whatever the sensor lists.
+
+This builds the sensor from the feed in `configuration.yaml`. The feed has no
+year, no time zone and no advice text, so the template assumes the current year
+and your HA time zone, and leaves `guidance` empty.
+
+```yaml
+rest_command:
+  fetch_rss:
+    url: '{{ url }}'
+    method: get
+    headers:
+      user-agent: 'Mozilla/5.0'
+
+template:
+  - triggers:
+      - trigger: time_pattern
+        minutes: '/15'
+      - trigger: homeassistant
+        event: start
+    actions:
+      - action: rest_command.fetch_rss
+        data:
+          url: https://www.metoffice.gov.uk/public/data/PWSCache/WarningsRSS/Region/se
+        response_variable: feed
+    sensor:
+      - name: Weather warnings
+        unique_id: weather_warnings
+        state: "{{ feed.content | regex_findall('<item>') | length }}"
+        attributes:
+          warnings: >-
+            {% macro stamp(text) %}{{ strptime(text ~ ' ' ~ now().year, '%H%M %a %d %b %Y').replace(tzinfo=now().tzinfo).isoformat() }}{% endmacro %}
+            {% set ns = namespace(out=[]) %}
+            {% for it in (feed.content | replace('<![CDATA[', '') | replace(']]>', '') | regex_findall('(?s)<item>(.*?)</item>')) %}
+              {% set title = ((it | regex_findall('(?s)<title>(.*?)</title>'))[0] | replace('&amp;', '&') | trim) %}
+              {% set desc = ((it | regex_findall('(?s)<description>(.*?)</description>'))[0] | replace('&amp;', '&') | trim) %}
+              {% set event = title | regex_findall('(?i)warning of (.+?) affecting') %}
+              {% set when = desc | regex_findall('valid from (\\d{4} \\w{3} \\d{2} \\w{3}) to (\\d{4} \\w{3} \\d{2} \\w{3})') %}
+              {% set areas = desc | regex_findall(': (.+?) valid from') %}
+              {% set id = it | regex_findall('id=([0-9a-f-]{36})') %}
+              {% if title.split(' ')[0] | lower in ['yellow', 'amber', 'red'] and event | length > 0 and when | length > 0 %}
+                {% set ns.out = ns.out + [{
+                  'id': id[0] if id else title,
+                  'severity': title.split(' ')[0] | lower,
+                  'event': event[0] | capitalize,
+                  'title': title,
+                  'starts': stamp(when[0][0]) | trim,
+                  'ends': stamp(when[0][1]) | trim,
+                  'area': 'London & South East England',
+                  'description': areas[0] if areas else desc,
+                  'guidance': '',
+                  'source': 'Met Office'
+                }] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.out | to_json }}
+```
+
+If you already have a `rest_command` that returns the feed as `content`, use it
+instead of `fetch_rss`. If `configuration.yaml` already has a `template:` list,
+add this as **its own item** of that list, with its own `triggers`: placed under
+another item's trigger, the sensor would never run the fetch. The `homeassistant`
+start trigger fills the sensor as soon as HA starts; a template reload alone
+leaves it `unknown` until the next quarter hour. If the fetch fails the sensor keeps its last value, and
+the panel hides a warning once its `ends` time passes. Reload with
+Developer tools → YAML → Template entities, then check the attribute under
+Developer tools → States. Then point the tile at it:
+
+```json
+"entities": { "entity": "weather.home", "alerts": "sensor.weather_warnings" }
+```
 
 ## Air conditioning
 

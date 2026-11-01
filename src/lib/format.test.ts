@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { applyConfig, getConfig } from '@/config/config.ts';
 import { mockConfig } from '@/dev/mock/config.ts';
 
-import { formatTemp, formatTime } from './format.ts';
+import { formatDayTime, formatTemp, formatTime } from './format.ts';
 
 afterEach(() => applyConfig(mockConfig));
 
@@ -31,6 +31,25 @@ describe('formatTime by locale and zone', () => {
   it('shows the configured zone, not the machine', () => {
     applyConfig({ ...getConfig(), locale: 'en-GB', timeZone: 'Asia/Tokyo' });
     expect(formatTime(at)).toBe('06:41');
+  });
+});
+
+describe('formatDayTime', () => {
+  const at = new Date(Date.UTC(2026, 10, 1, 18, 5));
+
+  it('shows the short weekday and the time', () => {
+    applyConfig({ ...getConfig(), locale: 'en-GB', timeZone: 'UTC' });
+    expect(formatDayTime(at)).toBe('Sun 18:05');
+  });
+
+  it('uses the configured zone, which can change the day', () => {
+    applyConfig({ ...getConfig(), locale: 'en-GB', timeZone: 'Asia/Tokyo' });
+    expect(formatDayTime(at)).toBe('Mon 03:05');
+  });
+
+  it('accepts epoch milliseconds', () => {
+    applyConfig({ ...getConfig(), locale: 'en-GB', timeZone: 'UTC' });
+    expect(formatDayTime(at.getTime())).toBe('Sun 18:05');
   });
 });
 

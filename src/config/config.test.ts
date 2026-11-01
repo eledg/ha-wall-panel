@@ -63,6 +63,40 @@ describe('entityRefs', () => {
   });
 });
 
+describe('the weather alerts role', () => {
+  const weather = tileOf('weather');
+  const withAlerts = (alerts?: string): Config =>
+    withTiles({
+      ...weather,
+      entities: { ...weather.entities, alerts },
+    } as TileConfig);
+
+  it('is optional: a tile without it reads one entity less', () => {
+    const paths = (cfg: Config) => entityRefs(cfg).map(({ path }) => path);
+
+    expect(paths(withAlerts('sensor.weather_warnings'))).toContain(
+      'tiles[0].alerts',
+    );
+    expect(paths(withAlerts(undefined))).not.toContain('tiles[0].alerts');
+    expect(validateConfig(withAlerts(undefined))).toEqual([]);
+  });
+
+  it('accepts a sensor', () => {
+    expect(validateConfig(withAlerts('sensor.weather_warnings'))).toEqual([]);
+  });
+
+  it('flags an entity from another domain', () => {
+    const issues = validateConfig(withAlerts('weather.home'));
+
+    expect(issues).toEqual([
+      {
+        key: 'tiles[0].alerts',
+        message: '"weather.home" should be in the sensor domain',
+      },
+    ]);
+  });
+});
+
 describe('validateConfig', () => {
   it('accepts the fixture config', () => {
     expect(validateConfig(getConfig())).toEqual([]);

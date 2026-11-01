@@ -66,6 +66,46 @@ describe('WeatherTile', () => {
     expect(text()).toContain('Rain');
   });
 
+  describe('weather warnings', () => {
+    const badge = () => document.body.querySelector('[role="img"]');
+
+    it('shows no badge without warnings', async () => {
+      await setup();
+
+      expect(badge()).toBeNull();
+    });
+
+    it('shows the most severe warning as a badge', async () => {
+      const { mock } = await setup();
+
+      await act(async () => mock.controls.setWarnings('amber'));
+
+      expect(badge()?.getAttribute('aria-label')).toBe('Amber warning: Wind');
+    });
+
+    it('counts several warnings', async () => {
+      const { mock } = await setup();
+
+      await act(async () => mock.controls.setWarnings('multiple'));
+
+      expect(badge()?.getAttribute('aria-label')).toBe(
+        'Amber warning: Rain · 2 warnings',
+      );
+      expect(badge()?.textContent).toBe('2');
+    });
+
+    it('hides the badge when the sensor is unavailable', async () => {
+      const { mock } = await setup();
+      await act(async () => mock.controls.setWarnings('red'));
+
+      await act(async () =>
+        mock.controls.setUnavailable(entityId('weatherAlerts')),
+      );
+
+      expect(badge()).toBeNull();
+    });
+  });
+
   it('handles an unavailable entity', async () => {
     const { mock } = await setup();
 
