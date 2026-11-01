@@ -11,6 +11,10 @@ inputs:
     description: Wait for quality gate result before completing
     required: false
     default: 'false'
+  fail-on-new-issues:
+    description: Fail when SonarCloud reports any unresolved issue on new code
+    required: false
+    default: 'false'
   scanner-version:
     description: >-
       sonar-scanner-cli version (no-JRE build). Check
@@ -58,3 +62,12 @@ runs:
       env:
         SONAR_TOKEN: ${{ inputs.sonar-token }}
         JAVA_HOME: ${{ env.JAVA_HOME }}
+
+    # Runs even when the quality gate step failed, so the issue count is reported too.
+    - name: Fail on new issues
+      if: ${{ !cancelled() && inputs.fail-on-new-issues == 'true' }}
+      shell: bash
+      run: bash "${{ github.action_path }}/fail-on-new-issues.sh"
+      env:
+        SONAR_TOKEN: ${{ inputs.sonar-token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}

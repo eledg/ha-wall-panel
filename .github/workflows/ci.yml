@@ -73,7 +73,8 @@ jobs:
       - uses: ./.github/actions/sonar-scan
         with:
           sonar-token: ${{ secrets.SONAR_TOKEN }}
-          wait-for-quality-gate: ${{ github.event_name == 'push' }}
+          wait-for-quality-gate: true
+          fail-on-new-issues: true
 
   e2e:
     runs-on: ubuntu-latest
