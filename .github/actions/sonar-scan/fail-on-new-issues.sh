@@ -18,17 +18,18 @@ for _ in $(seq 1 60); do
       echo "::error::SonarCloud analysis $status"
       exit 1
       ;;
+    *) ;; # still queued or running
   esac
   sleep 5
 done
-if [ "$status" != "SUCCESS" ]; then
+if [[ "$status" != "SUCCESS" ]]; then
   echo "::error::Timed out waiting for the SonarCloud analysis"
   exit 1
 fi
 
 scope=(--data-urlencode "branch=main")
 link_scope="branch=main"
-if [ -n "${PR_NUMBER:-}" ]; then
+if [[ -n "${PR_NUMBER:-}" ]]; then
   scope=(--data-urlencode "pullRequest=$PR_NUMBER")
   link_scope="pullRequest=$PR_NUMBER"
 fi
@@ -40,7 +41,7 @@ total=$(get -G "$api/issues/search" \
   --data-urlencode "ps=1" \
   "${scope[@]}" | jq -r .paging.total)
 
-if [ "$total" -gt 0 ]; then
+if [[ "$total" -gt 0 ]]; then
   echo "::error::SonarCloud found $total new issue(s): https://sonarcloud.io/project/issues?id=$project_key&$link_scope&inNewCodePeriod=true&resolved=false"
   exit 1
 fi
