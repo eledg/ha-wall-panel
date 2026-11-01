@@ -22,6 +22,12 @@ test('panel against the mock HA', async ({ page }) => {
   await expect(page).toHaveScreenshot('panel.png');
 });
 
+test('diagnostics: the version button is tappable', async ({ page }) => {
+  // A real click fails if another element (such as <main>) covers the button.
+  await page.getByRole('button', { name: 'Diagnostics' }).click();
+  await expect(page.getByRole('dialog', { name: 'Diagnostics' })).toBeVisible();
+});
+
 test('calendar: all four rows fit inside the tile', async ({ page }) => {
   const row = page.getByRole('button', { name: /Swimming lessons/ });
   await expect(row).toBeVisible();
