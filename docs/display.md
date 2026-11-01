@@ -75,6 +75,7 @@ Findings from the first deploy of the app, measured with a temporary probe that 
 - `appearance: none` on buttons made no visible difference.
 - The full-screen "Wake display" overlay was a background-less `<button>` and lit the whole screen grey when night mode dimmed, which looked like the dimming had failed. The opacity change in #41 did not fix it; making the overlay a `div role="button"` in `Shell` (#45) did, confirmed on the display on 2026-10-20. It cannot have an opaque background because it sits over the dashboard. Keep it a `div`.
 - The overlay is `z-40` so it sits above the diagnostics dialog and the sheets (`z-10` to `z-20`). At `z-10` the diagnostics dialog covered it, so a dimmed display could not be woken by tapping while diagnostics was open. Keep it above any full-screen layer. Tapping to wake with diagnostics open is confirmed on the display (2026-10-20).
+- The version button that opens diagnostics is `h-edge` tall, so its box stays inside the edge margin and never covers a tile. Putting it at `-z-10` (behind the tiles) looked right but made it untappable: `<main>` is `h-dvh` and covers the margin, so it took the taps. It keeps its opaque `bg-bg` (a background-less button goes grey).
 - If a button still renders grey, the next step to try is a `div role="button"` with keyboard handling.
 
 ### Inherited text stays day-bright at night
