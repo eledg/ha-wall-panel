@@ -31,6 +31,10 @@ changing the UI.
 CI runs on every PR. A first-time contributor's workflows need a maintainer's
 approval before they run.
 
+The `sonar` job fails on any new SonarCloud issue, or if the quality gate fails.
+Fix the issue, or mark it "Accepted" or "False positive" in SonarCloud if it is
+deliberate.
+
 ## Commit messages
 
 Releases are versioned automatically by [semantic-release](https://semantic-release.gitbook.io)
