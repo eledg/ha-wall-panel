@@ -27,7 +27,12 @@ import {
   heatingStatus,
   readHeating,
 } from '@/lib/climate/heating-model.ts';
-import { type Interval, toIntervals } from '@/services/ha/history.ts';
+import {
+  type Interval,
+  type Sample,
+  toIntervals,
+  toSeries,
+} from '@/services/ha/history.ts';
 import { haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
@@ -37,7 +42,12 @@ export const PRESS_MS = 800;
 /** The demand history is re-read this often while the sheet is open. */
 export const HISTORY_REFRESH_MS = 60_000;
 
-type Window = { start: number; end: number; intervals: Interval[] | undefined };
+type Window = {
+  start: number;
+  end: number;
+  intervals: Interval[] | undefined;
+  power: Sample[] | undefined;
+};
 
 /**
  * Full-screen heating controls, as in the design: power, the living room and
@@ -93,7 +103,8 @@ export const HeatingSheet = ({
     const load = () => {
       const end = Date.now();
       const start = end - HISTORY_HOURS * 3_600_000;
-      void store
+      const powerId = entities.power;
+      const demandRead = store
         .history(entities.demand, new Date(start), new Date(end))
         .then(
           (rows) => toIntervals(rows, start, end),
@@ -101,15 +112,29 @@ export const HeatingSheet = ({
             console.error('Heating demand history failed', err);
             return undefined;
           },
-        )
-        .then((intervals) => {
-          if (cancelled) return;
-          setHistory((previous) =>
+        );
+      const powerRead =
+        powerId === undefined
+          ? Promise.resolve(undefined)
+          : store.history(powerId, new Date(start), new Date(end)).then(
+              (rows) => toSeries(rows, start, end),
+              (err: unknown) => {
+                console.error('Heating power history failed', err);
+                return undefined;
+              },
+            );
+      void Promise.all([demandRead, powerRead]).then(([intervals, series]) => {
+        if (cancelled) return;
+        setHistory((previous) => ({
+          start,
+          end,
+          intervals:
             intervals === undefined && previous?.intervals
-              ? previous
-              : { start, end, intervals: intervals ?? [] },
-          );
-        });
+              ? previous.intervals
+              : (intervals ?? []),
+          power: series ?? previous?.power,
+        }));
+      });
     };
     load();
     const timer = setInterval(load, HISTORY_REFRESH_MS);
@@ -117,7 +142,7 @@ export const HeatingSheet = ({
       cancelled = true;
       clearInterval(timer);
     };
-  }, [store, entities.demand]);
+  }, [store, entities.demand, entities.power]);
 
   const togglePower = () => {
     const next = !view.on;
@@ -198,6 +223,7 @@ export const HeatingSheet = ({
       </div>
       <HeatingHistory
         intervals={history?.intervals}
+        power={history?.power}
         start={history?.start}
         end={history?.end}
       />

@@ -6,6 +6,8 @@ import {
   canResume,
   demandLevelOf,
   heatingStatus,
+  powerSegments,
+  powerStrength,
   readHeating,
 } from './heating-model.ts';
 import { stepTarget } from './target.ts';
@@ -178,5 +180,39 @@ describe('heatingStatus', () => {
     expect(heatingStatus(read('heat', 'on'), false, false)).toBe(
       'Turning off…',
     );
+  });
+});
+
+describe('powerSegments', () => {
+  it('holds each reading until the next and the last to the end', () => {
+    expect(
+      powerSegments(
+        [
+          { at: 10, value: 50 },
+          { at: 20, value: 0 },
+        ],
+        0,
+        30,
+      ),
+    ).toEqual([
+      { start: 0, end: 10, percent: 0 },
+      { start: 10, end: 20, percent: 50 },
+      { start: 20, end: 30, percent: 0 },
+    ]);
+  });
+
+  it('clamps to 0–100 and has nothing for no samples', () => {
+    expect(powerSegments([{ at: 0, value: 140 }], 0, 5)[0]?.percent).toBe(100);
+    expect(powerSegments([{ at: 0, value: -3 }], 0, 5)[0]?.percent).toBe(0);
+    expect(powerSegments([], 0, 5)).toEqual([]);
+  });
+});
+
+describe('powerStrength', () => {
+  it('is none at 0 and grows with power up to full', () => {
+    expect(powerStrength(0)).toBe(0);
+    expect(powerStrength(1)).toBeGreaterThan(35);
+    expect(powerStrength(50)).toBeLessThan(powerStrength(80));
+    expect(powerStrength(100)).toBe(100);
   });
 });

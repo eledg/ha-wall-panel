@@ -315,7 +315,11 @@ Two signals, kept separate (`heating-model.ts`):
   returns to the schedule is **untested**.
   Boost is enabled whenever heating is on.
 - **Demand history** is read from `/api/history/period` when the sheet opens and
-  every minute while it is open (`services/ha/history.ts`). An empty or failed first read
+  every minute while it is open (`services/ha/history.ts`). With the optional
+  `power` sensor the bar is graded by its history instead: no fill at 0%, a
+  stronger accent the higher the percentage, and each band's tooltip gives the
+  percentage. Without `power`, or with no history for it, the bar is plain
+  on/off from `demand`. An empty or failed first read
   shows "No demand history available"; a failed refresh keeps the last bars.
 - Tado's cloud API allows 20,000 calls a day, so the dashboard doesn't poll.
 

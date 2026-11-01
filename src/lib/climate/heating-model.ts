@@ -1,6 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 
 import { isUsable, num, parseNumber } from '@/services/ha/entity.ts';
+import type { Sample } from '@/services/ha/history.ts';
 
 /** Where the target comes from, and whether heating is on (see docs/entities.md#heating). */
 export type HeatingState = 'schedule' | 'manual' | 'off' | 'paused';
@@ -27,6 +28,45 @@ export const demandLevelOf = (percent: number): DemandLevel => {
   if (percent <= LEVEL_CEILINGS[0]) return 1;
   return percent <= LEVEL_CEILINGS[1] ? 2 : 3;
 };
+
+/** A stretch of the window at one heating power (percent, 0–100). */
+export type PowerSegment = { start: number; end: number; percent: number };
+
+/**
+ * Back-to-back segments over `start`..`end` from power samples: each reading
+ * holds until the next, the last to `end`. Time before the first sample is 0%.
+ * Percentages are clamped to 0–100. `[]` when there are no samples.
+ */
+export const powerSegments = (
+  samples: Sample[],
+  start: number,
+  end: number,
+): PowerSegment[] => {
+  const points = samples.filter((s) => s.at < end);
+  if (points.length === 0) return [];
+  const segments: PowerSegment[] = [];
+  const first = Math.max(start, points[0]!.at);
+  if (first > start) segments.push({ start, end: first, percent: 0 });
+  points.forEach((point, i) => {
+    const from = Math.max(start, point.at);
+    const to = points[i + 1]?.at ?? end;
+    if (to > from) {
+      segments.push({
+        start: from,
+        end: to,
+        percent: Math.min(100, Math.max(0, point.value)),
+      });
+    }
+  });
+  return segments;
+};
+
+/**
+ * How much of the accent a segment shows over the off colour: none at 0%,
+ * 35% at the faintest power, full at 100%.
+ */
+export const powerStrength = (percent: number) =>
+  percent <= 0 ? 0 : 35 + (Math.min(percent, 100) * 65) / 100;
 
 export type HeatingView = {
   /** The climate entity answers and the Tado cloud connection is up. */
