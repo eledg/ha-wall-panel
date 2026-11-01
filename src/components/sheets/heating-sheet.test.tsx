@@ -296,7 +296,7 @@ describe('HeatingSheet', () => {
   });
 
   describe('demand history', () => {
-    it('draws four heating periods with 24h labels', async () => {
+    it('shades four heating periods by power with 24h labels', async () => {
       await setup();
       await act(async () => {});
       const section = document.querySelector(
@@ -306,11 +306,48 @@ describe('HeatingSheet', () => {
       expect(section.textContent).toContain('last 6 hours');
       expect(
         section.querySelector('[role="img"]')?.getAttribute('aria-label'),
-      ).toBe('4 heating periods over the last 6 hours');
-      expect(section.querySelectorAll('.bg-accent')).toHaveLength(5); // 4 bands + the legend
+      ).toBe('Heating power peaked at 100% over the last 6 hours');
+      const bands = [
+        ...section.querySelectorAll<HTMLElement>('[role="img"] > div'),
+      ];
+      const levels = bands
+        .map((band) => band.title.split(' · ')[1])
+        .filter((level) => level !== '0%');
+      expect(levels).toEqual(['45%', '80%', '100%', '60%']);
+      expect(section.textContent).toContain('Low');
       expect(section.textContent).toMatch(
         /\d\d:\d\d.*\d\d:\d\d.*\d\d:\d\d.*\d\d:\d\d/,
       );
+    });
+
+    it('keeps the on/off bands without a power sensor', async () => {
+      const mock = createMockHa();
+      const store = createHaStore(mock.deps);
+      const tile = tileOf('heating');
+      const { power: _power, ...entities } = tile.entities;
+      await act(async () => {
+        await store.start(mock.getAuth);
+        render(
+          <HaConnection store={store}>
+            <HeatingSheet
+              tile={{ ...tile, entities }}
+              store={store}
+              onClose={vi.fn()}
+            />
+          </HaConnection>,
+          document.body,
+        );
+      });
+      await act(async () => {});
+      await act(async () => {});
+      const section = document.querySelector(
+        '[aria-label="Heating demand history"]',
+      )!;
+
+      expect(
+        section.querySelector('[role="img"]')?.getAttribute('aria-label'),
+      ).toBe('4 heating periods over the last 6 hours');
+      expect(section.querySelectorAll('.bg-accent')).toHaveLength(5); // 4 bands + the legend
     });
 
     it('shows an empty state when the fetch fails', async () => {
@@ -332,6 +369,7 @@ describe('HeatingSheet', () => {
         );
       });
       await act(async () => {});
+      await act(async () => {});
 
       expect(document.body.textContent).toContain(
         'No demand history available',
@@ -342,7 +380,7 @@ describe('HeatingSheet', () => {
           '[aria-label="Heating demand history"] [role="img"]',
         ),
       ).toBeNull();
-      expect(error).toHaveLength(1);
+      expect(error).toHaveLength(2); // demand and power
     });
   });
 

@@ -62,7 +62,7 @@ test('heating: the sheet', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeVisible();
   // Let the demand history load.
   await expect(
-    page.getByRole('img', { name: /heating periods/ }),
+    page.getByRole('img', { name: /Heating power peaked/ }),
   ).toBeVisible();
   await expect(page).toHaveScreenshot('heating-sheet.png');
 });
