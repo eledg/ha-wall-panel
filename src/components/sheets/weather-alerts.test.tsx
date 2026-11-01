@@ -4,27 +4,12 @@ import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { WeatherAlert } from '@/lib/weather-alerts.ts';
+import { alertFixture } from '@/tests/weather-alerts.ts';
 
 import { WeatherAlertControl, WeatherAlertDetails } from './weather-alerts.tsx';
 
 const now = new Date('2026-03-14T09:41:00Z');
-const hour = 3_600_000;
-const iso = (offsetHours: number) =>
-  new Date(now.getTime() + offsetHours * hour).toISOString();
-
-const alert = (overrides: Partial<WeatherAlert> = {}): WeatherAlert => ({
-  id: 'wind',
-  severity: 'yellow',
-  event: 'Wind',
-  title: 'Strong winds',
-  starts: iso(-1),
-  ends: iso(5),
-  area: 'Berkhamsted',
-  description: 'Gusts may cause disruption.',
-  guidance: 'Secure loose items.',
-  source: 'Sample warning',
-  ...overrides,
-});
+const { iso, alert } = alertFixture(now);
 
 const text = () => document.body.textContent;
 const close = () =>

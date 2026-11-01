@@ -1,31 +1,16 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 
+import { alertFixture } from '@/tests/weather-alerts.ts';
+
 import {
   readWeatherAlerts,
   relevantWeatherAlerts,
   severityLabel,
 } from './weather-alerts.ts';
-import type { WeatherAlert } from './weather-alerts.ts';
 
 const now = new Date('2026-10-31T12:00:00Z');
-const hour = 3_600_000;
-const iso = (offsetHours: number) =>
-  new Date(now.getTime() + offsetHours * hour).toISOString();
-
-const alert = (overrides: Partial<WeatherAlert> = {}): WeatherAlert => ({
-  id: 'a',
-  severity: 'yellow',
-  event: 'Wind',
-  title: 'Strong winds',
-  starts: iso(-1),
-  ends: iso(5),
-  area: '',
-  description: '',
-  guidance: '',
-  source: '',
-  ...overrides,
-});
+const { iso, alert } = alertFixture(now);
 
 const sensor = (
   state: string,
