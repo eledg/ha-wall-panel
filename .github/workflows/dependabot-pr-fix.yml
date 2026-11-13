@@ -9,8 +9,9 @@ name: Fix Dependabot PRs (lockfile and lint)
 #
 # Uses pull_request_target (not pull_request) because Dependabot-triggered
 # pull_request runs get a read-only GITHUB_TOKEN with no secrets access by
-# GitHub default policy, so they can't push a fix commit. This is scoped to
-# github.actor == 'dependabot[bot]' only, and the job independently verifies
+# GitHub default policy, so they can't push a fix commit. This is scoped to PRs
+# authored by dependabot[bot] (github.event.pull_request.user.login, not the
+# forgeable github.actor), and the job independently verifies
 # the PR head repo is this repo (never a fork) before checking out or
 # installing anything, since Dependabot branches here are always same-repo.
 # The head ref/repo are untrusted strings from the event payload, so they're
@@ -37,7 +38,7 @@ permissions:
 
 jobs:
   fix-lockfile:
-    if: github.event_name == 'workflow_dispatch' || github.actor == 'dependabot[bot]'
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -84,7 +85,7 @@ jobs:
         with:
           node-version: 24
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         name: Install pnpm
 
       - name: Get pnpm store directory
