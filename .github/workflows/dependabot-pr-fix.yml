@@ -1,0 +1,141 @@
+name: Fix Dependabot PRs (lockfile and lint)
+
+# Dependabot can leave pnpm-lock.yaml out of step with package.json (for
+# example by rewriting a `catalog:` specifier to a literal version). That
+# mismatch fails `pnpm install --frozen-lockfile` in CI. Plain `pnpm install` regenerates
+# each importer's specifier from package.json, so it self-heals the drift —
+# this workflow runs that and pushes a fix commit back onto the PR branch
+# whenever it detects a change.
+#
+# Uses pull_request_target (not pull_request) because Dependabot-triggered
+# pull_request runs get a read-only GITHUB_TOKEN with no secrets access by
+# GitHub default policy, so they can't push a fix commit. This is scoped to
+# github.actor == 'dependabot[bot]' only, and the job independently verifies
+# the PR head repo is this repo (never a fork) before checking out or
+# installing anything, since Dependabot branches here are always same-repo.
+# The head ref/repo are untrusted strings from the event payload, so they're
+# passed through env vars (never interpolated directly into a run: block)
+# and the ref is regex-validated before use, per GitHub's script-injection
+# hardening guidance for pull_request_target workflows.
+#
+# It also runs prettier and `eslint --fix` after install, because a bumped lint
+# plugin can change what its rules auto-fix (e.g. import order). Only fixable
+# findings are committed; anything left over still fails the real lint check
+# in CI, so this never hides a genuine rule break.
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to check/fix
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  fix-lockfile:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Resolve and verify PR head
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.PR_PAT_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          EVENT_IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            json=$(gh pr view "$PR_NUMBER" --repo "${{ github.repository }}" --json headRefName,isCrossRepository)
+            ref=$(jq -r .headRefName <<<"$json")
+            is_fork=$(jq -r .isCrossRepository <<<"$json")
+          else
+            ref="$EVENT_HEAD_REF"
+            is_fork="$EVENT_IS_FORK"
+          fi
+
+          if [ "$is_fork" != "false" ]; then
+            echo "::error::PR head is a fork — refusing to check out or run code from it with elevated permissions."
+            exit 1
+          fi
+
+          if ! [[ "$ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::PR head ref has an unexpected shape — refusing to use it."
+            exit 1
+          fi
+
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.pr.outputs.ref }}
+          token: ${{ secrets.PR_PAT_TOKEN }}
+
+      # Not using eledg/github-actions/setup-pnpm@v1 here: it ends with
+      # `pnpm install --frozen-lockfile`, which fails on exactly the drift
+      # this workflow exists to fix, before the step below ever runs.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v6
+        name: Install pnpm
+
+      - name: Get pnpm store directory
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@v6
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Regenerate lockfile specifiers
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Push fix if lockfile changed
+        env:
+          REF: ${{ steps.pr.outputs.ref }}
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "No lockfile drift detected — nothing to fix."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "fix(deps): restore pnpm lockfile drift introduced by dependabot"
+          git push origin "HEAD:$REF"
+
+      # Order matches `pnpm validate`: prettier first, then eslint. lint:fix exits
+      # non-zero when unfixable errors remain, so don't fail the job on it — the
+      # CI lint job reports those on the pushed commit.
+      - name: Auto-fix formatting and lint
+        run: |
+          pnpm prettier:fix
+          pnpm lint:fix || echo "Unfixable lint errors remain — left for CI to report."
+
+      - name: Push fix if formatting or lint changed files
+        env:
+          REF: ${{ steps.pr.outputs.ref }}
+        run: |
+          # Tracked files only: never commit stray build output or untracked files.
+          if git diff --quiet; then
+            echo "No formatting or lint fixes needed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add --update
+          git commit -m "style: apply prettier and eslint --fix after dependency bump"
+          git push origin "HEAD:$REF"
