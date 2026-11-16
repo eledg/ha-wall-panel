@@ -26,6 +26,7 @@ import type {
   WeatherDetailsConfig,
   WeatherStat,
 } from './config.ts';
+import { DOORBELL_TIMEOUT_LIMITS, DOORBELL_TIMEOUT_S } from './constants.ts';
 import { stripJsonComments } from './jsonc.ts';
 import { configUrl } from './url.ts';
 
@@ -265,6 +266,16 @@ const parseExtras = (
   if (type === 'heating' || type === 'ac')
     return {
       roomLabel: nonEmpty(raw, 'roomLabel', at, DEFAULT_ROOM_LABEL, problem),
+    };
+  if (type === 'door')
+    return {
+      timeoutSeconds: integerIn(
+        raw.timeoutSeconds,
+        DOORBELL_TIMEOUT_LIMITS,
+        `${at}.timeoutSeconds`,
+        DOORBELL_TIMEOUT_S,
+        problem,
+      ),
     };
   return {};
 };

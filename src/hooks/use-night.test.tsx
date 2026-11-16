@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import type { Auth } from 'home-assistant-js-websocket';
 import { render } from 'preact';
+import { useEffect } from 'preact/hooks';
 import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -80,5 +81,29 @@ describe('useNight overrideSwitch', () => {
     expect(last()?.night).toBe(false);
     await set('off');
     expect(last()?.night).toBe(false);
+  });
+});
+
+describe('useNight hold', () => {
+  afterEach(() => render(null, document.body));
+
+  it('keeps the display undimmed while held, then dims again', async () => {
+    const { store } = await setup();
+    let release = () => {};
+    const seen: boolean[] = [];
+    const Probe = () => {
+      const { dimmed, hold } = useNight(at22, night, store);
+      seen.push(dimmed);
+      useEffect(() => {
+        release = hold();
+        return () => release();
+      }, [hold]);
+      return null;
+    };
+    await act(() => render(<Probe />, document.body));
+    expect(seen.at(-1)).toBe(false);
+
+    await act(() => release());
+    expect(seen.at(-1)).toBe(true);
   });
 });

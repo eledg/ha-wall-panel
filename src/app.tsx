@@ -1,6 +1,7 @@
 import { Diagnostics } from '@/components/diagnostics/diagnostics.tsx';
 import { HaDebug } from '@/components/diagnostics/ha-debug.tsx';
 import { PerfProbe } from '@/components/diagnostics/perf-probe.tsx';
+import { DoorbellOverlay } from '@/components/doorbell/doorbell-overlay.tsx';
 import { ConfigWarning } from '@/components/layout/config-warning.tsx';
 import { DisconnectedBanner } from '@/components/layout/disconnected-banner.tsx';
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
@@ -10,7 +11,7 @@ import { getConfig } from '@/config/config.ts';
 
 export const App = () => (
   <>
-    <Shell>
+    <Shell overlay={<DoorbellOverlay />}>
       <HaConnection>{getConfig().tiles.map(renderTile)}</HaConnection>
     </Shell>
     <ConfigWarning />

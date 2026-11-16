@@ -13,6 +13,10 @@ import {
   WEATHER_STATS,
 } from '../src/config/config.ts';
 import type { TileType } from '../src/config/config.ts';
+import {
+  DOORBELL_TIMEOUT_LIMITS,
+  DOORBELL_TIMEOUT_S,
+} from '../src/config/constants.ts';
 
 /**
  * Writes `config.schema.json` from the same tables the runtime validator reads,
@@ -116,6 +120,13 @@ const extras: Json = {
     minItems: 1,
     items: calendar,
     description: 'The calendars merged into the agenda.',
+  },
+  timeoutSeconds: {
+    type: 'integer',
+    minimum: DOORBELL_TIMEOUT_LIMITS.min,
+    maximum: DOORBELL_TIMEOUT_LIMITS.max,
+    default: DOORBELL_TIMEOUT_S,
+    description: 'Seconds the doorbell overlay stays up before it closes.',
   },
   roomLabel: text('The room named in the "<room> now" caption.'),
 };

@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 
+import { NightHoldContext } from '@/hooks/night-hold.ts';
 import { useNight } from '@/hooks/use-night.ts';
 import { usePixelShift } from '@/hooks/use-pixel-shift.ts';
 import { GRID } from '@/lib/grid.ts';
@@ -12,10 +13,17 @@ import { GRID } from '@/lib/grid.ts';
  * the palette turns warm and, until a tap wakes it, drops to a darker set of solid
  * colours (`[data-dimmed]`), not opacity: see docs/display.md.
  */
-export const Shell = ({ children }: { children?: ComponentChildren }) => {
+export const Shell = ({
+  children,
+  overlay,
+}: {
+  children?: ComponentChildren;
+  /** A full-screen layer above the wake overlay, which may hold the display undimmed. */
+  overlay?: ComponentChildren;
+}) => {
   const grid = useRef<HTMLDivElement>(null);
   usePixelShift(grid);
-  const { night, dimmed, wake } = useNight();
+  const { night, dimmed, wake, hold } = useNight();
   // On <html>, not <main>: the diagnostics, config warning and disconnected
   // banner render outside <main>, and inherited text (`body` sets `text-fg`)
   // only follows the palette if the tokens are defined at or above `body`.
@@ -32,32 +40,35 @@ export const Shell = ({ children }: { children?: ComponentChildren }) => {
     };
   }, [night, dimmed]);
   return (
-    <main class="relative box-border h-dvh p-edge">
-      <div
-        ref={grid}
-        class="dash-grid h-full"
-        style={{
-          '--cols': GRID.cols,
-          '--rows': GRID.rows,
-        }}
-      >
-        {children}
-      </div>
-      {dimmed && (
-        // The first tap only wakes the display, so a stray touch changes nothing.
-        // Not a real button: the display paints a background-less one grey, which
-        // lit the whole screen (docs/display.md, "Buttons get a default grey background").
+    <NightHoldContext.Provider value={hold}>
+      <main class="relative box-border h-dvh p-edge">
         <div
-          role="button"
-          tabIndex={0}
-          aria-label="Wake display"
-          class="absolute inset-0 z-40"
-          onClick={wake}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') wake();
+          ref={grid}
+          class="dash-grid h-full"
+          style={{
+            '--cols': GRID.cols,
+            '--rows': GRID.rows,
           }}
-        />
-      )}
-    </main>
+        >
+          {children}
+        </div>
+        {dimmed && (
+          // The first tap only wakes the display, so a stray touch changes nothing.
+          // Not a real button: the display paints a background-less one grey, which
+          // lit the whole screen (docs/display.md, "Buttons get a default grey background").
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Wake display"
+            class="absolute inset-0 z-40"
+            onClick={wake}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') wake();
+            }}
+          />
+        )}
+        {overlay}
+      </main>
+    </NightHoldContext.Provider>
   );
 };

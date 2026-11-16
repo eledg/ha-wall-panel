@@ -106,6 +106,7 @@ export const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
   calendar: ['calendars'],
   heating: ['roomLabel'],
   ac: ['roomLabel'],
+  door: ['timeoutSeconds'],
 };
 
 /**
@@ -215,7 +216,8 @@ export type TileConfig<T extends TileType = TileType> = T extends TileType
         ? { details: WeatherDetailsConfig; metric: WeatherMetric }
         : unknown) &
       (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown) &
-      (T extends 'heating' | 'ac' ? { roomLabel: string } : unknown)
+      (T extends 'heating' | 'ac' ? { roomLabel: string } : unknown) &
+      (T extends 'door' ? { timeoutSeconds: number } : unknown)
   : never;
 
 /**

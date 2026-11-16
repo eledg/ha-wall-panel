@@ -15,7 +15,7 @@ const systemNow = () => new Date();
 
 /**
  * Night state for the shell. While it is night the display is dimmed until a
- * tap wakes it for `wakeMs`. The clock is injectable, as for `usePixelShift`.
+ * tap wakes it for `wakeMs`. `hold` keeps it undimmed until released (the doorbell overlay). The clock is injectable, as for `usePixelShift`.
  * While the `overrideSwitch` is on, the clock is ignored and it is day; a switch
  * that is off, unknown, unavailable or missing leaves the clock in charge.
  */
@@ -34,6 +34,7 @@ export const useNight = (
   const [, setTick] = useState(0);
   const rerender = useCallback(() => setTick((n) => n + 1), []);
   const [awake, setAwake] = useState(false);
+  const [holds, setHolds] = useState(0);
   const wakeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -63,10 +64,20 @@ export const useNight = (
     wakeTimerRef.current = setTimeout(() => setAwake(false), wakeMs);
   }, [wakeMs]);
 
+  const hold = useCallback(() => {
+    setHolds((n) => n + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      setHolds((n) => n - 1);
+    };
+  }, []);
+
   const night =
     getNightMode() === 'on' ||
     (getNightMode() === 'auto' &&
       !overridden &&
       isNight(now(), startHour, endHour));
-  return { night, dimmed: night && !awake, wake };
+  return { night, dimmed: night && !awake && holds === 0, wake, hold };
 };
