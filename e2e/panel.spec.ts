@@ -103,6 +103,14 @@ test('weather: the warning details', async ({ page }) => {
   await expect(page).toHaveScreenshot('weather-warnings.png');
 });
 
+test('doorbell: the overlay over an open sheet', async ({ page }) => {
+  await page.getByRole('button', { name: /humidity/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await setWarnings(page, 'Ring');
+  await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeVisible();
+  await expect(page).toHaveScreenshot('doorbell-overlay.png');
+});
+
 test('climate: the sheet', async ({ page }) => {
   await page.getByRole('button', { name: /humidity/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();

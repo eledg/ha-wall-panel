@@ -356,6 +356,48 @@ describe('parseConfig', () => {
     ]);
   });
 
+  it('sets how long the doorbell overlay stays up, 45 seconds by default', () => {
+    const door = { type: 'door', ring: 'event.r', camera: 'camera.c', row: 1 };
+    const { config, issues } = parseConfig({
+      tiles: [
+        { ...door, col: 1, timeoutSeconds: 20 },
+        { ...door, col: 2 },
+      ],
+    });
+
+    expect(issues).toEqual([]);
+    expect(
+      config.tiles.map((t) => ('timeoutSeconds' in t ? t.timeoutSeconds : 0)),
+    ).toEqual([20, 45]);
+  });
+
+  it('rejects a timeoutSeconds out of range or on another type of tile', () => {
+    const { issues } = parseConfig({
+      tiles: [
+        {
+          type: 'door',
+          col: 1,
+          row: 1,
+          ring: 'event.r',
+          camera: 'camera.c',
+          timeoutSeconds: 1,
+        },
+        { ...toggleTile, col: 2, timeoutSeconds: 20 },
+      ],
+    });
+
+    expect(issues).toEqual([
+      {
+        key: 'tiles[0].timeoutSeconds',
+        message: 'must be a whole number from 5 to 600',
+      },
+      {
+        key: 'tiles[1].timeoutSeconds',
+        message: 'is not a setting of a toggle tile',
+      },
+    ]);
+  });
+
   describe('the weather tile metric', () => {
     const metricOf = (metric?: unknown) => {
       const { config, issues } = parseConfig({

@@ -13,5 +13,11 @@ export const RING_DEBOUNCE_MS = 5_000;
  */
 export const RING_MAX_AGE_MS = 10_000;
 
+/** The range `timeoutSeconds` may take. */
+export const DOORBELL_TIMEOUT_LIMITS = { min: 5, max: 600 };
+
+/** How long the doorbell overlay stays up, in seconds, unless the door tile sets `timeoutSeconds`. */
+export const DOORBELL_TIMEOUT_S = 45;
+
 /** The door tile shows "Rang HH:MM" for this long after a ring. */
 export const RECENT_RING_MS = 30 * 60_000;

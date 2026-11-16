@@ -3,7 +3,8 @@
 Findings from a UniFi G6 Entry doorbell with a UniFi Access Hub, read from Home
 Assistant on 2026-11-15, the day they were installed. They shape the planned
 doorbell overlay (the `domain:doorbell` issues). The door tile and ring
-detection are built ([entities.md](entities.md#doorbell)); the overlay is not yet.
+detection are built ([entities.md](entities.md#doorbell)); the overlay is
+described below.
 Other doorbells will differ; the [checklist](#checking-another-doorbell) at the
 end says what to look at.
 
@@ -99,3 +100,21 @@ phone or hearing the chime never reaches HA. The Access Hub's door input would
 show the door opening, but only with a door contact wired to it (here it stayed
 `off` all evening, even after the exit button was pressed). So the panel can show when
 the door last rang, not whether anyone went to it.
+
+## The overlay
+
+A ring, or a tap on the door tile, opens `DoorbellOverlay`
+(`src/components/doorbell/doorbell-overlay.tsx`) over everything: the sheets,
+diagnostics and the night dimming. It is `z-50`, above the `z-40` wake overlay.
+
+- The camera is a still snapshot on the left (portrait 3:4, `object-contain`),
+  read from `/api/camera_proxy/<camera>?token=<access_token>`. The token is read
+  from the entity each time the overlay opens, because HA rotates it about every
+  5 minutes. There is no greyscale filter: the camera sends greyscale frames itself
+  when it switches to infrared. Live video is a later issue.
+- On the right: "Doorbell", the door's label, "Rang at 14:32" while the ring is
+  recent (30 minutes) or "Live view" if not, the auto-close countdown and Dismiss.
+  On a narrow screen the camera stacks above them.
+- It closes after the door tile's `timeoutSeconds` (default 45), on Dismiss, on
+  a tap on the picture, or on Escape. A new ring while it is open restarts the countdown.
+- While open it sets `data-blocks-reload`, so auto-reload waits.

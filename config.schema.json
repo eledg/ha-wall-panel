@@ -623,6 +623,13 @@
                 "type": "string",
                 "minLength": 1,
                 "description": "A camera.* entity ID."
+              },
+              "timeoutSeconds": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 600,
+                "default": 45,
+                "description": "Seconds the doorbell overlay stays up before it closes."
               }
             }
           }
