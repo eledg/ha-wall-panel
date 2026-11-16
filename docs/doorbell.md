@@ -116,26 +116,5 @@ diagnostics and the night dimming. It is `z-50`, above the `z-40` wake overlay.
   recent (30 minutes) or "Live view" if not, the auto-close countdown and Dismiss.
   On a narrow screen the camera stacks above them.
 - It closes after the door tile's `timeoutSeconds` (default 45), on Dismiss, on
-  a tap anywhere, or on Escape. A new ring while it is open restarts the countdown.
-- While open it holds the night dimming off (`useNightHold`) and sets
-  `data-blocks-reload`, so auto-reload waits. When it closes the display dims again.
-
-### Waking a blanked screen
-
-The page cannot wake a screen the display has blanked; HA does. Add an
-automation that presses the display's "Turn on the screen" button when the ring
-entity fires (HA's Shelly integration exposes one for the X2i). Use your own entity IDs:
-
-```yaml
-alias: Wake the wall panel on a doorbell ring
-triggers:
-  - trigger: state
-    entity_id: event.front_door_doorbell
-conditions:
-  - condition: template
-    value_template: "{{ trigger.to_state.state not in ['unknown', 'unavailable'] }}"
-actions:
-  - action: button.press
-    target:
-      entity_id: button.wall_panel_turn_on_the_screen
-```
+  a tap on the picture, or on Escape. A new ring while it is open restarts the countdown.
+- While open it sets `data-blocks-reload`, so auto-reload waits.

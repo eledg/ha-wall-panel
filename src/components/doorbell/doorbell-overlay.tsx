@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 
 import { type Config, getConfig } from '@/config/config.ts';
-import { useNightHold } from '@/hooks/night-hold.ts';
 import { recentRing } from '@/lib/door.ts';
 import { formatTime } from '@/lib/format.ts';
 import type { Doorbell, DoorEvent } from '@/services/ha/doorbell.ts';
@@ -36,8 +35,7 @@ const snapshotUrl = (
 /**
  * The doorbell's camera over everything, on a ring or a tap on the door tile:
  * a still snapshot (uncropped, portrait 3:4), when it rang, a countdown to
- * closing and a large Dismiss. While open it holds the night dimming off and
- * blocks auto-reload. A ring while open restarts the countdown, not a second
+ * closing and a large Dismiss. While open it blocks auto-reload. A ring while open restarts the countdown, not a second
  * overlay. The picture is not greyed: the camera sends greyscale frames itself
  * when it switches to infrared (docs/doorbell.md).
  */
@@ -79,7 +77,6 @@ export const DoorbellOverlay = ({
   );
 
   const close = () => setShown(undefined);
-  useNightHold(shown !== undefined);
 
   const session = shown?.session;
   const timeoutSeconds = shown?.timeoutSeconds ?? 0;

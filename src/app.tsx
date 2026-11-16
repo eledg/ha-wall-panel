@@ -11,9 +11,10 @@ import { getConfig } from '@/config/config.ts';
 
 export const App = () => (
   <>
-    <Shell overlay={<DoorbellOverlay />}>
+    <Shell>
       <HaConnection>{getConfig().tiles.map(renderTile)}</HaConnection>
     </Shell>
+    <DoorbellOverlay />
     <ConfigWarning />
     <DisconnectedBanner />
     <Diagnostics>

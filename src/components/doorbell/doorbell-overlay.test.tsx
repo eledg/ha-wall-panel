@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
 import { mockConfig } from '@/dev/mock/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
-import { NightHoldContext } from '@/hooks/night-hold.ts';
 import { createDoorbell } from '@/services/ha/doorbell.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import { entityId, tileOf } from '@/tests/ids.ts';
@@ -26,13 +25,6 @@ const setup = async (setToken?: string) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   const doorbell = createDoorbell(store);
-  const holds = { active: 0 };
-  const hold = () => {
-    holds.active += 1;
-    return () => {
-      holds.active -= 1;
-    };
-  };
   await act(async () => {
     await store.start(mock.getAuth);
     if (setToken !== undefined)
@@ -41,16 +33,14 @@ const setup = async (setToken?: string) => {
         entity_picture: `/api/camera_proxy/${CAMERA}?token=${setToken}`,
       });
     render(
-      <NightHoldContext.Provider value={hold}>
-        <HaConnection store={store}>
-          <DoorbellOverlay store={store} doorbell={doorbell} cfg={mockConfig} />
-        </HaConnection>
-      </NightHoldContext.Provider>,
+      <HaConnection store={store}>
+        <DoorbellOverlay store={store} doorbell={doorbell} cfg={mockConfig} />
+      </HaConnection>,
       document.body,
     );
   });
   const dialog = () => document.querySelector('dialog');
-  return { mock, store, doorbell, holds, dialog };
+  return { mock, store, doorbell, dialog };
 };
 
 afterEach(() => {
@@ -64,14 +54,13 @@ describe('DoorbellOverlay', () => {
     expect(dialog()).toBeNull();
   });
 
-  it('opens on a ring with the ring time, holds the night and blocks reload', async () => {
-    const { mock, dialog, holds } = await setup();
+  it('opens on a ring with the ring time and blocks reload', async () => {
+    const { mock, dialog } = await setup();
 
     await act(() => mock.controls.ring());
 
     expect(dialog()?.textContent).toContain('Rang at');
     expect(dialog()?.hasAttribute('data-blocks-reload')).toBe(true);
-    expect(holds.active).toBe(1);
   });
 
   it('opens on a tap with "Live view" when there was no recent ring', async () => {
@@ -107,9 +96,9 @@ describe('DoorbellOverlay', () => {
     );
   });
 
-  it('closes on timeout and releases the night hold', async () => {
+  it('closes on timeout', async () => {
     vi.useFakeTimers();
-    const { doorbell, dialog, holds } = await setup();
+    const { doorbell, dialog } = await setup();
     await act(() => doorbell.open(TILE.id));
 
     await act(() => {
@@ -121,7 +110,6 @@ describe('DoorbellOverlay', () => {
     });
 
     expect(dialog()).toBeNull();
-    expect(holds.active).toBe(0);
   });
 
   it('restarts the countdown on a new ring instead of stacking', async () => {
