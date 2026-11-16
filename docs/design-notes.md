@@ -81,17 +81,18 @@ first build that contained the check needed one.
 
 ## Open questions and ideas
 
-- **Doorbell overlay (planned):** on a ring event, show a full-screen overlay with
-  the camera feed, auto-dismiss after about 45 seconds, with a manual dismiss.
-  Start with HA's camera proxy (MJPEG) to prove the trigger and overlay, then add
-  a WebRTC player through HA's go2rtc as an upgrade, with MJPEG as the fallback.
-- **Video on this hardware:** how well does an A35-class processor decode WebRTC
-  or MSE, and how smooth is MJPEG? Measure before committing to WebRTC.
-- **WebRTC networking:** if the display and go2rtc sit on different networks, is
-  UDP allowed between them?
-- **Commanding the display from HA:** HTTP `rest_command`, WebSocket RPC or MQTT
-  RPC? HTTP is the best documented; revisit if authentication or reliability is a
-  problem (the doorbell wake case needs it).
+- **Doorbell overlay (planned):** on a ring, show a full-screen overlay with the
+  camera, auto-dismiss after about 45 seconds, with a manual dismiss. What Home
+  Assistant provides for a UniFi doorbell, and what that means for the plan, is
+  in [doorbell.md](doorbell.md).
+- **Video on this hardware:** how well does an A35-class processor decode WebRTC,
+  and how smooth is MJPEG? Measure before making WebRTC the default.
+- **WebRTC networking:** HA brokers WebRTC over the WebSocket the panel already
+  uses, but the media comes from go2rtc on the HA host. If the display and HA sit
+  on different networks, the firewall must allow that port as well as 8123.
+- **Commanding the display from HA:** HA's Shelly integration now exposes
+  "Turn on the screen" and "Turn off the screen" buttons for the X2i, so an
+  automation can wake it without RPC (see [doorbell.md](doorbell.md#waking-the-display)).
 - **Release pull frequency:** a conditional request with a stored ETag is cheap,
   so checking every few minutes would cost almost nothing, against up to a day's
   delay for a daily check.
