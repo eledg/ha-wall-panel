@@ -130,6 +130,7 @@ there.
 - [docs/entities.md](docs/entities.md): the entities the app uses and what it reads
 - [docs/deploy.md](docs/deploy.md): deploying to Home Assistant, signing in, rolling back
 - [docs/display.md](docs/display.md): findings from testing on the Shelly Wall Display X2i
+- [docs/doorbell.md](docs/doorbell.md): what HA provides for a doorbell (UniFi Protect and Access)
 - [docs/design.md](docs/design.md): the UI rules and shared pieces
 - [docs/design-notes.md](docs/design-notes.md): why it is built this way, and open questions
 - [docs/mock.md](docs/mock.md): the mock HA and its overlay
