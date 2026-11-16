@@ -16,21 +16,21 @@ and detections. The Access Hub, which drives the lock, comes in through the
 separate **UniFi Access** integration as its own device. HA does not link the
 two, so the panel has to be told about both.
 
-| What             | Entity                                                  | Integration | Notes                                                       |
-| ---------------- | ------------------------------------------------------- | ----------- | ----------------------------------------------------------- |
-| Ring             | `event.<entry>_doorbell`                                | Protect     | The one to use. See [Ring](#ring).                          |
-| Ring (Access)    | `event.<hub>_doorbell`                                  | Access      | Did not fire for a ring at the G6 Entry. Do not rely on it. |
-| Camera           | `camera.<entry>_medium_resolution_channel`              | Protect     | 720 x 960, about 4 Mbps. Best fit for a small display.      |
-| Camera (high)    | `camera.<entry>_high_resolution_channel`                | Protect     | 1920 x 2560, 16 Mbps. Too heavy for the display.            |
-| Package camera   | `camera.<entry>_package_camera`                         | Protect     | 3264 x 2448 at 3 fps, pointing down at the step.            |
-| Package          | `event.<entry>_package`                                 | Protect     | `event_type: detected`.                                     |
-| Unlock           | `button.<hub>_unlock`                                   | Access      | Press to release the lock.                                  |
-| Door position    | `binary_sensor.<hub>`                                   | Access      | `device_class: door`, `on` when open.                       |
-| Access log       | `event.<hub>_access`                                    | Access      | `access_granted` / `access_denied`, with `actor`.           |
-| Last visitor     | `image.<hub>_thumbnail`                                 | Access      | Updated on access events.                                   |
-| Lock rule        | `select.<hub>_lock_rule`                                | Access      | `keep_lock`, `keep_unlock`, `custom`, `reset`.              |
-| Doorbell speaker | `media_player.<entry>_speaker`                          | Protect     | Can play media or TTS at the door.                          |
-| Indoor chime     | `button.<chime>_play_chime`, `sensor.<chime>_last_ring` | Protect     | Only with a UniFi Smart PoE Chime, which rings on its own.  |
+| What             | Entity                                                  | Integration | Notes                                                        |
+| ---------------- | ------------------------------------------------------- | ----------- | ------------------------------------------------------------ |
+| Ring             | `event.<entry>_doorbell`                                | Protect     | The one to use. See [Ring](#ring).                           |
+| Ring (Access)    | `event.<hub>_doorbell`                                  | Access      | Did not fire for a ring at the G6 Entry. Do not rely on it.  |
+| Camera           | `camera.<entry>_medium_resolution_channel`              | Protect     | 720 x 960, about 4 Mbps. Best fit for a small display.       |
+| Camera (high)    | `camera.<entry>_high_resolution_channel`                | Protect     | 1920 x 2560, 16 Mbps. Too heavy for the display.             |
+| Package camera   | `camera.<entry>_package_camera`                         | Protect     | 3264 x 2448 at 3 fps, pointing down at the step.             |
+| Package          | `event.<entry>_package`                                 | Protect     | `event_type: detected`.                                      |
+| Unlock           | `button.<hub>_unlock`                                   | Access      | Only does something if a lock is wired to the hub.           |
+| Door position    | `binary_sensor.<hub>`                                   | Access      | Needs a door contact on the hub; without one it stays `off`. |
+| Access log       | `event.<hub>_access`                                    | Access      | `access_granted` / `access_denied`, with `actor`.            |
+| Last visitor     | `image.<hub>_thumbnail`                                 | Access      | Updated on access events.                                    |
+| Lock rule        | `select.<hub>_lock_rule`                                | Access      | `keep_lock`, `keep_unlock`, `custom`, `reset`.               |
+| Doorbell speaker | `media_player.<entry>_speaker`                          | Protect     | Can play media or TTS at the door.                           |
+| Indoor chime     | `button.<chime>_play_chime`, `sensor.<chime>_last_ring` | Protect     | Only with a UniFi Smart PoE Chime, which rings on its own.   |
 
 ## Ring
 
@@ -90,3 +90,11 @@ The panel's own night dimming is separate: the panel must undim itself on a ring
 4. Check `supported_features` on the camera: without `2` there is no stream, only
    snapshots.
 5. If a lock is involved, find its unlock entity and how the result is reported.
+
+## Answered or missed?
+
+Nothing here says whether a ring was answered: opening the door, answering on a
+phone or hearing the chime never reaches HA. The Access Hub's door input would
+show the door opening, but only with a door contact wired to it (here it stayed
+`off` all evening, through people coming and going). So the panel can show when
+the door last rang, not whether anyone went to it.
