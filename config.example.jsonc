@@ -4,7 +4,8 @@
 // each: docs/entities.md.
 //
 // The display is a grid of 6 columns by 3 rows. Every tile has:
-//   type   what it is: clock, weather, calendar, toggle, temperature, heating, ac
+//   type   what it is: clock, weather, calendar, toggle, temperature, heating, ac,
+//          door
 //   col    left column, 1 to 6 (required)
 //   row    top row, 1 to 3 (required)
 //   w, h   columns and rows it spans (default 1). It must fit the grid, and
@@ -151,6 +152,17 @@
       "economy": "switch.living_room_ac_economy_mode", // switch.*
       "quietFan": "switch.living_room_ac_quiet_fan", // switch.*
       "room": "sensor.living_room_temperature" // sensor.*, optional: shown beside the target
+    },
+
+    // A doorbell. A ring brings up its camera whatever the display is showing;
+    // a tap on the tile does too. See docs/doorbell.md.
+    {
+      "type": "door",
+      "label": "Front door",
+      "col": 6,
+      "row": 3,
+      "ring": "event.front_door_doorbell", // event.*: the doorbell's ring
+      "camera": "camera.front_door_medium_resolution_channel" // camera.*
     }
   ],
 

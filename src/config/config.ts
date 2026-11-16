@@ -7,7 +7,9 @@ export type EntityDomain =
   | 'binary_sensor'
   | 'button'
   | 'calendar'
+  | 'camera'
   | 'climate'
+  | 'event'
   | 'sensor'
   | 'sun'
   | 'switch'
@@ -68,6 +70,13 @@ export const TILE_ROLES = {
     quietFan: { domain: 'switch' },
     /** Room temperature, shown beside the target in the controls. */
     room: { domain: 'sensor', optional: true },
+  },
+  /** A doorbell: a ring opens its camera wherever the panel is (see `docs/doorbell.md`). */
+  door: {
+    /** The doorbell's ring event: its state is the time of the last ring. */
+    ring: { domain: 'event' },
+    /** The doorbell's camera. */
+    camera: { domain: 'camera' },
   },
 } as const satisfies Record<string, Record<string, RoleSpec>>;
 
@@ -190,6 +199,7 @@ export const DEFAULT_LABEL: Record<TileType, string> = {
   temperature: 'Room',
   heating: 'Heating',
   ac: 'AC',
+  door: 'Front door',
 };
 
 /** The room named in a sheet's "<room> now" caption, when the config gives no `roomLabel`. */

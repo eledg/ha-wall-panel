@@ -35,6 +35,8 @@ type DomainServices = {
   sun: never;
   weather: never;
   calendar: never;
+  event: never;
+  camera: never;
   climate:
     | 'turn_on'
     | 'turn_off'

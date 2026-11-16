@@ -284,7 +284,7 @@ describe('parseConfig', () => {
 
   it('drops a tile of an unknown type and says so', () => {
     const { config, issues } = parseConfig({
-      tiles: [{ type: 'doorbell', col: 1, row: 1 }, toggleTile],
+      tiles: [{ type: 'garage', col: 1, row: 1 }, toggleTile],
     });
 
     expect(config.tiles).toHaveLength(1);
@@ -292,7 +292,7 @@ describe('parseConfig', () => {
       {
         key: 'tiles[0].type',
         message:
-          'must be one of clock, weather, calendar, toggle, temperature, heating, ac (got "doorbell")',
+          'must be one of clock, weather, calendar, toggle, temperature, heating, ac, door (got "garage")',
       },
     ]);
   });
@@ -602,6 +602,7 @@ describe('config.example.jsonc', () => {
       'temperature',
       'heating',
       'ac',
+      'door',
     ]);
   });
 });

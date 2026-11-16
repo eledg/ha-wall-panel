@@ -1,6 +1,7 @@
 import { applyConfig } from '@/config/config.ts';
 import { loadConfig } from '@/config/load.ts';
 
+import { createDoorbell } from './doorbell.ts';
 import { createHaStore } from './store.ts';
 
 // __HA_MOCK__ is true only under `pnpm dev:mock` (see dev-ha.ts). In every
@@ -19,3 +20,4 @@ mock?.mountOverlay();
 
 export const haAuth = mock?.getAuth;
 export const haStore = createHaStore(mock?.deps);
+export const doorbell = createDoorbell(haStore);

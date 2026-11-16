@@ -18,6 +18,11 @@ import {
 import { calendarScenarios } from '@/dev/mock/scenarios/calendar.ts';
 import { acHistory, climateHistory } from '@/dev/mock/scenarios/climate.ts';
 import {
+  cameraAttributes,
+  DOUBLE_FIRE_MS,
+  ringAttributes,
+} from '@/dev/mock/scenarios/door.ts';
+import {
   applyHeatingService,
   BOOST_TARGET,
   DEMAND_BOUNDARIES,
@@ -111,6 +116,11 @@ export type MockControls = {
   failHistory: (failing: boolean) => void;
   /** Whether the demand history fetch is set to fail. */
   isHistoryFailing: () => boolean;
+  /**
+   * Rings the doorbell: its state becomes the time of the ring. With `double`
+   * it fires twice, 160 ms apart, as one press of the real doorbell does.
+   */
+  ring: (double?: boolean) => void;
   /** Calls `listener` after every change the mock makes; returns the unsubscribe. */
   subscribe: (listener: () => void) => () => void;
 };
@@ -242,6 +252,10 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   for (const id of [heatingEntities.resume, heatingEntities.boost]) {
     entities.set(id, make(id, 'unknown'));
   }
+  const door = mockTile('door').entities;
+  // `unknown` is how HA shows a doorbell that hasn't rung since it restarted.
+  entities.set(door.ring, make(door.ring, 'unknown', ringAttributes()));
+  entities.set(door.camera, make(door.camera, 'idle', cameraAttributes()));
   // Every other entity (the first tile's switches, further tiles) starts plain.
   for (const { id, domain } of entityRefs(cfg)) {
     if (entities.has(id)) continue;
@@ -554,6 +568,12 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       label,
     })),
     weatherScenarios: scenarios.map(({ id, label }) => ({ id, label })),
+    ring: (double = false) => {
+      const fire = () =>
+        setState(door.ring, new Date().toISOString(), ringAttributes('ring'));
+      fire();
+      if (double) setTimeout(fire, DOUBLE_FIRE_MS);
+    },
     subscribe: (listener) => {
       watchers.add(listener);
       return () => {

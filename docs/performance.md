@@ -9,7 +9,7 @@ are enforced by the build; the rest are read on the display from the
 | Measure                | Budget                               | Enforced by                |
 | ---------------------- | ------------------------------------ | -------------------------- |
 | JS, as served          | 150 KB                               | build (`bundle-budget.ts`) |
-| JS, gzipped            | 38 KB                                | build                      |
+| JS, gzipped            | 40 KB                                | build                      |
 | CSS, gzipped           | 12 KB                                | build                      |
 | First render           | 2 s from navigation start            | read on the display        |
 | First paint            | 2 s from navigation start            | read on the display        |
@@ -29,7 +29,9 @@ date helpers (`src/config/datetime.ts`, for the `locale` and `timeZone` settings
 took it just over; it was then 32 KB. The weather sheet (about 2 KB gzipped:
 the sheet, its model and six icons) took it over again, so it was then 36 KB.
 The weather warnings (about 1.3 KB gzipped: the model, the tile badge and the
-details dialog) took it over once more, so it is now 38 KB.
+details dialog) took it over once more, so it was then 38 KB. The door tile and
+the doorbell's ring detection (about 0.7 KB gzipped) took it over again, with the
+doorbell overlay still to come, so it is now 40 KB.
 
 The store-updates limit was raised from 10 to 20 per minute after the display
 idled at 10 to 15. A store update only costs a snapshot copy and a selector

@@ -127,6 +127,19 @@ export const mockConfig: RuntimeConfig = {
         room: 'sensor.room_temperature',
       },
     },
+    {
+      id: 'door',
+      type: 'door',
+      label: 'Front door',
+      col: 6,
+      row: 3,
+      w: 1,
+      h: 1,
+      entities: {
+        ring: 'event.front_door_ring',
+        camera: 'camera.front_door',
+      },
+    },
   ],
   night: { ...DEFAULT_NIGHT, overrideSwitch: 'switch.night_override' },
   // Pinned so the e2e baselines look the same on any machine.

@@ -569,6 +569,62 @@
                 "description": "The room named in the \"<room> now\" caption."
               }
             }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "col",
+              "row",
+              "ring",
+              "camera"
+            ],
+            "properties": {
+              "type": {
+                "const": "door"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A name unique across the file. Default: the type and a count."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The name shown on the tile."
+              },
+              "col": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Left column, 1 to 6."
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Top row, 1 to 3."
+              },
+              "w": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Columns spanned. Default 1."
+              },
+              "h": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Rows spanned. Default 1."
+              },
+              "ring": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A event.* entity ID."
+              },
+              "camera": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A camera.* entity ID."
+              }
+            }
           }
         ]
       }

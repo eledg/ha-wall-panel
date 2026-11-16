@@ -71,6 +71,7 @@ describe('Overlay', () => {
       'Light',
       'AC',
       'Heating',
+      'Door',
       'Night mode',
     ]);
   });

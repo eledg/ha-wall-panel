@@ -43,6 +43,10 @@ readings and shaped by the mock heating demand and AC runs.
   `Fails`, which keeps the last events on screen (badged `stale` after 15 minutes
   without a successful refresh). Picking a scenario touches the
   calendar entities, as HA does when events change, so the tile refetches.
+- **Door**: `Ring` rings the doorbell (its state becomes the time of the ring),
+  `Double fire` sends that twice 160 ms apart as one real press does, which the
+  panel counts as one ring. The doorbell and camera can be made unavailable. The
+  camera's `entity_picture` is a placeholder image.
   Tapping an event opens its detail sheet; some mock events carry a location and
   notes (the F1 ones carry the promotional text the real feed has, which is dropped).
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the
