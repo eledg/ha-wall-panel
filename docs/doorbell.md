@@ -96,5 +96,5 @@ The panel's own night dimming is separate: the panel must undim itself on a ring
 Nothing here says whether a ring was answered: opening the door, answering on a
 phone or hearing the chime never reaches HA. The Access Hub's door input would
 show the door opening, but only with a door contact wired to it (here it stayed
-`off` all evening, through people coming and going). So the panel can show when
+`off` all evening, even after the exit button was pressed). So the panel can show when
 the door last rang, not whether anyone went to it.
