@@ -108,6 +108,8 @@ test('doorbell: the overlay over an open sheet', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeVisible();
   await setWarnings(page, 'Ring');
   await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeVisible();
+  // The stream's first frame, so the picture is there and the badge settled.
+  await expect(page.getByText('● Live')).toBeVisible();
   await expect(page).toHaveScreenshot('doorbell-overlay.png');
 });
 

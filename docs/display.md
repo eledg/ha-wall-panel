@@ -142,3 +142,9 @@ The panel formats dates and times in the WebView's language and time zone unless
 `config.json` sets `locale` or `timeZone` (see [configuration.md](configuration.md)).
 Kiosk WebViews often report `en-US`, which gives a 12 hour clock and month-first
 dates; set `"locale": "en-GB"` if the display shows that.
+
+## Doorbell live view frame rate
+
+The overlay streams HA's MJPEG (`/api/camera_proxy_stream`), which for UniFi Protect is
+built from repeated snapshots. The frame rate on the X2i has not been measured yet; it
+feeds the on-device test in #18. Record it here once measured.

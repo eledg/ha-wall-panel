@@ -1,9 +1,47 @@
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import type { Plugin } from 'vite';
+import type { Connect, Plugin } from 'vite';
 
 import { configUrl } from './src/config/url.ts';
+import { FAILING_TOKEN } from './src/dev/mock/scenarios/door.ts';
+
+// The mock's camera, as HA serves it: a snapshot, and a multipart "MJPEG" stream
+// that sends the same frame every 200 ms. The token FAILING_TOKEN makes the stream fail.
+const mockCamera = (middlewares: Connect.Server) => {
+  const jpeg = readFileSync(
+    new URL('./src/dev/mock/scenarios/door-frame.jpg', import.meta.url),
+  );
+  // Mounted on /api: connect only matches a prefix up to a slash, and the
+  // stream's path is /api/camera_proxy_stream.
+  middlewares.use('/api', (req, res, next) => {
+    const url = new URL(req.originalUrl ?? '', 'http://localhost');
+    if (!url.pathname.startsWith('/api/camera_proxy')) return next();
+    if (!url.pathname.startsWith('/api/camera_proxy_stream')) {
+      res.setHeader('content-type', 'image/jpeg');
+      res.end(jpeg);
+      return;
+    }
+    if (url.searchParams.get('token') === FAILING_TOKEN) {
+      res.statusCode = 500;
+      res.end();
+      return;
+    }
+    res.setHeader('content-type', 'multipart/x-mixed-replace; boundary=frame');
+    const send = () => {
+      const body = jpeg;
+      res.write(
+        `--frame\r\nContent-Type: image/jpeg\r\nContent-Length: ${body.length}\r\n\r\n`,
+      );
+      res.write(body);
+      res.write('\r\n');
+    };
+    send();
+    const timer = setInterval(send, 200);
+    req.on('close', () => clearInterval(timer));
+  });
+};
 
 // Hands the dev server's HA settings to the app as __HA_DEV__. The token is
 // named HA_DEV_TOKEN, without Vite's VITE_ prefix, so Vite never exposes it to
@@ -16,6 +54,7 @@ export const devHaPlugin = (env: Record<string, string>): Plugin => ({
   // where the app looks for it from the dev server's root, so `pnpm dev` loads it
   // like a deploy would.
   configureServer: (server) => {
+    if (server.config.mode === 'mock') mockCamera(server.middlewares);
     if (server.config.mode !== 'development') return;
     const file = resolve(env.HA_DEV_CONFIG || 'config.json');
     server.middlewares.use(configUrl('/'), (_req, res) => {

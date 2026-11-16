@@ -4,6 +4,7 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
+import { SNAPSHOT_REFRESH_MS, STREAM_STALL_MS } from '@/config/constants.ts';
 import { mockConfig } from '@/dev/mock/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createDoorbell } from '@/services/ha/doorbell.ts';
@@ -83,17 +84,70 @@ describe('DoorbellOverlay', () => {
     expect(dialog()?.textContent).toContain('Rang at');
   });
 
-  it('builds the snapshot URL from the access token at open time', async () => {
+  it('streams from the camera with the access token at open time', async () => {
     const { doorbell, dialog } = await setup('abc123');
 
     await act(() => doorbell.open(TILE.id));
 
     expect(dialog()?.querySelector('img')?.getAttribute('src')).toBe(
-      `/api/camera_proxy/${CAMERA}?token=abc123`,
+      `/api/camera_proxy_stream/${CAMERA}?token=abc123`,
     );
+    expect(dialog()?.textContent).toContain('Connecting');
     expect(dialog()?.querySelector('img')?.className).not.toContain(
       'grayscale',
     );
+  });
+
+  it('shows Live on the first frame', async () => {
+    const { doorbell, dialog } = await setup('abc123');
+    await act(() => doorbell.open(TILE.id));
+
+    await act(() => {
+      dialog()?.querySelector('img')?.dispatchEvent(new Event('load'));
+    });
+
+    expect(dialog()?.textContent).toContain('● Live');
+  });
+
+  it('falls back to snapshots, refreshed every second, when the stream errors', async () => {
+    vi.useFakeTimers();
+    const { doorbell, dialog } = await setup('abc123');
+    await act(() => doorbell.open(TILE.id));
+
+    await act(() => {
+      dialog()?.querySelector('img')?.dispatchEvent(new Event('error'));
+    });
+    const src = () => dialog()?.querySelector('img')?.getAttribute('src');
+    expect(dialog()?.textContent).toContain('Snapshot mode');
+    expect(src()).toBe(`/api/camera_proxy/${CAMERA}?token=abc123`);
+
+    await act(() => {
+      vi.advanceTimersByTime(SNAPSHOT_REFRESH_MS);
+    });
+    expect(src()).toBe(`/api/camera_proxy/${CAMERA}?token=abc123&t=1`);
+  });
+
+  it('falls back to snapshots when no frame arrives in time', async () => {
+    vi.useFakeTimers();
+    const { doorbell, dialog } = await setup('abc123');
+    await act(() => doorbell.open(TILE.id));
+
+    await act(() => {
+      vi.advanceTimersByTime(STREAM_STALL_MS);
+    });
+
+    expect(dialog()?.textContent).toContain('Snapshot mode');
+  });
+
+  it('empties the picture source when it closes, so the stream is released', async () => {
+    const { doorbell, dialog } = await setup('abc123');
+    await act(() => doorbell.open(TILE.id));
+    const img = dialog()!.querySelector('img')!;
+
+    await act(() => screen().Dismiss.click());
+
+    expect(dialog()).toBeNull();
+    expect(img.hasAttribute('src')).toBe(false);
   });
 
   it('closes on timeout', async () => {

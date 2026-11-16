@@ -203,8 +203,41 @@ describe('dev-ha plugin, config.json', () => {
     expect((await request(route!.handler)).statusCode).toBe(404);
   });
 
-  it('serves nothing under the mock or tests', () => {
-    expect(mount('mock', {})).toEqual([]);
+  it('serves only the camera under the mock, and nothing under tests', () => {
+    expect(mount('mock', {}).map((r) => r.path)).toEqual(['/api']);
     expect(mount('test', {})).toEqual([]);
+  });
+
+  it('streams the mock camera, and fails it for the failing token', () => {
+    const [route] = mount('mock', {});
+    const call = (originalUrl: string) => {
+      const res = {
+        statusCode: 200,
+        headers: {} as Record<string, string>,
+        writes: [] as unknown[],
+        setHeader: (n: string, v: string) => void (res.headers[n] = v),
+        write: (chunk: unknown) => void res.writes.push(chunk),
+        end: () => {},
+      };
+      const req = { originalUrl, on: () => {} };
+      (route!.handler as (q: unknown, r: unknown, n: () => void) => void)(
+        req,
+        res,
+        () => {},
+      );
+      return res;
+    };
+
+    const stream = call('/api/camera_proxy_stream/camera.x?token=mock');
+    expect(stream.headers['content-type']).toContain(
+      'multipart/x-mixed-replace',
+    );
+    expect(stream.writes.length).toBeGreaterThan(0);
+    expect(
+      call('/api/camera_proxy_stream/camera.x?token=fail').statusCode,
+    ).toBe(500);
+    expect(call('/api/camera_proxy/camera.x?token=fail').headers).toEqual({
+      'content-type': 'image/jpeg',
+    });
   });
 });
