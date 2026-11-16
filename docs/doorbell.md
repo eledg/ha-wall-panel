@@ -2,7 +2,8 @@
 
 Findings from a UniFi G6 Entry doorbell with a UniFi Access Hub, read from Home
 Assistant on 2026-11-15, the day they were installed. They shape the planned
-doorbell overlay (the `domain:doorbell` issues). Nothing here is built yet.
+doorbell overlay (the `domain:doorbell` issues). The door tile and ring
+detection are built ([entities.md](entities.md#doorbell)); the overlay is not yet.
 Other doorbells will differ; the [checklist](#checking-another-doorbell) at the
 end says what to look at.
 

@@ -3,6 +3,7 @@ import type { TileConfig } from '@/config/config.ts';
 import { AcTile } from './ac-tile.tsx';
 import { CalendarTile } from './calendar-tile.tsx';
 import { ClockTile } from './clock-tile.tsx';
+import { DoorTile } from './door-tile.tsx';
 import { HeatingTile } from './heating-tile.tsx';
 import { TemperatureTile } from './temperature-tile.tsx';
 import { ToggleTile } from './toggle-tile.tsx';
@@ -28,5 +29,7 @@ export const renderTile = (tile: TileConfig) => {
       return <HeatingTile key={tile.id} tile={tile} />;
     case 'ac':
       return <AcTile key={tile.id} tile={tile} />;
+    case 'door':
+      return <DoorTile key={tile.id} tile={tile} />;
   }
 };

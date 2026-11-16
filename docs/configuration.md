@@ -80,15 +80,15 @@ a string, such as a URL, is not a comment.
 Every tile has a `type` and a position, and may be repeated: two `toggle` tiles
 with different entities are two independent lights.
 
-| Setting    | Meaning                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------ |
-| `type`     | `clock`, `weather`, `calendar`, `toggle`, `temperature`, `heating` or `ac`.                            |
-| `col`      | Left column, 1 to 6. Required.                                                                         |
-| `row`      | Top row, 1 to 3. Required.                                                                             |
-| `w`, `h`   | Columns and rows the tile spans. Default 1. The tile must stay inside the 6 x 3 grid.                  |
-| `id`       | Optional name, unique across the file. Default: the type and a count (`toggle-1`).                     |
-| `label`    | Optional name shown on the tile. Default: "Light" for a toggle, "Room", "Heating", "AC", "Weather".    |
-| _entities_ | The Home Assistant entity IDs the tile reads, named per type. See the [entity reference](entities.md). |
+| Setting    | Meaning                                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| `type`     | `clock`, `weather`, `calendar`, `toggle`, `temperature`, `heating`, `ac` or `door`.                               |
+| `col`      | Left column, 1 to 6. Required.                                                                                    |
+| `row`      | Top row, 1 to 3. Required.                                                                                        |
+| `w`, `h`   | Columns and rows the tile spans. Default 1. The tile must stay inside the 6 x 3 grid.                             |
+| `id`       | Optional name, unique across the file. Default: the type and a count (`toggle-1`).                                |
+| `label`    | Optional name shown on the tile. Default: "Light" for a toggle, "Room", "Heating", "AC", "Weather", "Front door". |
+| _entities_ | The Home Assistant entity IDs the tile reads, named per type. See the [entity reference](entities.md).            |
 
 Tiles may not overlap, and a cell with no tile stays empty.
 
@@ -142,6 +142,21 @@ one 7 days, so a strip or outlook that asks for more simply stops at the end.
     "hoursCount": 6,
     "stats": ["wind", "feelsLike", "humidity"],
   },
+}
+```
+
+A `door` tile is a doorbell: `ring` is its ring `event` entity and `camera` its
+camera. A ring brings up the door's camera on whatever screen the panel is
+showing, and so does a tap on the tile. See [Doorbell](entities.md#doorbell) for
+which entities to use.
+
+```jsonc
+{
+  "type": "door",
+  "col": 6,
+  "row": 3,
+  "ring": "event.front_door_doorbell",
+  "camera": "camera.front_door_medium_resolution_channel",
 }
 ```
 

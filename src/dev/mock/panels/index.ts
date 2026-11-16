@@ -1,6 +1,7 @@
 import { acPanel } from './ac.tsx';
 import { calendarPanel } from './calendar.tsx';
 import { connectionPanel } from './connection.tsx';
+import { doorPanel } from './door.tsx';
 import { heatingPanel } from './heating.tsx';
 import { lightPanel } from './light.tsx';
 import { nightPanel } from './night.tsx';
@@ -15,5 +16,6 @@ export const panels: MockPanel[] = [
   lightPanel,
   acPanel,
   heatingPanel,
+  doorPanel,
   nightPanel,
 ];

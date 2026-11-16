@@ -15,6 +15,7 @@ const [family, birthdays, f1] = tileOf('calendar').calendars;
 const ac = tileOf('ac').entities;
 const room = tileOf('temperature').entities;
 const heating = tileOf('heating').entities;
+const door = tileOf('door').entities;
 
 /** Fixture entity IDs by short name, for tests that read one entity. */
 export const IDS = {
@@ -39,6 +40,8 @@ export const IDS = {
   heatingCloud: heating.cloud,
   heatingResume: heating.resume,
   heatingBoost: heating.boost,
+  doorRing: door.ring,
+  doorCamera: door.camera,
 } as const;
 
 export const entityId = (key: keyof typeof IDS) => IDS[key];

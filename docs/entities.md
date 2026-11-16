@@ -28,6 +28,8 @@ domain shown. A tile type may appear any number of times.
 |               | `cloud`       | `binary_sensor` | `state`                                                                                                                                 | Heating cloud link; `off` makes the heating unavailable.                        |
 |               | `resume`      | `button`        | none (press only)                                                                                                                       | Heating: Resume schedule.                                                       |
 |               | `boost`       | `button`        | none (press only)                                                                                                                       | Heating: Boost.                                                                 |
+| `door`        | `ring`        | `event`         | `state`, `event_type`                                                                                                                   | The doorbell's ring. See [Doorbell](#doorbell).                                 |
+|               | `camera`      | `camera`        | `state`                                                                                                                                 | The doorbell's camera.                                                          |
 
 ## Calendars
 
@@ -359,3 +361,23 @@ Template entities might fill the gaps; that is untested.
 provider, and the logic is shaped by Tado, so a general version can't be designed
 before a second system exists. Revisit it if the V3 check shows different entities
 are needed. A new setting could default to Tado so existing configs keep working.
+
+## Doorbell
+
+The door tile (`components/tiles/door-tile.tsx`) is built around a UniFi Protect
+doorbell (a G6 Entry); [doorbell.md](doorbell.md) records what HA provides for it.
+
+- **`ring`** is the doorbell's `event` entity (`event.<entry>_doorbell` with
+  Protect). Its state is the time of the last ring. The tile shows "Rang 09:41"
+  in the accent colour for 30 minutes after a ring, and the camera badge
+  otherwise; `unknown` (no ring since HA restarted) is normal.
+- **A ring** is a change of that state to a new time, with `event_type: ring`,
+  within 10 seconds of the panel's clock (`services/ha/ring.ts`). The state the
+  panel connects with, the same state sent again on reconnect, `unknown` and
+  `unavailable` are not rings, and rings within 5 seconds of each other count
+  once (one press fires twice). A ring after `unknown` counts, so the first one
+  after HA restarts is not lost. Keep the display's clock in time with HA's, or
+  rings arrive "old" and are dropped.
+- **`camera`** is the doorbell's camera (with Protect, the medium resolution
+  channel). The tile is unavailable while the camera or the doorbell is.
+- A ring brings up the door's camera on any screen, and so does a tap on the tile.
