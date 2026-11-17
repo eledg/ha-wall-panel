@@ -89,8 +89,10 @@ export const CameraFeed = ({
   onRetry?: () => void;
   now?: () => number;
 }) => {
-  const initial = (u: FeedUrls): FeedState =>
-    u.stream ? 'connecting' : u.snapshot ? 'degraded' : 'failed';
+  const initial = (u: FeedUrls): FeedState => {
+    if (u.stream) return 'connecting';
+    return u.snapshot ? 'degraded' : 'failed';
+  };
   const [state, setState] = useState<FeedState>(initial(urls));
   const [refresh, setRefresh] = useState(0);
   const [frame, setFrame] = useState<Frame | undefined>();
