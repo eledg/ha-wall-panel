@@ -36,10 +36,11 @@ export const feedUrls = (
 };
 
 /** A snapshot URL the browser will fetch again; inline images are left as they are. */
-const refreshed = (url: string, n: number) =>
-  n === 0 || !url.startsWith('/')
-    ? url
-    : `${url}${url.includes('?') ? '&' : '?'}t=${n}`;
+const refreshed = (url: string, n: number) => {
+  if (n === 0 || !url.startsWith('/')) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}t=${n}`;
+};
 
 /**
  * HA's MJPEG stream in an `<img>`, with the snapshot as the fallback: if the
