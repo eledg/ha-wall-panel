@@ -150,8 +150,12 @@ camera. A ring brings up the door's camera on whatever screen the panel is
 showing, and so does a tap on the tile. `timeoutSeconds` (optional, 5 to 600,
 default 45) sets how long the overlay stays up, and `recentMinutes` (optional, 1 to
 1440, default 30) how long the tile shows "Rang 09:41" after a ring unless
-someone presses Dismiss on the overlay. See [Doorbell](entities.md#doorbell) for
-which entities to use.
+someone presses Dismiss on the overlay. `liveView` (optional) picks how the overlay
+shows the camera: `webrtc` (the default) streams it over WebRTC through HA's go2rtc,
+falling back to MJPEG and then snapshots; `mjpeg` starts with HA's MJPEG stream; and
+`snapshot` shows a snapshot refreshed every second. See [Doorbell](entities.md#doorbell)
+for which entities to use, and [doorbell.md](doorbell.md#webrtc) for what WebRTC
+needs from the network.
 
 ```jsonc
 {

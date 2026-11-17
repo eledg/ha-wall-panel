@@ -1,21 +1,39 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 
-import { SNAPSHOT_REFRESH_MS, STREAM_STALL_MS } from '@/config/constants.ts';
+import {
+  SNAPSHOT_REFRESH_MS,
+  STREAM_STALL_MS,
+  WEBRTC_FRAME_MS,
+} from '@/config/constants.ts';
+import type { WebRtcHandlers, WebRtcSession } from '@/services/ha/webrtc.ts';
 
 export type FeedUrls = { snapshot?: string; stream?: string };
 
+/** Starts a WebRTC session to the camera. */
+export type StartWebRtc = (handlers: WebRtcHandlers) => WebRtcSession;
+
 /**
- * `connecting` until the first frame, `live` on the stream, `degraded` on
- * snapshots, `failed` when there is no picture to show.
+ * `webrtc` until WebRTC's first frame, then `video`; `connecting` until the
+ * MJPEG stream's first frame, then `live`; `degraded` on snapshots, `failed`
+ * when there is no picture to show.
  */
-type FeedState = 'connecting' | 'live' | 'degraded' | 'failed';
+type FeedState =
+  'webrtc' | 'video' | 'connecting' | 'live' | 'degraded' | 'failed';
 
 const BADGE: Record<FeedState, string> = {
+  webrtc: 'Connecting',
+  video: '● Live',
   connecting: 'Connecting',
   live: '● Live',
   degraded: 'Snapshot mode',
   failed: 'Camera unavailable',
 };
+
+const Badge = ({ state }: { state: FeedState }) => (
+  <span class="absolute left-2 top-2 rounded-full bg-bg/70 px-3 py-1 text-sm text-fg">
+    {BADGE[state]}
+  </span>
+);
 
 /**
  * The camera URLs. The access token rotates about every 5 minutes, so it is
@@ -69,35 +87,69 @@ const ageLabel = (ms: number) => {
   return s < 60 ? `${s}s` : `${Math.round(s / 60)}m`;
 };
 
+/** Where the feed goes without WebRTC, or when WebRTC fails. */
+const withoutWebRtc = (u: FeedUrls): FeedState => {
+  if (u.stream) return 'connecting';
+  return u.snapshot ? 'degraded' : 'failed';
+};
+
 /**
- * HA's MJPEG stream in an `<img>`, with the snapshot as the fallback: if the
- * stream errors, or shows no frame within `STREAM_STALL_MS`, the picture is the
- * snapshot, refreshed every `SNAPSHOT_REFRESH_MS`. If the snapshot fails too (or
- * there is no camera) the feed is `failed`: "Camera unavailable" with Retry, and
- * the last good frame marked with its age when there was one. Unmounting empties
- * `src`, so the browser drops the stream's connection.
+ * The camera, by the best way that works. With `webrtc`, WebRTC first: the
+ * snapshot shows until the video's first frame, and if WebRTC fails, or
+ * decodes no frame within `WEBRTC_FRAME_MS`, the peer connection closes and the
+ * feed moves on. Next HA's MJPEG stream in an `<img>`: if it errors, or shows no
+ * frame within `STREAM_STALL_MS`, the picture is the snapshot, refreshed every
+ * `SNAPSHOT_REFRESH_MS`. If the snapshot fails too (or there is no camera) the
+ * feed is `failed`: "Camera unavailable" with Retry, and the last good frame
+ * marked with its age when there was one. Unmounting closes the peer connection
+ * and empties the image's `src`, so the browser drops the stream's connection.
  */
 export const CameraFeed = ({
   urls,
   label,
+  webrtc,
   onRetry,
   now = Date.now,
 }: {
   urls: FeedUrls;
   label: string;
+  /** Tries WebRTC first; left out, the feed starts with `urls`. */
+  webrtc?: StartWebRtc;
   /** Called by Retry, so the caller can pass fresh `urls` (the token rotates). */
   onRetry?: () => void;
   now?: () => number;
 }) => {
-  const initial = (u: FeedUrls): FeedState => {
-    if (u.stream) return 'connecting';
-    return u.snapshot ? 'degraded' : 'failed';
-  };
+  const initial = (u: FeedUrls): FeedState =>
+    webrtc && (u.stream || u.snapshot) ? 'webrtc' : withoutWebRtc(u);
   const [state, setState] = useState<FeedState>(initial(urls));
   const [refresh, setRefresh] = useState(0);
   const [frame, setFrame] = useState<Frame | undefined>();
+  const [stream, setStream] = useState<MediaStream | undefined>();
   const [, setTick] = useState(0);
   const img = useRef<HTMLImageElement>(null);
+  const viaWebRtc = state === 'webrtc' || state === 'video';
+
+  // One session for as long as the feed is on WebRTC; leaving it closes the peer.
+  useEffect(() => {
+    if (!viaWebRtc || !webrtc) return;
+    const session = webrtc({
+      onStream: setStream,
+      onFail: () => setState(withoutWebRtc(urls)),
+    });
+    return () => {
+      session.close();
+      setStream(undefined);
+    };
+  }, [viaWebRtc, webrtc, urls]);
+
+  useEffect(() => {
+    if (state !== 'webrtc') return;
+    const timer = setTimeout(
+      () => setState(withoutWebRtc(urls)),
+      WEBRTC_FRAME_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [state, urls]);
 
   useEffect(() => {
     if (state !== 'connecting') return;
@@ -124,7 +176,7 @@ export const CameraFeed = ({
   useEffect(() => {
     const el = img.current;
     return () => el?.removeAttribute('src');
-  }, []);
+  }, [viaWebRtc]);
 
   const retry = () => {
     onRetry?.();
@@ -160,6 +212,33 @@ export const CameraFeed = ({
       </div>
     );
 
+  if (viaWebRtc)
+    return (
+      <>
+        {state === 'webrtc' && urls.snapshot && (
+          <img
+            src={urls.snapshot}
+            alt={`${label} camera, snapshot`}
+            class="absolute inset-0 size-full object-contain"
+          />
+        )}
+        <video
+          ref={(el) => {
+            // Only on a change: setting it again would restart the video.
+            if (el && el.srcObject !== (stream ?? null))
+              el.srcObject = stream ?? null;
+          }}
+          autoplay
+          muted
+          playsInline
+          aria-label={`${label} camera`}
+          class={`size-full object-contain ${state === 'video' ? '' : 'invisible'}`}
+          onLoadedData={() => setState((s) => (s === 'webrtc' ? 'video' : s))}
+        />
+        <Badge state={state} />
+      </>
+    );
+
   const src =
     state === 'degraded' && urls.snapshot
       ? refreshed(urls.snapshot, refresh)
@@ -182,9 +261,7 @@ export const CameraFeed = ({
           )
         }
       />
-      <span class="absolute left-2 top-2 rounded-full bg-bg/70 px-3 py-1 text-sm text-fg">
-        {BADGE[state]}
-      </span>
+      <Badge state={state} />
     </>
   );
 };

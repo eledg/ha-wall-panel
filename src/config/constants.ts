@@ -25,6 +25,9 @@ export const DOORBELL_RECENT_LIMITS = { min: 1, max: 1440 };
 /** The door tile shows "Rang HH:MM" this many minutes after a ring, unless it sets `recentMinutes`. */
 export const DOORBELL_RECENT_MIN = 30;
 
+/** The doorbell's WebRTC view falls back to MJPEG if it has not decoded a frame by now. */
+export const WEBRTC_FRAME_MS = 5_000;
+
 /** The doorbell's live view falls back to snapshots if the stream has not shown a frame by now. */
 export const STREAM_STALL_MS = 5_000;
 

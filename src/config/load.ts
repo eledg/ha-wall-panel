@@ -3,11 +3,13 @@ import {
   CALENDAR_COLORS,
   COMMON_KEYS,
   DEFAULT_LABEL,
+  DEFAULT_LIVE_VIEW,
   DEFAULT_NIGHT,
   DEFAULT_ROOM_LABEL,
   DEFAULT_WEATHER_DETAILS,
   DEFAULT_WEATHER_METRIC,
   EXTRA_KEYS,
+  LIVE_VIEWS,
   markConfigUnavailable,
   TILE_ROLES,
   TILE_TYPES,
@@ -288,6 +290,9 @@ const parseExtras = (
         DOORBELL_RECENT_MIN,
         problem,
       ),
+      liveView:
+        oneOf(LIVE_VIEWS, raw.liveView, `${at}.liveView`, problem) ??
+        DEFAULT_LIVE_VIEW,
     };
   return {};
 };

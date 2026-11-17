@@ -106,7 +106,7 @@ export const EXTRA_KEYS: Partial<Record<TileType, string[]>> = {
   calendar: ['calendars'],
   heating: ['roomLabel'],
   ac: ['roomLabel'],
-  door: ['timeoutSeconds', 'recentMinutes'],
+  door: ['timeoutSeconds', 'recentMinutes', 'liveView'],
 };
 
 /**
@@ -143,6 +143,14 @@ export type CalendarSource = {
 export const WEATHER_METRICS = ['rain', 'uv'] as const;
 export type WeatherMetric = (typeof WEATHER_METRICS)[number];
 export const DEFAULT_WEATHER_METRIC: WeatherMetric = 'rain';
+
+/**
+ * How the doorbell overlay shows the camera: WebRTC (falling back to MJPEG,
+ * then snapshots), HA's MJPEG stream (falling back to snapshots), or snapshots only.
+ */
+export const LIVE_VIEWS = ['webrtc', 'mjpeg', 'snapshot'] as const;
+export type LiveView = (typeof LIVE_VIEWS)[number];
+export const DEFAULT_LIVE_VIEW: LiveView = 'webrtc';
 
 /** The figures the weather screen can show in its stats block, in their default order. */
 export const WEATHER_STATS = [
@@ -218,7 +226,7 @@ export type TileConfig<T extends TileType = TileType> = T extends TileType
       (T extends 'calendar' ? { calendars: CalendarSource[] } : unknown) &
       (T extends 'heating' | 'ac' ? { roomLabel: string } : unknown) &
       (T extends 'door'
-        ? { timeoutSeconds: number; recentMinutes: number }
+        ? { timeoutSeconds: number; recentMinutes: number; liveView: LiveView }
         : unknown)
   : never;
 

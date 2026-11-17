@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 
-import { type Config, getConfig } from '@/config/config.ts';
+import { type Config, getConfig, type TileConfig } from '@/config/config.ts';
 import {
   doorDismissals as appDismissals,
   type DoorDismissals,
@@ -11,22 +11,41 @@ import type { Doorbell, DoorEvent } from '@/services/ha/doorbell.ts';
 import { doorbell as appDoorbell, haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
-import { CameraFeed, type FeedUrls, feedUrls } from './camera-feed.tsx';
+import {
+  CameraFeed,
+  type FeedUrls,
+  feedUrls,
+  type StartWebRtc,
+} from './camera-feed.tsx';
 
-/** The camera entity ID of a door tile. */
-const cameraOf = (cfg: Config, tileId: string) => {
+/** A door tile by its id. */
+const doorOf = (cfg: Config, tileId: string) => {
   const tile = cfg.tiles.find((t) => t.type === 'door' && t.id === tileId);
-  return tile?.type === 'door' ? tile.entities.camera : undefined;
+  return tile?.type === 'door' ? tile : undefined;
 };
 
 /** No URLs for a camera that is missing or unavailable, whatever stale attributes it keeps. */
 const cameraUrls = (
-  camera: string | undefined,
+  camera: string,
   entity: { state: string; attributes: Record<string, unknown> } | undefined,
 ): FeedUrls =>
-  camera && entity && entity.state !== 'unavailable'
+  entity && entity.state !== 'unavailable'
     ? feedUrls(camera, entity.attributes)
     : {};
+
+/** What the feed may use, by the tile's `liveView`: WebRTC first, then MJPEG, then snapshots. */
+const feedOf = (tile: TileConfig<'door'>, store: HaStore) => {
+  const { camera } = tile.entities;
+  const urls = cameraUrls(camera, store.getSnapshot().entities[camera]);
+  return {
+    urls: tile.liveView === 'snapshot' ? { snapshot: urls.snapshot } : urls,
+    webrtc:
+      tile.liveView === 'webrtc'
+        ? (handlers: Parameters<StartWebRtc>[0]) =>
+            store.webrtc(camera, handlers)
+        : undefined,
+  };
+};
 
 type Shown = {
   /** Bumped by every event, so a new ring restarts the countdown. */
@@ -34,6 +53,7 @@ type Shown = {
   tileId: string;
   label: string;
   urls: FeedUrls;
+  webrtc?: StartWebRtc;
   ringAt?: number;
   /** The ring entity's last-ring time while the ring is recent: what Dismiss hides. */
   ringEntityAt?: number;
@@ -42,7 +62,8 @@ type Shown = {
 
 /**
  * The doorbell's camera over everything, on a ring or a tap on the door tile:
- * the live MJPEG stream, or snapshots when it fails (uncropped, portrait 3:4), when it rang, a countdown to
+ * the live view by the tile's `liveView` (WebRTC, then MJPEG, then snapshots;
+ * uncropped, portrait 3:4), when it rang, a countdown to
  * closing and a large Dismiss. While open it blocks auto-reload. A ring while open restarts the countdown, not a second
  * overlay. The picture is not greyed: the camera sends greyscale frames itself
  * when it switches to infrared (docs/doorbell.md).
@@ -71,7 +92,7 @@ export const DoorbellOverlay = ({
         );
         if (tile?.type !== 'door') return;
         const { entities } = store.getSnapshot();
-        const { camera, ring } = tile.entities;
+        const { ring } = tile.entities;
         const ringed = recentRing(
           entities[ring],
           now(),
@@ -82,7 +103,7 @@ export const DoorbellOverlay = ({
           session: (prev?.session ?? 0) + 1,
           tileId: tile.id,
           label: tile.label,
-          urls: cameraUrls(camera, entities[camera]),
+          ...feedOf(tile, store),
           ringEntityAt: ringed,
           ringAt: ringed ?? (event.kind === 'ring' ? event.at : undefined),
           timeoutSeconds: tile.timeoutSeconds,
@@ -105,9 +126,8 @@ export const DoorbellOverlay = ({
   const retry = () =>
     setShown((prev) => {
       if (!prev) return prev;
-      const camera = cameraOf(cfg, prev.tileId);
-      const entity = camera ? store.getSnapshot().entities[camera] : undefined;
-      return { ...prev, urls: cameraUrls(camera, entity) };
+      const tile = doorOf(cfg, prev.tileId);
+      return tile ? { ...prev, ...feedOf(tile, store) } : prev;
     });
 
   const session = shown?.session;
@@ -149,6 +169,7 @@ export const DoorbellOverlay = ({
           <CameraFeed
             key={shown.session}
             urls={shown.urls}
+            webrtc={shown.webrtc}
             label={shown.label}
             onRetry={retry}
             now={now}

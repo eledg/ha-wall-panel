@@ -2,10 +2,12 @@ import { writeFileSync } from 'node:fs';
 
 import {
   CALENDAR_COLORS,
+  DEFAULT_LIVE_VIEW,
   DEFAULT_NIGHT,
   DEFAULT_WEATHER_DETAILS,
   DEFAULT_WEATHER_METRIC,
   EXTRA_KEYS,
+  LIVE_VIEWS,
   TILE_ROLES,
   TILE_TYPES,
   WEATHER_DETAILS_LIMITS,
@@ -137,6 +139,12 @@ const extras: Json = {
     default: DOORBELL_RECENT_MIN,
     description:
       'Minutes after a ring that the door tile shows when it rang, unless dismissed.',
+  },
+  liveView: {
+    enum: [...LIVE_VIEWS],
+    default: DEFAULT_LIVE_VIEW,
+    description:
+      "How the doorbell overlay shows the camera: WebRTC through HA's go2rtc (falling back to MJPEG, then snapshots), HA's MJPEG stream, or snapshots only.",
   },
   roomLabel: text('The room named in the "<room> now" caption.'),
 };

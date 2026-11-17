@@ -49,6 +49,10 @@ readings and shaped by the mock heating demand and AC runs.
   camera's `entity_picture` is a placeholder image, and the dev server streams it
   as a MJPEG of a still JPEG. `Stream fails` makes the stream return an error, so the overlay
   shows "Snapshot mode". `Stream and snapshot fail` fails both, so it shows "Camera unavailable" and Retry.
+  The door tile's live view is WebRTC first: `WebRTC works` sends the camera over an
+  in-page peer connection (labelled "Mock WebRTC" with the time), while `WebRTC
+unsupported`, `WebRTC rejected` and `WebRTC no answer` (the 5 s timeout) each fall
+  back to the MJPEG stream. The stream chips only show once WebRTC has failed.
   Tapping an event opens its detail sheet; some mock events carry a location and
   notes (the F1 ones carry the promotional text the real feed has, which is dropped).
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the

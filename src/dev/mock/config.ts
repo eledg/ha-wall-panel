@@ -142,6 +142,7 @@ export const mockConfig: RuntimeConfig = {
       },
       timeoutSeconds: DOORBELL_TIMEOUT_S,
       recentMinutes: DOORBELL_RECENT_MIN,
+      liveView: 'webrtc',
     },
   ],
   night: { ...DEFAULT_NIGHT, overrideSwitch: 'switch.night_override' },

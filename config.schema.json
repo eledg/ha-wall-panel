@@ -637,6 +637,15 @@
                 "maximum": 1440,
                 "default": 30,
                 "description": "Minutes after a ring that the door tile shows when it rang, unless dismissed."
+              },
+              "liveView": {
+                "enum": [
+                  "webrtc",
+                  "mjpeg",
+                  "snapshot"
+                ],
+                "default": "webrtc",
+                "description": "How the doorbell overlay shows the camera: WebRTC through HA's go2rtc (falling back to MJPEG, then snapshots), HA's MJPEG stream, or snapshots only."
               }
             }
           }

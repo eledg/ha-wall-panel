@@ -53,6 +53,17 @@ export const doorPanel: MockPanel = {
             Stream and snapshot fail
           </Chip>
         </Group>
+        <Group label="WebRTC">
+          {mock.webRtcModes.map(({ id, label }) => (
+            <Chip
+              key={id}
+              active={mock.getWebRtc() === id}
+              onClick={() => mock.setWebRtc(id)}
+            >
+              {label}
+            </Chip>
+          ))}
+        </Group>
       </>
     );
   },
