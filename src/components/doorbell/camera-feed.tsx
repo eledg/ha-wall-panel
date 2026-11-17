@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
 import {
   SNAPSHOT_REFRESH_MS,
@@ -103,12 +103,15 @@ const withoutWebRtc = (u: FeedUrls): FeedState => {
  * feed is `failed`: "Camera unavailable" with Retry, and the last good frame
  * marked with its age when there was one. Unmounting closes the peer connection
  * and empties the image's `src`, so the browser drops the stream's connection.
+ * `onFirstPicture` is called once, when the first picture shows (a snapshot
+ * counts) or the feed fails, so other work can wait until then.
  */
 export const CameraFeed = ({
   urls,
   label,
   webrtc,
   onRetry,
+  onFirstPicture,
   now = Date.now,
 }: {
   urls: FeedUrls;
@@ -117,6 +120,7 @@ export const CameraFeed = ({
   webrtc?: StartWebRtc;
   /** Called by Retry, so the caller can pass fresh `urls` (the token rotates). */
   onRetry?: () => void;
+  onFirstPicture?: () => void;
   now?: () => number;
 }) => {
   const initial = (u: FeedUrls): FeedState =>
@@ -127,6 +131,12 @@ export const CameraFeed = ({
   const [stream, setStream] = useState<MediaStream | undefined>();
   const [, setTick] = useState(0);
   const img = useRef<HTMLImageElement>(null);
+  const picturedRef = useRef(false);
+  const firstPicture = useCallback(() => {
+    if (picturedRef.current) return;
+    picturedRef.current = true;
+    onFirstPicture?.();
+  }, [onFirstPicture]);
   const viaWebRtc = state === 'webrtc' || state === 'video';
 
   // One session for as long as the feed is on WebRTC; leaving it closes the peer.
@@ -165,6 +175,10 @@ export const CameraFeed = ({
     );
     return () => clearInterval(timer);
   }, [state]);
+
+  useEffect(() => {
+    if (state === 'failed') firstPicture();
+  }, [state, firstPicture]);
 
   // Re-render each second while failed, so the age of the last frame counts up.
   useEffect(() => {
@@ -220,6 +234,7 @@ export const CameraFeed = ({
             src={urls.snapshot}
             alt={`${label} camera, snapshot`}
             class="absolute inset-0 size-full object-contain"
+            onLoad={firstPicture}
           />
         )}
         <video
@@ -233,7 +248,10 @@ export const CameraFeed = ({
           playsInline
           aria-label={`${label} camera`}
           class={`size-full object-contain ${state === 'video' ? '' : 'invisible'}`}
-          onLoadedData={() => setState((s) => (s === 'webrtc' ? 'video' : s))}
+          onLoadedData={() => {
+            firstPicture();
+            setState((s) => (s === 'webrtc' ? 'video' : s));
+          }}
         />
         <Badge state={state} />
       </>
@@ -251,6 +269,7 @@ export const CameraFeed = ({
         alt={`${label} camera`}
         class="size-full object-contain"
         onLoad={(e) => {
+          firstPicture();
           setState((s) => (s === 'connecting' ? 'live' : s));
           const copy = snapshotOf(e.currentTarget);
           if (copy) setFrame({ src: copy, at: now() });

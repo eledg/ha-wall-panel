@@ -53,6 +53,10 @@ readings and shaped by the mock heating demand and AC runs.
   in-page peer connection (labelled "Mock WebRTC" with the time), while `WebRTC
 unsupported`, `WebRTC rejected` and `WebRTC no answer` (the 5 s timeout) each fall
   back to the MJPEG stream. The stream chips only show once WebRTC has failed.
+  The door tile has a package camera whose snapshot is a landscape placeholder.
+  `Package unavailable`, `Package back` and `Package snapshot fails` act on it
+  alone, and `No package camera` takes the role off the tile (from the next ring)
+  to show the overlay without it.
   Tapping an event opens its detail sheet; some mock events carry a location and
   notes (the F1 ones carry the promotional text the real feed has, which is dropped).
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the

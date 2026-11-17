@@ -163,6 +163,8 @@
       "row": 3,
       "ring": "event.front_door_doorbell", // event.*: the doorbell's ring
       "camera": "camera.front_door_medium_resolution_channel", // camera.*
+      // optional: a second camera on the step, shown small beside the main one
+      "packageCamera": "camera.front_door_package_camera",
       "timeoutSeconds": 45 // optional: seconds before the doorbell overlay closes
     }
   ],

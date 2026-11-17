@@ -139,6 +139,7 @@ export const mockConfig: RuntimeConfig = {
       entities: {
         ring: 'event.front_door_ring',
         camera: 'camera.front_door',
+        packageCamera: 'camera.front_door_package',
       },
       timeoutSeconds: DOORBELL_TIMEOUT_S,
       recentMinutes: DOORBELL_RECENT_MIN,

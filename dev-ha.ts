@@ -9,12 +9,16 @@ import { DEAD_TOKEN, FAILING_TOKEN } from './src/dev/mock/scenarios/door.ts';
 
 // The mock's camera, as HA serves it: a snapshot, and a multipart "MJPEG" stream
 // that sends the same frame every 200 ms. The token FAILING_TOKEN makes the stream fail.
+// The package camera (an entity named *_package) gets a landscape snapshot.
 const mockCamera = (middlewares: Connect.Server) => {
   const jpeg = readFileSync(
     new URL('./src/dev/mock/scenarios/door-frame.jpg', import.meta.url),
   );
   // Mounted on /api: connect only matches a prefix up to a slash, and the
   // stream's path is /api/camera_proxy_stream.
+  const packageJpeg = readFileSync(
+    new URL('./src/dev/mock/scenarios/package-frame.jpg', import.meta.url),
+  );
   middlewares.use('/api', (req, res, next) => {
     const url = new URL(req.originalUrl ?? '', 'http://localhost');
     if (!url.pathname.startsWith('/api/camera_proxy')) return next();
@@ -25,7 +29,7 @@ const mockCamera = (middlewares: Connect.Server) => {
     }
     if (!url.pathname.startsWith('/api/camera_proxy_stream')) {
       res.setHeader('content-type', 'image/jpeg');
-      res.end(jpeg);
+      res.end(url.pathname.endsWith('_package') ? packageJpeg : jpeg);
       return;
     }
     if (url.searchParams.get('token') === FAILING_TOKEN) {

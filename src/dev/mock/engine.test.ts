@@ -60,6 +60,7 @@ describe('createMockHa', () => {
         entityId('heatingPower'),
         entityId('doorRing'),
         entityId('doorCamera'),
+        entityId('doorPackageCamera'),
         entityId('heatingCloud'),
         entityId('heatingResume'),
         entityId('heatingBoost'),

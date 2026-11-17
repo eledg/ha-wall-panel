@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
 import type { Config, LiveView } from '@/config/config.ts';
 import {
+  PACKAGE_REFRESH_MS,
   SNAPSHOT_REFRESH_MS,
   STREAM_STALL_MS,
   WEBRTC_FRAME_MS,
@@ -21,6 +22,7 @@ import { entityId, tileOf } from '@/tests/ids.ts';
 import { DoorbellOverlay } from './doorbell-overlay.tsx';
 
 const CAMERA = entityId('doorCamera');
+const PACKAGE = entityId('doorPackageCamera');
 const RING = entityId('doorRing');
 const TILE = tileOf('door');
 
@@ -30,20 +32,33 @@ const screen = () => ({
   )!,
 });
 
-/** The mock config with the door tile's live view set. */
-const withLiveView = (liveView: LiveView): Config => ({
+/** The mock config with the door tile's live view set, with or without its package camera. */
+const withLiveView = (liveView: LiveView, packageCamera = true): Config => ({
   ...mockConfig,
-  tiles: mockConfig.tiles.map((t) =>
-    t.type === 'door' ? { ...t, liveView } : t,
-  ),
+  tiles: mockConfig.tiles.map((t) => {
+    if (t.type !== 'door') return t;
+    const { packageCamera: _, ...entities } = t.entities;
+    return { ...t, liveView, entities: packageCamera ? t.entities : entities };
+  }),
 });
+
+/** Stands in for HA's camera proxy: every fetch of the package camera's still. */
+const stubFetch = () => {
+  const fetch = vi.fn((_url: string) =>
+    Promise.resolve(new Response(new Blob(['jpeg']))),
+  );
+  vi.stubGlobal('fetch', fetch);
+  return fetch;
+};
 
 /** Most tests are about the MJPEG stream; WebRTC has its own below. */
 const setup = async (
   setToken?: string,
   now?: () => number,
   liveView: LiveView = 'mjpeg',
+  packageCamera = true,
 ) => {
+  const fetch = stubFetch();
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   const doorbell = createDoorbell(store);
@@ -61,7 +76,7 @@ const setup = async (
           store={store}
           doorbell={doorbell}
           dismissals={dismissals}
-          cfg={withLiveView(liveView)}
+          cfg={withLiveView(liveView, packageCamera)}
           now={now}
         />
       </HaConnection>,
@@ -69,12 +84,13 @@ const setup = async (
     );
   });
   const dialog = () => document.querySelector('dialog');
-  return { mock, store, doorbell, dismissals, dialog };
+  return { mock, store, doorbell, dismissals, dialog, fetch };
 };
 
 afterEach(() => {
   render(null, document.body);
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('DoorbellOverlay', () => {
@@ -463,6 +479,130 @@ describe('DoorbellOverlay', () => {
       });
 
       expect(imgSrc()).toBe(streamSrc);
+    });
+  });
+
+  describe('package camera', () => {
+    const button = (label: string) =>
+      document.querySelector<HTMLButtonElement>(
+        `button[aria-label="${label}"]`,
+      );
+    const mainImg = () => document.querySelector('dialog img')!;
+    const firstFrame = () =>
+      act(() => {
+        mainImg().dispatchEvent(new Event('load'));
+      });
+    const inset = `/api/camera_proxy/${PACKAGE}?token=mock&width=480&height=360`;
+
+    it('is not there without the role', async () => {
+      const { doorbell, dialog, fetch } = await setup(
+        'abc123',
+        undefined,
+        'mjpeg',
+        false,
+      );
+      await act(() => doorbell.open(TILE.id));
+      await firstFrame();
+
+      expect(dialog()?.textContent).not.toContain('Package camera');
+      expect(
+        dialog()?.querySelector('[aria-label="Package camera loading"]'),
+      ).toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("waits for the main camera's first picture", async () => {
+      const { doorbell, dialog, fetch } = await setup('abc123');
+      await act(() => doorbell.open(TILE.id));
+
+      expect(
+        dialog()?.querySelector('[aria-label="Package camera loading"]'),
+      ).not.toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+
+      await firstFrame();
+      await vi.waitFor(() =>
+        expect(dialog()?.textContent).toContain('Doorstep · Still'),
+      );
+      expect(fetch).toHaveBeenCalledWith(inset, expect.anything());
+    });
+
+    it('shows unavailable without touching the main feed', async () => {
+      const { mock, doorbell, dialog, fetch } = await setup('abc123');
+      mock.controls.setUnavailable(PACKAGE);
+      await act(() => doorbell.open(TILE.id));
+      await firstFrame();
+
+      await vi.waitFor(() =>
+        expect(dialog()?.textContent).toContain('Package camera unavailable'),
+      );
+      expect(fetch).not.toHaveBeenCalled();
+      expect(dialog()?.textContent).toContain('● Live');
+      expect(mainImg().getAttribute('src')).toBe(
+        `/api/camera_proxy_stream/${CAMERA}?token=abc123`,
+      );
+    });
+
+    it('swaps with the main picture, keeping the live view and the countdown', async () => {
+      const { doorbell, dialog, fetch } = await setup('abc123');
+      await act(() => doorbell.open(TILE.id));
+      await firstFrame();
+      const visitor = mainImg();
+      await vi.waitFor(() =>
+        expect(button('Enlarge doorstep camera')).not.toBeNull(),
+      );
+
+      await act(() => button('Enlarge doorstep camera')!.click());
+
+      expect(button('Enlarge visitor camera')).not.toBeNull();
+      expect(dialog()?.textContent).toContain('Visitor');
+      expect(mainImg()).toBe(visitor);
+      await vi.waitFor(() =>
+        expect(fetch).toHaveBeenLastCalledWith(
+          `/api/camera_proxy/${PACKAGE}?token=mock&width=1280&height=960`,
+          expect.anything(),
+        ),
+      );
+      expect(dialog()?.textContent).toContain(
+        `Auto-close ${TILE.timeoutSeconds}s`,
+      );
+
+      await act(() => button('Enlarge visitor camera')!.click());
+      expect(button('Enlarge visitor camera')).toBeNull();
+      expect(mainImg()).toBe(visitor);
+    });
+
+    it('goes back to the visitor on a new ring', async () => {
+      const { mock, doorbell } = await setup('abc123');
+      await act(() => doorbell.open(TILE.id));
+      await firstFrame();
+      await vi.waitFor(() =>
+        expect(button('Enlarge doorstep camera')).not.toBeNull(),
+      );
+      await act(() => button('Enlarge doorstep camera')!.click());
+
+      await act(() => mock.controls.ring());
+
+      expect(button('Enlarge visitor camera')).toBeNull();
+    });
+
+    it('stops fetching when the overlay closes', async () => {
+      vi.useFakeTimers();
+      const { doorbell, fetch } = await setup('abc123');
+      await act(() => doorbell.open(TILE.id));
+      await firstFrame();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const calls = fetch.mock.calls.length;
+      expect(calls).toBeGreaterThan(0);
+
+      await act(() => screen().Dismiss.click());
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PACKAGE_REFRESH_MS * 3);
+      });
+
+      expect(fetch.mock.calls.length).toBe(calls);
     });
   });
 });

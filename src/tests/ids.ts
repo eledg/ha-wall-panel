@@ -42,6 +42,7 @@ export const IDS = {
   heatingBoost: heating.boost,
   doorRing: door.ring,
   doorCamera: door.camera,
+  doorPackageCamera: door.packageCamera!,
 } as const;
 
 export const entityId = (key: keyof typeof IDS) => IDS[key];

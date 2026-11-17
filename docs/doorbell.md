@@ -69,6 +69,20 @@ two, so the panel has to be told about both.
   current `access_token` attribute, not a saved one.
 - At night the camera switches to infrared, so the picture is greyscale.
 
+## Package camera
+
+`camera.<entry>_package_camera` is a second camera on the same device:
+
+- **Landscape 4:3**, 3264 x 2448, at **3 fps** and about 1.25 Mbps, unlike the
+  main camera's portrait 3:4, so the two need different boxes.
+- It looks straight down at the doorstep and mat from above the door, wide-angle,
+  with the door frame along one edge. Colour by day.
+- `supported_features: 2` (stream), and the usual `access_token` and `entity_picture`.
+- **Scaling.** A full-size snapshot is far too large to fetch every few seconds on the
+  display. `/api/camera_proxy/<entity>?token=…&width=…&height=…` makes HA scale the
+  JPEG down, but only when both `width` and `height` are given and the camera serves
+  JPEG. Ask for about twice the box's CSS size.
+
 ## WebRTC
 
 HA brokers WebRTC over the WebSocket connection the panel already has; the panel
@@ -183,3 +197,20 @@ diagnostics and the night dimming. It is `z-50`, above the `z-40` wake overlay.
   neither brings it back nor loses an undismissed one (the time comes from the ring
   entity). If storage fails, the ring shows again after a reload.
 - While open it sets `data-blocks-reload`, so auto-reload waits.
+- **Package camera.** With the door tile's `packageCamera`, a 4:3 still sits beside
+  the heading ("Doorstep · Still"; `package-camera.tsx`). It is a refreshing snapshot,
+  not a stream: at 3 fps there is little motion to see, and a second live stream
+  would compete with the main one for the display's CPU.
+  - It loads only after the main camera's first picture (or its failure), so the
+    visitor's picture is never slowed by it.
+  - It is fetched [scaled](#package-camera) (480 x 360 in the inset, 1280 x 960
+    enlarged) with the current token, then again 2 s (`PACKAGE_REFRESH_MS`) after
+    each fetch finishes, so requests never overlap. Closing the overlay stops it and
+    aborts the request in flight.
+  - Until the first still a camera icon shows. If the entity is unavailable or a fetch
+    fails it reads "Package camera unavailable" and keeps trying; the main feed is not
+    touched. A still older than 10 s shows "Updated 14:32:05".
+  - A tap on it swaps the two: the package camera becomes the large picture and the
+    visitor a small "Visitor" thumbnail, which a tap swaps back. The boxes change
+    places by their classes alone, so the live view is not restarted. The countdown
+    keeps running, and a new ring goes back to the visitor.

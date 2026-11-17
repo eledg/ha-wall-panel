@@ -21,6 +21,7 @@ import { acHistory, climateHistory } from '@/dev/mock/scenarios/climate.ts';
 import {
   cameraAttributes,
   DOUBLE_FIRE_MS,
+  packageCameraAttributes,
   ringAttributes,
 } from '@/dev/mock/scenarios/door.ts';
 import {
@@ -266,6 +267,11 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
   // `unknown` is how HA shows a doorbell that hasn't rung since it restarted.
   entities.set(door.ring, make(door.ring, 'unknown', ringAttributes()));
   entities.set(door.camera, make(door.camera, 'idle', cameraAttributes()));
+  if (door.packageCamera)
+    entities.set(
+      door.packageCamera,
+      make(door.packageCamera, 'idle', packageCameraAttributes()),
+    );
   // Every other entity (the first tile's switches, further tiles) starts plain.
   for (const { id, domain } of entityRefs(cfg)) {
     if (entities.has(id)) continue;
