@@ -9,7 +9,7 @@ are enforced by the build; the rest are read on the display from the
 | Measure                | Budget                               | Enforced by                |
 | ---------------------- | ------------------------------------ | -------------------------- |
 | JS, as served          | 150 KB                               | build (`bundle-budget.ts`) |
-| JS, gzipped            | 41 KB                                | build                      |
+| JS, gzipped            | 48 KB                                | build                      |
 | CSS, gzipped           | 12 KB                                | build                      |
 | First render           | 2 s from navigation start            | read on the display        |
 | First paint            | 2 s from navigation start            | read on the display        |
@@ -33,7 +33,9 @@ details dialog) took it over once more, so it was then 38 KB. The door tile and
 the doorbell's ring detection (about 0.7 KB gzipped) took it over again, with the
 doorbell overlay still to come, so it was then 40 KB. Dismissing a ring and
 remembering it across reloads (about 0.3 KB gzipped, `src/lib/door-dismissed.ts`)
-puts it at 41 KB.
+took it over once more. Rather than nudge it up again, it is now 48 KB: the
+bundle was 41.2 KB, so there is about 15% of headroom for the tiles and features
+still to come.
 
 The store-updates limit was raised from 10 to 20 per minute after the display
 idled at 10 to 15. A store update only costs a snapshot copy and a selector

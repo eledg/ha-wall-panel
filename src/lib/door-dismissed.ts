@@ -37,7 +37,9 @@ export const createDoorDismissals = (
     },
     subscribe: (listener: () => void) => {
       listeners.add(listener);
-      return () => void listeners.delete(listener);
+      return () => {
+        listeners.delete(listener);
+      };
     },
   };
 };
