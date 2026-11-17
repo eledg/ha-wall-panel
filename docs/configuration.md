@@ -155,7 +155,10 @@ shows the camera: `webrtc` (the default) streams it over WebRTC through HA's go2
 falling back to MJPEG and then snapshots; `mjpeg` starts with HA's MJPEG stream; and
 `snapshot` shows a snapshot refreshed every second. See [Doorbell](entities.md#doorbell)
 for which entities to use, and [doorbell.md](doorbell.md#webrtc) for what WebRTC
-needs from the network.
+needs from the network. `packageCamera` (optional) is a second `camera` looking
+down at the step: the overlay shows it as a small still beside the heading,
+refreshed every 2 s, and a tap enlarges it. Without it the overlay shows only the
+door's camera.
 
 ```jsonc
 {
@@ -164,6 +167,7 @@ needs from the network.
   "row": 3,
   "ring": "event.front_door_doorbell",
   "camera": "camera.front_door_medium_resolution_channel",
+  "packageCamera": "camera.front_door_package_camera", // optional
 }
 ```
 

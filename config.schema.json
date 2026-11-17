@@ -624,6 +624,11 @@
                 "minLength": 1,
                 "description": "A camera.* entity ID."
               },
+              "packageCamera": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A camera.* entity ID."
+              },
               "timeoutSeconds": {
                 "type": "integer",
                 "minimum": 5,

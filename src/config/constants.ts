@@ -34,5 +34,18 @@ export const STREAM_STALL_MS = 5_000;
 /** In snapshot mode the doorbell picture is refreshed this often. */
 export const SNAPSHOT_REFRESH_MS = 1_000;
 
+/** The package camera's still is fetched again this long after the last one finished. */
+export const PACKAGE_REFRESH_MS = 2_000;
+
+/** Past this age the package camera's still shows when it was taken. */
+export const PACKAGE_STALE_MS = 10_000;
+
+/**
+ * The size HA scales the package camera's still to, about twice the box it
+ * fills: the inset beside the heading, or the large picture once enlarged.
+ */
+export const PACKAGE_INSET_SIZE = { width: 480, height: 360 };
+export const PACKAGE_LARGE_SIZE = { width: 1280, height: 960 };
+
 /** The doorbell's ring entity is reported in diagnostics once unavailable for this long. */
 export const RING_UNAVAILABLE_MS = 3 * 60_000;

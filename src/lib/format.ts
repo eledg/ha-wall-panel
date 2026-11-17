@@ -4,6 +4,12 @@ import { dateFormat } from '@/config/datetime.ts';
 export const formatTime = (value: Date | number) =>
   dateFormat({ hour: '2-digit', minute: '2-digit' }).format(value);
 
+/** `09:41:05`: as `formatTime`, with seconds. */
+export const formatTimeSeconds = (value: Date | number) =>
+  dateFormat({ hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(
+    value,
+  );
+
 /** `Sat 18:00`: the short weekday and time, in the configured locale and zone. */
 export const formatDayTime = (value: Date | number) =>
   dateFormat({ weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(

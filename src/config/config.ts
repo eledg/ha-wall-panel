@@ -77,6 +77,8 @@ export const TILE_ROLES = {
     ring: { domain: 'event' },
     /** The doorbell's camera. */
     camera: { domain: 'camera' },
+    /** A second camera looking down at the doorstep, shown as a refreshing still beside the main one. */
+    packageCamera: { domain: 'camera', optional: true },
   },
 } as const satisfies Record<string, Record<string, RoleSpec>>;
 

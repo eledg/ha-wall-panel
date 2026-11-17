@@ -123,12 +123,42 @@ test('doorbell: the overlay over an open sheet', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeVisible();
   // The stream's first frame, so the picture is there and the badge settled.
   await expect(page.getByText('● Live')).toBeVisible();
+  await expect(page.getByText('Doorstep · Still')).toBeVisible();
   await expect(page).toHaveScreenshot('doorbell-overlay.png');
+});
+
+test('doorbell: without a package camera', async ({ page }) => {
+  await ringWith(page, 'WebRTC unsupported', 'No package camera');
+  await expect(page.getByText('● Live')).toBeVisible();
+  await expect(page.getByText('Doorstep')).toBeHidden();
+  await expect(page).toHaveScreenshot('doorbell-no-package.png');
+});
+
+test('doorbell: the package camera enlarged', async ({ page }) => {
+  await ringWith(page, 'WebRTC unsupported');
+  await expect(page.getByText('● Live')).toBeVisible();
+  await page.getByRole('button', { name: 'Enlarge doorstep camera' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Enlarge visitor camera' }),
+  ).toBeVisible();
+  await expect(page.getByText('Doorstep · Still')).toBeVisible();
+  await expect(page).toHaveScreenshot('doorbell-package-enlarged.png');
+});
+
+test('doorbell: the package camera unavailable leaves the main feed', async ({
+  page,
+}) => {
+  await ringWith(page, 'WebRTC unsupported', 'Package unavailable');
+  await expect(page.getByText('Package camera unavailable')).toBeVisible();
+  await expect(page.getByText('● Live')).toBeVisible();
+  await expect(page).toHaveScreenshot('doorbell-package-unavailable.png');
 });
 
 test('doorbell: the camera unavailable', async ({ page }) => {
   await ringWith(page, 'WebRTC unsupported', 'Stream and snapshot fail');
   await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+  // The package camera still shows: the main feed failing does not stop it.
+  await expect(page.getByText('Doorstep · Still')).toBeVisible();
   await expect(page).toHaveScreenshot('doorbell-failed.png');
 });
 
