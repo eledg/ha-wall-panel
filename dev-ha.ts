@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import type { Connect, Plugin } from 'vite';
 
 import { configUrl } from './src/config/url.ts';
-import { FAILING_TOKEN } from './src/dev/mock/scenarios/door.ts';
+import { DEAD_TOKEN, FAILING_TOKEN } from './src/dev/mock/scenarios/door.ts';
 
 // The mock's camera, as HA serves it: a snapshot, and a multipart "MJPEG" stream
 // that sends the same frame every 200 ms. The token FAILING_TOKEN makes the stream fail.
@@ -18,6 +18,11 @@ const mockCamera = (middlewares: Connect.Server) => {
   middlewares.use('/api', (req, res, next) => {
     const url = new URL(req.originalUrl ?? '', 'http://localhost');
     if (!url.pathname.startsWith('/api/camera_proxy')) return next();
+    if (url.searchParams.get('token') === DEAD_TOKEN) {
+      res.statusCode = 500;
+      res.end();
+      return;
+    }
     if (!url.pathname.startsWith('/api/camera_proxy_stream')) {
       res.setHeader('content-type', 'image/jpeg');
       res.end(jpeg);

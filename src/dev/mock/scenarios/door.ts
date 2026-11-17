@@ -26,6 +26,9 @@ export const placeholder =
  */
 export const FAILING_TOKEN = 'fail';
 
+/** The token that makes both the stream and the snapshot fail (HTTP 500). */
+export const DEAD_TOKEN = 'dead';
+
 /**
  * The camera entity's attributes. The token lets the panel stream from the
  * dev server (`dev-ha.ts`); `entity_picture` is a placeholder image.

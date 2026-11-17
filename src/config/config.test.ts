@@ -97,6 +97,36 @@ describe('the weather alerts role', () => {
   });
 });
 
+describe('validateConfig for the door tile', () => {
+  const door = (entities: { ring: string; camera: string }) =>
+    ({ ...tileOf('door'), entities }) as TileConfig;
+  const { camera, ring } = tileOf('door').entities;
+
+  it('flags a missing ring', () => {
+    const issues = validateConfig(withTiles(door({ ring: '', camera })));
+    expect(issues.map((i) => i.key)).toEqual(['tiles[0].ring']);
+  });
+
+  it('flags a ring from the wrong domain', () => {
+    const issues = validateConfig(
+      withTiles(door({ ring: 'sensor.front_door', camera })),
+    );
+    expect(issues).toEqual([
+      {
+        key: 'tiles[0].ring',
+        message: '"sensor.front_door" should be in the event domain',
+      },
+    ]);
+  });
+
+  it('flags a camera from the wrong domain', () => {
+    const issues = validateConfig(
+      withTiles(door({ ring, camera: 'sensor.front_door' })),
+    );
+    expect(issues.map((i) => i.key)).toEqual(['tiles[0].camera']);
+  });
+});
+
 describe('validateConfig', () => {
   it('accepts the fixture config', () => {
     expect(validateConfig(getConfig())).toEqual([]);

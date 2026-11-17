@@ -118,6 +118,14 @@ diagnostics and the night dimming. It is `z-50`, above the `z-40` wake overlay.
   overlay empties the image's `src`, so the browser drops the connection. There is no
   greyscale filter: the camera sends greyscale frames itself when it switches to infrared.
   WebRTC is a later issue.
+- **Failures.** A ring always opens the overlay. If the camera is `unavailable` or
+  missing (whatever stale token it keeps), or the snapshot fails too, the feed is
+  `failed`: "Camera unavailable" with a Retry button, which reads the token again and
+  restarts the stream. If a frame had loaded, it stays dimmed behind the message with
+  "Last frame 12s ago" (a canvas copy, so it outlives the rotating token). A ring entity
+  `unavailable` for more than 3 minutes (`RING_UNAVAILABLE_MS`) is flagged in diagnostics;
+  a missing or wrong-domain ring or camera is a config warning like any other role.
+  With HA disconnected no ring arrives and the existing banner says so.
 - On the right: "Doorbell", the door's label, "Rang at 14:32" while the ring is
   recent (30 minutes) or "Live view" if not, the auto-close countdown and Dismiss.
   On a narrow screen the camera stacks above them.

@@ -48,7 +48,7 @@ readings and shaped by the mock heating demand and AC runs.
   panel counts as one ring. The doorbell and camera can be made unavailable. The
   camera's `entity_picture` is a placeholder image, and the dev server streams it
   as a MJPEG of a still JPEG. `Stream fails` makes the stream return an error, so the overlay
-  shows "Snapshot mode".
+  shows "Snapshot mode". `Stream and snapshot fail` fails both, so it shows "Camera unavailable" and Retry.
   Tapping an event opens its detail sheet; some mock events carry a location and
   notes (the F1 ones carry the promotional text the real feed has, which is dropped).
 - **Light**: HA flips the light, unavailable, back. `Make calls fail` rejects the

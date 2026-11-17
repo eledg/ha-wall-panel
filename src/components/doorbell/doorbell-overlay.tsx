@@ -9,9 +9,25 @@ import type { HaStore } from '@/services/ha/store.ts';
 
 import { CameraFeed, type FeedUrls, feedUrls } from './camera-feed.tsx';
 
+/** The camera entity ID of a door tile. */
+const cameraOf = (cfg: Config, tileId: string) => {
+  const tile = cfg.tiles.find((t) => t.type === 'door' && t.id === tileId);
+  return tile?.type === 'door' ? tile.entities.camera : undefined;
+};
+
+/** No URLs for a camera that is missing or unavailable, whatever stale attributes it keeps. */
+const cameraUrls = (
+  camera: string | undefined,
+  entity: { state: string; attributes: Record<string, unknown> } | undefined,
+): FeedUrls =>
+  camera && entity && entity.state !== 'unavailable'
+    ? feedUrls(camera, entity.attributes)
+    : {};
+
 type Shown = {
   /** Bumped by every event, so a new ring restarts the countdown. */
   session: number;
+  tileId: string;
   label: string;
   urls: FeedUrls;
   ringAt?: number;
@@ -51,8 +67,9 @@ export const DoorbellOverlay = ({
         const ringed = recentRing(entities[ring], now());
         setShown((prev) => ({
           session: (prev?.session ?? 0) + 1,
+          tileId: tile.id,
           label: tile.label,
-          urls: feedUrls(camera, entities[camera]?.attributes),
+          urls: cameraUrls(camera, entities[camera]),
           ringAt: ringed ?? (event.kind === 'ring' ? event.at : undefined),
           timeoutSeconds: tile.timeoutSeconds,
         }));
@@ -61,6 +78,15 @@ export const DoorbellOverlay = ({
   );
 
   const close = () => setShown(undefined);
+
+  // The access token rotates, so a retry reads it again.
+  const retry = () =>
+    setShown((prev) => {
+      if (!prev) return prev;
+      const camera = cameraOf(cfg, prev.tileId);
+      const entity = camera ? store.getSnapshot().entities[camera] : undefined;
+      return { ...prev, urls: cameraUrls(camera, entity) };
+    });
 
   const session = shown?.session;
   const timeoutSeconds = shown?.timeoutSeconds ?? 0;
@@ -90,14 +116,23 @@ export const DoorbellOverlay = ({
       data-blocks-reload
       class="fixed inset-0 m-0 flex size-full max-h-none max-w-none flex-col gap-4 overflow-y-auto border-0 bg-bg p-4 text-fg z-50 min-[600px]:flex-row"
     >
-      <button
-        type="button"
-        aria-label="Close doorbell"
-        onClick={close}
-        class="relative mx-auto aspect-[3/4] w-full max-w-[360px] shrink-0 block overflow-hidden rounded-tile border border-line bg-surface min-[600px]:mx-0 min-[600px]:h-full min-[600px]:w-auto min-[600px]:max-w-none"
-      >
-        <CameraFeed key={shown.session} urls={shown.urls} label={shown.label} />
-      </button>
+      <div class="relative mx-auto aspect-[3/4] w-full max-w-[360px] shrink-0 overflow-hidden rounded-tile border border-line bg-surface min-[600px]:mx-0 min-[600px]:h-full min-[600px]:w-auto min-[600px]:max-w-none">
+        <button
+          type="button"
+          aria-label="Close doorbell"
+          onClick={close}
+          class="absolute inset-0 size-full bg-surface"
+        />
+        <div class="pointer-events-none absolute inset-0">
+          <CameraFeed
+            key={shown.session}
+            urls={shown.urls}
+            label={shown.label}
+            onRetry={retry}
+            now={now}
+          />
+        </div>
+      </div>
       <div class="flex min-w-0 flex-1 flex-col justify-between gap-4">
         <div>
           <h2 id="doorbell-title" class="text-3xl font-semibold">

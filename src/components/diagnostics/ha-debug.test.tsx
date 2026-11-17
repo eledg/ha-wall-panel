@@ -5,6 +5,7 @@ import { act } from 'preact/test-utils';
 import { describe, expect, it } from 'vitest';
 
 import { entityRefs } from '@/config/config.ts';
+import { RING_UNAVAILABLE_MS } from '@/config/constants.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import { fakeHaDeps } from '@/tests/ha-deps.ts';
 import { entityId } from '@/tests/ids.ts';
@@ -55,5 +56,32 @@ describe('HaDebug', () => {
 
     expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)));
     expect(ids).toHaveLength(new Set(entityRefs().map(({ id }) => id)).size);
+  });
+
+  it('flags a ring entity unavailable for more than a few minutes', async () => {
+    const { deps, push } = fakeHaDeps();
+    const store = createHaStore(deps);
+    const changed = Date.parse('2026-01-01T12:00:00Z');
+    let now = changed + RING_UNAVAILABLE_MS - 1_000;
+    await act(() => {
+      render(<HaDebug store={store} now={() => now} />, document.body);
+    });
+    await act(async () => {
+      await store.start(() => Promise.resolve({} as Auth));
+      push({
+        [entityId('doorRing')]: {
+          state: 'unavailable',
+          attributes: {},
+          last_changed: new Date(changed).toISOString(),
+        },
+      });
+    });
+    expect(document.body.textContent).not.toContain('Unavailable for');
+
+    now = changed + 5 * 60_000;
+    await act(() => {
+      render(<HaDebug store={store} now={() => now} />, document.body);
+    });
+    expect(document.body.textContent).toContain('Unavailable for 5 min');
   });
 });

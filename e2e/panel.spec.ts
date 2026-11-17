@@ -113,6 +113,18 @@ test('doorbell: the overlay over an open sheet', async ({ page }) => {
   await expect(page).toHaveScreenshot('doorbell-overlay.png');
 });
 
+test('doorbell: the camera unavailable', async ({ page }) => {
+  // Both chips in one go: setWarnings toggles the mock overlay each time.
+  const overlay = page.locator('#mock-overlay');
+  await overlay.locator('button[aria-expanded]').dispatchEvent('click');
+  for (const label of ['Stream and snapshot fail', 'Ring'])
+    await overlay
+      .locator('button', { hasText: new RegExp(`^${label}$`) })
+      .dispatchEvent('click');
+  await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+  await expect(page).toHaveScreenshot('doorbell-failed.png');
+});
+
 test('climate: the sheet', async ({ page }) => {
   await page.getByRole('button', { name: /humidity/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();

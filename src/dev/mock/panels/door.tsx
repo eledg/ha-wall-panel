@@ -1,5 +1,9 @@
 import { entitiesOf } from '@/dev/mock/entities.ts';
-import { cameraAttributes, FAILING_TOKEN } from '@/dev/mock/scenarios/door.ts';
+import {
+  cameraAttributes,
+  DEAD_TOKEN,
+  FAILING_TOKEN,
+} from '@/dev/mock/scenarios/door.ts';
 import { Chip, Group, useMockChanges } from '@/dev/mock/ui.tsx';
 
 import type { MockPanel } from './types.ts';
@@ -40,6 +44,13 @@ export const doorPanel: MockPanel = {
             }
           >
             Stream fails
+          </Chip>
+          <Chip
+            onClick={() =>
+              mock.setState(camera, 'idle', cameraAttributes(DEAD_TOKEN))
+            }
+          >
+            Stream and snapshot fail
           </Chip>
         </Group>
       </>
