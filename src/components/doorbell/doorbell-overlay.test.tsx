@@ -22,7 +22,7 @@ const screen = () => ({
   )!,
 });
 
-const setup = async (setToken?: string) => {
+const setup = async (setToken?: string, now?: () => number) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   const doorbell = createDoorbell(store);
@@ -35,7 +35,12 @@ const setup = async (setToken?: string) => {
       });
     render(
       <HaConnection store={store}>
-        <DoorbellOverlay store={store} doorbell={doorbell} cfg={mockConfig} />
+        <DoorbellOverlay
+          store={store}
+          doorbell={doorbell}
+          cfg={mockConfig}
+          now={now}
+        />
       </HaConnection>,
       document.body,
     );
@@ -200,5 +205,89 @@ describe('DoorbellOverlay', () => {
         .click(),
     );
     expect(dialog()).toBeNull();
+  });
+
+  describe('failures', () => {
+    const retryButton = () =>
+      [...document.querySelectorAll('button')].find(
+        (b) => b.textContent === 'Retry',
+      );
+
+    it('opens on a ring and says the camera is unavailable', async () => {
+      const { mock, dialog } = await setup();
+      await act(() => mock.controls.setUnavailable(CAMERA));
+      await act(() => mock.controls.ring());
+      expect(dialog()?.textContent).toContain('Camera unavailable');
+      expect(dialog()?.textContent).toContain('Rang at');
+      expect(retryButton()).toBeTruthy();
+      expect(dialog()?.querySelector('img')).toBeNull();
+    });
+
+    it('opens on a ring when the camera entity is missing', async () => {
+      const { mock, dialog } = await setup();
+      await act(() => mock.controls.removeEntity(CAMERA));
+      await act(() => mock.controls.ring());
+      expect(dialog()?.textContent).toContain('Camera unavailable');
+      expect(retryButton()).toBeTruthy();
+    });
+
+    it('fails when the stream and the snapshot both fail, and Retry recovers', async () => {
+      vi.useFakeTimers();
+      const { mock, doorbell, dialog } = await setup('dead');
+      await act(() => doorbell.open(TILE.id));
+      const img = () => dialog()!.querySelector('img')!;
+      await act(() => {
+        img().dispatchEvent(new Event('error'));
+      });
+      expect(dialog()?.textContent).toContain('Snapshot mode');
+      await act(() => {
+        img().dispatchEvent(new Event('error'));
+      });
+      expect(dialog()?.textContent).toContain('Camera unavailable');
+      expect(retryButton()).toBeTruthy();
+
+      // The token has rotated by the time Retry is tapped.
+      await act(() =>
+        mock.controls.setState(CAMERA, 'idle', { access_token: 'fresh' }),
+      );
+      await act(() => retryButton()!.click());
+      expect(img().getAttribute('src')).toContain('token=fresh');
+      expect(retryButton()).toBeUndefined();
+    });
+
+    it('marks the last good frame with its age', async () => {
+      vi.useFakeTimers();
+      let at = 1_000_000;
+      const { doorbell, dialog } = await setup('dead', () => at);
+      const draw = vi
+        .spyOn(HTMLCanvasElement.prototype, 'getContext')
+        .mockReturnValue({ drawImage: vi.fn() } as never);
+      vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(
+        'data:image/jpeg;base64,AAAA',
+      );
+      vi.spyOn(
+        HTMLImageElement.prototype,
+        'naturalWidth',
+        'get',
+      ).mockReturnValue(768);
+      await act(() => doorbell.open(TILE.id));
+      const img = () => dialog()!.querySelector('img')!;
+      await act(() => {
+        img().dispatchEvent(new Event('error'));
+      });
+      await act(() => {
+        img().dispatchEvent(new Event('load'));
+      });
+      expect(draw).toHaveBeenCalled();
+      at += 12_000;
+      await act(() => {
+        img().dispatchEvent(new Event('error'));
+      });
+      expect(dialog()?.textContent).toContain('Camera unavailable');
+      expect(dialog()?.querySelector('img')?.getAttribute('src')).toBe(
+        'data:image/jpeg;base64,AAAA',
+      );
+      expect(dialog()?.textContent).toContain('Last frame 12s ago');
+    });
   });
 });

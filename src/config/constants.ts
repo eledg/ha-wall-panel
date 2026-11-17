@@ -27,3 +27,6 @@ export const STREAM_STALL_MS = 5_000;
 
 /** In snapshot mode the doorbell picture is refreshed this often. */
 export const SNAPSHOT_REFRESH_MS = 1_000;
+
+/** The doorbell's ring entity is reported in diagnostics once unavailable for this long. */
+export const RING_UNAVAILABLE_MS = 3 * 60_000;
