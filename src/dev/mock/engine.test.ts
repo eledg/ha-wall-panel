@@ -524,3 +524,121 @@ describe('mock heating', () => {
     await expect(fetch()).rejects.toThrow('history failed');
   });
 });
+
+describe('mock HA camera WebRTC', () => {
+  const CAMERA = entityId('doorCamera');
+  type Conn = {
+    sendMessagePromise: (msg: object) => Promise<unknown>;
+    subscribeMessage: (
+      cb: (msg: unknown) => void,
+      msg: object,
+    ) => Promise<() => Promise<void>>;
+  };
+  const open = async () => {
+    const mock = createMockHa();
+    const conn = (await mock.deps.createConnection({})) as unknown as Conn;
+    const offer = async () => {
+      const seen: unknown[] = [];
+      await conn.subscribeMessage((m) => seen.push(m), {
+        type: 'camera/webrtc/offer',
+        entity_id: CAMERA,
+        offer: 'v=0',
+      });
+      await Promise.resolve();
+      return seen;
+    };
+    const capabilities = () =>
+      conn.sendMessagePromise({
+        type: 'camera/capabilities',
+        entity_id: CAMERA,
+      });
+    return { mock, conn, offer, capabilities };
+  };
+
+  it('offers WebRTC, with the client config HA gives', async () => {
+    const { conn, capabilities } = await open();
+
+    await expect(capabilities()).resolves.toEqual({
+      frontend_stream_types: ['hls', 'web_rtc'],
+      two_way_audio: false,
+    });
+    await expect(
+      conn.sendMessagePromise({
+        type: 'camera/webrtc/get_client_config',
+        entity_id: CAMERA,
+      }),
+    ).resolves.toEqual({ configuration: { iceServers: [] } });
+  });
+
+  it('leaves web_rtc out when unsupported', async () => {
+    const { mock, capabilities } = await open();
+    mock.controls.setWebRtc('unsupported');
+
+    await expect(capabilities()).resolves.toMatchObject({
+      frontend_stream_types: ['hls'],
+    });
+  });
+
+  it('names the session, then refuses the offer when rejected', async () => {
+    const { mock, offer } = await open();
+    mock.controls.setWebRtc('rejected');
+
+    const seen = await offer();
+    expect(seen).toEqual([
+      { type: 'session', session_id: expect.any(String) },
+      expect.objectContaining({
+        type: 'error',
+        code: 'go2rtc_webrtc_offer_failed',
+      }),
+    ]);
+  });
+
+  it('never answers when silent', async () => {
+    const { mock, offer } = await open();
+    mock.controls.setWebRtc('silent');
+
+    expect(await offer()).toEqual([
+      { type: 'session', session_id: expect.any(String) },
+    ]);
+  });
+
+  it('refuses the offer where the browser has no WebRTC', async () => {
+    const { offer } = await open();
+
+    expect((await offer())[1]).toMatchObject({ type: 'error' });
+  });
+
+  it('refuses signalling while disconnected', async () => {
+    const { mock, capabilities } = await open();
+    mock.controls.setConnected(false);
+
+    await expect(capabilities()).rejects.toThrow('connection lost');
+  });
+});
+
+describe('the store over mock HA', () => {
+  it('fails WebRTC at once before connecting or for an unknown camera', async () => {
+    const mock = createMockHa();
+    const store = createHaStore(mock.deps);
+    const onFail = vi.fn();
+    store.webrtc(entityId('doorCamera'), { onStream: vi.fn(), onFail });
+    expect(onFail).toHaveBeenCalledWith('Not connected');
+
+    await store.start(mock.getAuth);
+    store.webrtc('camera.unknown', { onStream: vi.fn(), onFail });
+    expect(onFail).toHaveBeenCalledTimes(2);
+  });
+
+  it('signals WebRTC over the connection once connected', async () => {
+    const mock = createMockHa();
+    const store = createHaStore(mock.deps);
+    await store.start(mock.getAuth);
+    mock.controls.setWebRtc('unsupported');
+    const onFail = vi.fn();
+    store.webrtc(entityId('doorCamera'), { onStream: vi.fn(), onFail });
+
+    await vi.waitFor(() =>
+      expect(onFail).toHaveBeenCalledWith('WebRTC unsupported'),
+    );
+  });
+});

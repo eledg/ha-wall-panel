@@ -103,10 +103,23 @@ test('weather: the warning details', async ({ page }) => {
   await expect(page).toHaveScreenshot('weather-warnings.png');
 });
 
+/**
+ * Clicks mock chips in one go: setWarnings toggles the mock overlay each time.
+ * Screenshots take the MJPEG path, as the mock's WebRTC video shows the time.
+ */
+const ringWith = async (page: Page, ...labels: string[]) => {
+  const overlay = page.locator('#mock-overlay');
+  await overlay.locator('button[aria-expanded]').dispatchEvent('click');
+  for (const label of [...labels, 'Ring'])
+    await overlay
+      .locator('button', { hasText: new RegExp(`^${label}$`) })
+      .dispatchEvent('click');
+};
+
 test('doorbell: the overlay over an open sheet', async ({ page }) => {
   await page.getByRole('button', { name: /humidity/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await setWarnings(page, 'Ring');
+  await ringWith(page, 'WebRTC unsupported');
   await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeVisible();
   // The stream's first frame, so the picture is there and the badge settled.
   await expect(page.getByText('● Live')).toBeVisible();
@@ -114,21 +127,24 @@ test('doorbell: the overlay over an open sheet', async ({ page }) => {
 });
 
 test('doorbell: the camera unavailable', async ({ page }) => {
-  // Both chips in one go: setWarnings toggles the mock overlay each time.
-  const overlay = page.locator('#mock-overlay');
-  await overlay.locator('button[aria-expanded]').dispatchEvent('click');
-  for (const label of ['Stream and snapshot fail', 'Ring'])
-    await overlay
-      .locator('button', { hasText: new RegExp(`^${label}$`) })
-      .dispatchEvent('click');
+  await ringWith(page, 'WebRTC unsupported', 'Stream and snapshot fail');
   await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
   await expect(page).toHaveScreenshot('doorbell-failed.png');
+});
+
+test('doorbell: WebRTC refused falls back to the MJPEG stream', async ({
+  page,
+}) => {
+  await ringWith(page, 'WebRTC rejected');
+  const picture = page.getByRole('img', { name: 'Front door camera' });
+  await expect(picture).toHaveAttribute('src', /camera_proxy_stream/);
+  await expect(page.getByText('● Live')).toBeVisible();
 });
 
 test('doorbell: the tile keeps the ring after the overlay closes', async ({
   page,
 }) => {
-  await setWarnings(page, 'Ring');
+  await ringWith(page, 'WebRTC unsupported');
   await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeVisible();
   await page.getByRole('button', { name: 'Close doorbell' }).click();
   await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeHidden();

@@ -9,6 +9,7 @@ import {
   type TileConfig,
   type TileType,
 } from '@/config/config.ts';
+import { MOCK_MARKER } from '@/dev/mock/marker.ts';
 import {
   AC_DEFAULT_MODE,
   acAttributes,
@@ -42,10 +43,14 @@ import {
   warningScenarios,
   weatherScenarios,
 } from '@/dev/mock/scenarios/weather.ts';
+import {
+  MOCK_WEBRTC,
+  mockGo2rtc,
+  type MockPeer,
+  type MockWebRtc,
+  OFFER_FAILED,
+} from '@/dev/mock/webrtc.ts';
 import type { HaDeps } from '@/services/ha/store.ts';
-
-/** Present only in mock code; a build test looks for it in `dist/`. */
-export const MOCK_MARKER = 'wall-panel-mock-ha';
 
 /** An entity that is not in the config, to prove the store filters. */
 export const UNRELATED_ID = 'switch.mock_unrelated';
@@ -121,6 +126,11 @@ export type MockControls = {
    * it fires twice, 160 ms apart, as one press of the real doorbell does.
    */
   ring: (double?: boolean) => void;
+  /** How the camera answers WebRTC (see `MockWebRtc`). */
+  setWebRtc: (mode: MockWebRtc) => void;
+  getWebRtc: () => MockWebRtc;
+  /** Ids and labels only, as for weather. */
+  webRtcModes: { id: MockWebRtc; label: string }[];
   /** Calls `listener` after every change the mock makes; returns the unsubscribe. */
   subscribe: (listener: () => void) => () => void;
 };
@@ -312,8 +322,63 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     publish();
   };
 
+  const fail = (message: string) =>
+    Promise.reject(new Error(`Mock HA: ${message}`));
+
+  // The camera's WebRTC signalling, as HA brokers it for go2rtc (docs/doorbell.md#webrtc).
+  let webrtcMode: MockWebRtc = 'ok';
+  const peers = new Map<string, MockPeer>();
+  const cameraMessage = (msg: Record<string, unknown>) => {
+    if (msg.type === 'camera/capabilities')
+      return Promise.resolve({
+        frontend_stream_types:
+          webrtcMode === 'unsupported' ? ['hls'] : ['hls', 'web_rtc'],
+        two_way_audio: false,
+      });
+    if (msg.type === 'camera/webrtc/get_client_config')
+      return Promise.resolve({ configuration: { iceServers: [] } });
+    if (msg.type === 'camera/webrtc/candidate') {
+      peers
+        .get(String(msg.session_id))
+        ?.addCandidate(msg.candidate as RTCIceCandidateInit);
+      return Promise.resolve(null);
+    }
+    return fail(`unknown command ${String(msg.type)}`);
+  };
+  const offer = (
+    send: (msg: unknown) => void,
+    msg: { entity_id: string; offer: string },
+  ) => {
+    const session = crypto.randomUUID();
+    // Asynchronous, as HA's replies are.
+    void Promise.resolve().then(() => {
+      send({ type: 'session', session_id: session });
+      if (webrtcMode === 'silent') return;
+      if (webrtcMode !== 'ok' || typeof RTCPeerConnection === 'undefined') {
+        send(OFFER_FAILED);
+        return;
+      }
+      const snapshot = `/api/camera_proxy/${msg.entity_id}?token=${String(cameraAttributes().access_token)}`;
+      peers.set(session, mockGo2rtc(msg.offer, snapshot, send));
+    });
+    return () => {
+      peers.get(session)?.close();
+      peers.delete(session);
+      return Promise.resolve();
+    };
+  };
+
   const listeners = new Map<string, Set<() => void>>();
   const connection = {
+    sendMessagePromise: (msg: Record<string, unknown>) =>
+      connected ? cameraMessage(msg) : fail('connection lost'),
+    subscribeMessage: (
+      send: (msg: unknown) => void,
+      msg: { type: string; entity_id: string; offer: string },
+    ) =>
+      connected && msg.type === 'camera/webrtc/offer'
+        ? Promise.resolve(offer(send, msg))
+        : fail(`cannot subscribe to ${msg.type}`),
     addEventListener: (event: string, listener: () => void) => {
       listeners.set(event, (listeners.get(event) ?? new Set()).add(listener));
     },
@@ -322,9 +387,6 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
     },
     close: () => {},
   } as unknown as Connection;
-
-  const fail = (message: string) =>
-    Promise.reject(new Error(`Mock HA: ${message}`));
 
   const getForecasts = (id: string, type: unknown) => {
     if (!entities.has(id)) return fail(`unknown entity ${id}`);
@@ -574,6 +636,12 @@ export const createMockHa = (cfg: RuntimeConfig = getConfig()) => {
       fire();
       if (double) setTimeout(fire, DOUBLE_FIRE_MS);
     },
+    setWebRtc: (mode) => {
+      webrtcMode = mode;
+      watchers.forEach((watcher) => watcher());
+    },
+    getWebRtc: () => webrtcMode,
+    webRtcModes: MOCK_WEBRTC,
     subscribe: (listener) => {
       watchers.add(listener);
       return () => {

@@ -25,6 +25,11 @@ import type {
 import { cancellableDelay } from './delay.ts';
 import { fetchHistory } from './history.ts';
 import type { RawHistoryState } from './history.ts';
+import {
+  startWebRtc,
+  type WebRtcHandlers,
+  type WebRtcSession,
+} from './webrtc.ts';
 
 /** The services each domain accepts through `callService`. */
 type DomainServices = {
@@ -444,6 +449,18 @@ export const createHaStore = (
     });
   };
 
+  /**
+   * Receives a configured camera over WebRTC (see `startWebRtc`). Fails at
+   * once while HA is not connected, so the feed falls back without waiting.
+   */
+  const webrtc = (camera: string, handlers: WebRtcHandlers): WebRtcSession => {
+    if (!connection || domains.get(camera) !== 'camera') {
+      handlers.onFail('Not connected');
+      return { close: () => {} };
+    }
+    return startWebRtc(connection, camera, handlers);
+  };
+
   return {
     getSnapshot: () => snapshot,
     subscribe: (listener: () => void) => {
@@ -457,6 +474,7 @@ export const createHaStore = (
     callService,
     history,
     refreshWeather,
+    webrtc,
   };
 };
 

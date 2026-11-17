@@ -392,6 +392,27 @@ describe('parseConfig', () => {
     ).toEqual([5, 30, 30]);
   });
 
+  it('picks the doorbell live view, WebRTC by default', () => {
+    const door = { type: 'door', ring: 'event.r', camera: 'camera.c', row: 1 };
+    const { config, issues } = parseConfig({
+      tiles: [
+        { ...door, col: 1, liveView: 'mjpeg' },
+        { ...door, col: 2 },
+        { ...door, col: 3, liveView: 'hls' },
+      ],
+    });
+
+    expect(issues).toEqual([
+      {
+        key: 'tiles[2].liveView',
+        message: 'must be one of webrtc, mjpeg, snapshot',
+      },
+    ]);
+    expect(
+      config.tiles.map((t) => ('liveView' in t ? t.liveView : undefined)),
+    ).toEqual(['mjpeg', 'webrtc', 'webrtc']);
+  });
+
   it('rejects a timeoutSeconds out of range or on another type of tile', () => {
     const { issues } = parseConfig({
       tiles: [

@@ -4,12 +4,18 @@ import { act } from 'preact/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
-import { SNAPSHOT_REFRESH_MS, STREAM_STALL_MS } from '@/config/constants.ts';
+import type { Config, LiveView } from '@/config/config.ts';
+import {
+  SNAPSHOT_REFRESH_MS,
+  STREAM_STALL_MS,
+  WEBRTC_FRAME_MS,
+} from '@/config/constants.ts';
 import { mockConfig } from '@/dev/mock/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
 import { createDoorDismissals } from '@/lib/door-dismissed.ts';
 import { createDoorbell } from '@/services/ha/doorbell.ts';
-import { createHaStore } from '@/services/ha/store.ts';
+import { createHaStore, type HaStore } from '@/services/ha/store.ts';
+import type { WebRtcHandlers } from '@/services/ha/webrtc.ts';
 import { entityId, tileOf } from '@/tests/ids.ts';
 
 import { DoorbellOverlay } from './doorbell-overlay.tsx';
@@ -24,7 +30,20 @@ const screen = () => ({
   )!,
 });
 
-const setup = async (setToken?: string, now?: () => number) => {
+/** The mock config with the door tile's live view set. */
+const withLiveView = (liveView: LiveView): Config => ({
+  ...mockConfig,
+  tiles: mockConfig.tiles.map((t) =>
+    t.type === 'door' ? { ...t, liveView } : t,
+  ),
+});
+
+/** Most tests are about the MJPEG stream; WebRTC has its own below. */
+const setup = async (
+  setToken?: string,
+  now?: () => number,
+  liveView: LiveView = 'mjpeg',
+) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   const doorbell = createDoorbell(store);
@@ -42,7 +61,7 @@ const setup = async (setToken?: string, now?: () => number) => {
           store={store}
           doorbell={doorbell}
           dismissals={dismissals}
-          cfg={mockConfig}
+          cfg={withLiveView(liveView)}
           now={now}
         />
       </HaConnection>,
@@ -318,6 +337,132 @@ describe('DoorbellOverlay', () => {
         'data:image/jpeg;base64,AAAA',
       );
       expect(dialog()?.textContent).toContain('Last frame 12s ago');
+    });
+  });
+
+  describe('WebRTC', () => {
+    /** Stands in for the store's WebRTC, recording each session. */
+    const fakeWebRtc = (store: HaStore) => {
+      const sessions: (WebRtcHandlers & { close: () => void })[] = [];
+      vi.spyOn(store, 'webrtc').mockImplementation((_camera, handlers) => {
+        const session = { ...handlers, close: vi.fn() };
+        sessions.push(session);
+        return session;
+      });
+      return sessions;
+    };
+    const streamSrc = `/api/camera_proxy_stream/${CAMERA}?token=abc123`;
+    const imgSrc = () =>
+      document.querySelector('dialog img')?.getAttribute('src');
+
+    it('shows the snapshot, then the video on its first frame', async () => {
+      const { store, doorbell, dialog } = await setup(
+        'abc123',
+        undefined,
+        'webrtc',
+      );
+      const sessions = fakeWebRtc(store);
+      await act(() => doorbell.open(TILE.id));
+
+      expect(store.webrtc).toHaveBeenCalledWith(CAMERA, expect.anything());
+      expect(imgSrc()).toBe(`/api/camera_proxy/${CAMERA}?token=abc123`);
+      expect(dialog()?.textContent).toContain('Connecting');
+      const video = dialog()!.querySelector('video')!;
+      expect(video.className).toContain('invisible');
+      expect(video.muted).toBe(true);
+
+      await act(() => {
+        sessions[0]!.onStream(new MediaStream());
+        video.dispatchEvent(new Event('loadeddata'));
+      });
+
+      expect(dialog()?.textContent).toContain('● Live');
+      expect(video.className).not.toContain('invisible');
+      expect(dialog()?.querySelector('img')).toBeNull();
+    });
+
+    it.each(['WebRTC unsupported', 'webrtc: streams: unknown error'])(
+      'falls back to MJPEG when WebRTC fails: %s',
+      async (reason) => {
+        const { store, doorbell } = await setup('abc123', undefined, 'webrtc');
+        const sessions = fakeWebRtc(store);
+        await act(() => doorbell.open(TILE.id));
+
+        await act(() => sessions[0]!.onFail(reason));
+
+        expect(imgSrc()).toBe(streamSrc);
+        expect(sessions[0]!.close).toHaveBeenCalled();
+      },
+    );
+
+    it('falls back to MJPEG when no frame arrives in time', async () => {
+      vi.useFakeTimers();
+      const { store, doorbell } = await setup('abc123', undefined, 'webrtc');
+      const sessions = fakeWebRtc(store);
+      await act(() => doorbell.open(TILE.id));
+
+      await act(() => {
+        vi.advanceTimersByTime(WEBRTC_FRAME_MS - 1);
+      });
+      expect(imgSrc()).not.toBe(streamSrc);
+      await act(() => {
+        vi.advanceTimersByTime(1);
+      });
+
+      expect(imgSrc()).toBe(streamSrc);
+      expect(sessions[0]!.close).toHaveBeenCalled();
+    });
+
+    it('closes the peer connection on Dismiss', async () => {
+      const { store, doorbell } = await setup('abc123', undefined, 'webrtc');
+      const sessions = fakeWebRtc(store);
+      await act(() => doorbell.open(TILE.id));
+
+      await act(() => screen().Dismiss.click());
+
+      expect(sessions[0]!.close).toHaveBeenCalled();
+    });
+
+    it('is not tried for an MJPEG or snapshot view', async () => {
+      const mjpeg = await setup('abc123');
+      const webrtc = vi.spyOn(mjpeg.store, 'webrtc');
+      await act(() => mjpeg.doorbell.open(TILE.id));
+      expect(imgSrc()).toBe(streamSrc);
+      render(null, document.body);
+
+      const snapshot = await setup('abc123', undefined, 'snapshot');
+      const snapshotWebrtc = vi.spyOn(snapshot.store, 'webrtc');
+      await act(() => snapshot.doorbell.open(TILE.id));
+      expect(imgSrc()).toBe(`/api/camera_proxy/${CAMERA}?token=abc123`);
+      expect(snapshot.dialog()?.textContent).toContain('Snapshot mode');
+
+      expect(webrtc).not.toHaveBeenCalled();
+      expect(snapshotWebrtc).not.toHaveBeenCalled();
+    });
+
+    // Through the mock HA's signalling, as `pnpm dev:mock` does.
+    it.each(['unsupported', 'rejected'] as const)(
+      'falls back to MJPEG when the mock camera is %s',
+      async (mode) => {
+        const { mock, doorbell } = await setup('abc123', undefined, 'webrtc');
+        mock.controls.setWebRtc(mode);
+        await act(() => doorbell.open(TILE.id));
+
+        await vi.waitFor(() => expect(imgSrc()).toBe(streamSrc));
+      },
+    );
+
+    it('falls back to MJPEG when the mock camera never answers', async () => {
+      vi.useFakeTimers();
+      const { mock, doorbell } = await setup('abc123', undefined, 'webrtc');
+      mock.controls.setWebRtc('silent');
+      await act(() => doorbell.open(TILE.id));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(WEBRTC_FRAME_MS);
+      });
+
+      expect(imgSrc()).toBe(streamSrc);
     });
   });
 });
