@@ -7,6 +7,7 @@ import { HaConnection } from '@/components/layout/ha-connection.tsx';
 import { SNAPSHOT_REFRESH_MS, STREAM_STALL_MS } from '@/config/constants.ts';
 import { mockConfig } from '@/dev/mock/config.ts';
 import { createMockHa } from '@/dev/mock/engine.ts';
+import { createDoorDismissals } from '@/lib/door-dismissed.ts';
 import { createDoorbell } from '@/services/ha/doorbell.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import { entityId, tileOf } from '@/tests/ids.ts';
@@ -14,6 +15,7 @@ import { entityId, tileOf } from '@/tests/ids.ts';
 import { DoorbellOverlay } from './doorbell-overlay.tsx';
 
 const CAMERA = entityId('doorCamera');
+const RING = entityId('doorRing');
 const TILE = tileOf('door');
 
 const screen = () => ({
@@ -26,6 +28,7 @@ const setup = async (setToken?: string, now?: () => number) => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   const doorbell = createDoorbell(store);
+  const dismissals = createDoorDismissals();
   await act(async () => {
     await store.start(mock.getAuth);
     if (setToken !== undefined)
@@ -38,6 +41,7 @@ const setup = async (setToken?: string, now?: () => number) => {
         <DoorbellOverlay
           store={store}
           doorbell={doorbell}
+          dismissals={dismissals}
           cfg={mockConfig}
           now={now}
         />
@@ -46,7 +50,7 @@ const setup = async (setToken?: string, now?: () => number) => {
     );
   });
   const dialog = () => document.querySelector('dialog');
-  return { mock, store, doorbell, dialog };
+  return { mock, store, doorbell, dismissals, dialog };
 };
 
 afterEach(() => {
@@ -81,7 +85,13 @@ describe('DoorbellOverlay', () => {
   it('keeps the ring time when opened by a tap after a recent ring', async () => {
     const { mock, doorbell, dialog } = await setup();
     await act(() => mock.controls.ring());
-    await act(() => screen().Dismiss.click());
+    await act(() =>
+      document
+        .querySelector<HTMLButtonElement>(
+          'button[aria-label="Close doorbell"]',
+        )!
+        .click(),
+    );
     expect(dialog()).toBeNull();
 
     await act(() => doorbell.open(TILE.id));
@@ -205,6 +215,26 @@ describe('DoorbellOverlay', () => {
         .click(),
     );
     expect(dialog()).toBeNull();
+  });
+
+  it('remembers the ring on Dismiss, not when it closes by timeout', async () => {
+    vi.useFakeTimers();
+    const { mock, store, doorbell, dismissals, dialog } = await setup();
+    await act(() => mock.controls.ring());
+    const rangAt = Date.parse(store.getSnapshot().entities[RING]!.state);
+
+    await act(async () => {
+      vi.advanceTimersByTime(TILE.timeoutSeconds * 1000);
+    });
+    expect(dialog()).toBeNull();
+    expect(dismissals.get(TILE.id)).toBeUndefined();
+
+    await act(() => doorbell.open(TILE.id));
+    await act(() => screen().Dismiss.click());
+    expect(dismissals.get(TILE.id)).toBe(rangAt);
+
+    await act(() => doorbell.open(TILE.id));
+    expect(dialog()?.textContent).toContain('Live view');
   });
 
   describe('failures', () => {

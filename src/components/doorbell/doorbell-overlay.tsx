@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
 
 import { type Config, getConfig } from '@/config/config.ts';
+import {
+  doorDismissals as appDismissals,
+  type DoorDismissals,
+} from '@/lib/door-dismissed.ts';
 import { recentRing } from '@/lib/door.ts';
 import { formatTime } from '@/lib/format.ts';
 import type { Doorbell, DoorEvent } from '@/services/ha/doorbell.ts';
@@ -31,6 +35,8 @@ type Shown = {
   label: string;
   urls: FeedUrls;
   ringAt?: number;
+  /** The ring entity's last-ring time while the ring is recent: what Dismiss hides. */
+  ringEntityAt?: number;
   timeoutSeconds: number;
 };
 
@@ -44,11 +50,13 @@ type Shown = {
 export const DoorbellOverlay = ({
   store = haStore,
   doorbell = appDoorbell,
+  dismissals = appDismissals,
   cfg = getConfig(),
   now = Date.now,
 }: {
   store?: HaStore;
   doorbell?: Doorbell;
+  dismissals?: DoorDismissals;
   cfg?: Config;
   now?: () => number;
 }) => {
@@ -64,20 +72,34 @@ export const DoorbellOverlay = ({
         if (tile?.type !== 'door') return;
         const { entities } = store.getSnapshot();
         const { camera, ring } = tile.entities;
-        const ringed = recentRing(entities[ring], now());
+        const ringed = recentRing(
+          entities[ring],
+          now(),
+          tile.recentMinutes * 60_000,
+          dismissals.get(tile.id),
+        );
         setShown((prev) => ({
           session: (prev?.session ?? 0) + 1,
           tileId: tile.id,
           label: tile.label,
           urls: cameraUrls(camera, entities[camera]),
+          ringEntityAt: ringed,
           ringAt: ringed ?? (event.kind === 'ring' ? event.at : undefined),
           timeoutSeconds: tile.timeoutSeconds,
         }));
       }),
-    [doorbell, store, cfg, now],
+    [doorbell, dismissals, store, cfg, now],
   );
 
   const close = () => setShown(undefined);
+
+  // Someone at the panel has seen the ring: the tile stops showing it. Closing
+  // by timeout, tap or Escape does not.
+  const dismiss = () => {
+    if (shown?.ringEntityAt !== undefined)
+      dismissals.dismiss(shown.tileId, shown.ringEntityAt);
+    close();
+  };
 
   // The access token rotates, so a retry reads it again.
   const retry = () =>
@@ -156,7 +178,7 @@ export const DoorbellOverlay = ({
           <button
             type="button"
             class="tap h-24 w-full rounded-2xl bg-surface-2 text-2xl font-semibold text-fg"
-            onClick={close}
+            onClick={dismiss}
           >
             Dismiss
           </button>

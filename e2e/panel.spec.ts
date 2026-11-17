@@ -125,6 +125,17 @@ test('doorbell: the camera unavailable', async ({ page }) => {
   await expect(page).toHaveScreenshot('doorbell-failed.png');
 });
 
+test('doorbell: the tile keeps the ring after the overlay closes', async ({
+  page,
+}) => {
+  await setWarnings(page, 'Ring');
+  await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close doorbell' }).click();
+  await expect(page.getByRole('heading', { name: 'Doorbell' })).toBeHidden();
+  await expect(page.getByText('Rang')).toBeVisible();
+  await expect(page).toHaveScreenshot('door-tile-rang.png');
+});
+
 test('climate: the sheet', async ({ page }) => {
   await page.getByRole('button', { name: /humidity/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
