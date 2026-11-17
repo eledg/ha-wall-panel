@@ -1,8 +1,14 @@
+import { useEffect, useState } from 'preact/hooks';
+
 import { CameraIcon } from '@/components/icons/camera-icon.tsx';
 import { DoorIcon } from '@/components/icons/door-icon.tsx';
 import type { TileConfig } from '@/config/config.ts';
 import { useMinute } from '@/hooks/use-minute.ts';
 import { useSnapshot } from '@/hooks/use-snapshot.ts';
+import {
+  doorDismissals as appDismissals,
+  type DoorDismissals,
+} from '@/lib/door-dismissed.ts';
 import { recentRing } from '@/lib/door.ts';
 import { formatTime } from '@/lib/format.ts';
 import type { Doorbell } from '@/services/ha/doorbell.ts';
@@ -13,26 +19,45 @@ import type { HaStore } from '@/services/ha/store.ts';
 import { DeviceTile } from './base/device-tile.tsx';
 import { tileState } from './base/tile.tsx';
 
+/** The last dismissed ring's time, following later dismissals. */
+const useDismissedAt = (dismissals: DoorDismissals, tileId: string) => {
+  const [at, setAt] = useState(() => dismissals.get(tileId));
+  useEffect(() => {
+    const sync = () => setAt(dismissals.get(tileId));
+    sync();
+    return dismissals.subscribe(sync);
+  }, [dismissals, tileId]);
+  return at;
+};
+
 /**
  * A doorbell: "Rang 09:41" in the accent colour for half an hour after a
- * ring, otherwise a camera badge. A tap shows the door's camera without a ring.
+ * ring (`recentMinutes`) unless dismissed on the overlay, otherwise a camera badge. A tap shows the door's camera without a ring.
  */
 export const DoorTile = ({
   tile,
   store = haStore,
   doorbell = appDoorbell,
+  dismissals = appDismissals,
 }: {
   tile: TileConfig<'door'>;
   store?: HaStore;
   doorbell?: Doorbell;
+  dismissals?: DoorDismissals;
 }) => {
   const ring = useSnapshot(store, (s) => s.entities[tile.entities.ring]);
   const camera = useSnapshot(store, (s) => s.entities[tile.entities.camera]);
   const now = useMinute();
+  const dismissedAt = useDismissedAt(dismissals, tile.id);
   // `unknown` is a doorbell that hasn't rung since HA restarted: still usable.
   const usable = isUsable(camera) && ring?.state !== 'unavailable';
   const state = tileState([ring, camera], usable);
-  const rangAt = recentRing(ring, now.getTime());
+  const rangAt = recentRing(
+    ring,
+    now.getTime(),
+    tile.recentMinutes * 60_000,
+    dismissedAt,
+  );
 
   return (
     <DeviceTile

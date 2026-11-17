@@ -14,6 +14,8 @@ import {
 } from '../src/config/config.ts';
 import type { TileType } from '../src/config/config.ts';
 import {
+  DOORBELL_RECENT_LIMITS,
+  DOORBELL_RECENT_MIN,
   DOORBELL_TIMEOUT_LIMITS,
   DOORBELL_TIMEOUT_S,
 } from '../src/config/constants.ts';
@@ -127,6 +129,14 @@ const extras: Json = {
     maximum: DOORBELL_TIMEOUT_LIMITS.max,
     default: DOORBELL_TIMEOUT_S,
     description: 'Seconds the doorbell overlay stays up before it closes.',
+  },
+  recentMinutes: {
+    type: 'integer',
+    minimum: DOORBELL_RECENT_LIMITS.min,
+    maximum: DOORBELL_RECENT_LIMITS.max,
+    default: DOORBELL_RECENT_MIN,
+    description:
+      'Minutes after a ring that the door tile shows when it rang, unless dismissed.',
   },
   roomLabel: text('The room named in the "<room> now" caption.'),
 };

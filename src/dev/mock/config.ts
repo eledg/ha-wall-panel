@@ -4,7 +4,7 @@ import {
   DEFAULT_WEATHER_METRIC,
 } from '@/config/config.ts';
 import type { RuntimeConfig } from '@/config/config.ts';
-import { DOORBELL_TIMEOUT_S } from '@/config/constants.ts';
+import { DOORBELL_RECENT_MIN, DOORBELL_TIMEOUT_S } from '@/config/constants.ts';
 
 /**
  * Fixture tiles, standing in for a real `config.json` in the mock and in tests.
@@ -141,6 +141,7 @@ export const mockConfig: RuntimeConfig = {
         camera: 'camera.front_door',
       },
       timeoutSeconds: DOORBELL_TIMEOUT_S,
+      recentMinutes: DOORBELL_RECENT_MIN,
     },
   ],
   night: { ...DEFAULT_NIGHT, overrideSwitch: 'switch.night_override' },

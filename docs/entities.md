@@ -369,8 +369,9 @@ doorbell (a G6 Entry); [doorbell.md](doorbell.md) records what HA provides for i
 
 - **`ring`** is the doorbell's `event` entity (`event.<entry>_doorbell` with
   Protect). Its state is the time of the last ring. The tile shows "Rang 09:41"
-  in the accent colour for 30 minutes after a ring, and the camera badge
-  otherwise; `unknown` (no ring since HA restarted) is normal.
+  in the accent colour for `recentMinutes` (default 30) after a ring, and the
+  camera badge otherwise. Dismiss on the overlay clears it; the overlay closing
+  by timeout does not (see [Doorbell](doorbell.md#the-overlay)); `unknown` (no ring since HA restarted) is normal.
 - **A ring** is a change of that state to a new time, with `event_type: ring`,
   within 10 seconds of the panel's clock (`services/ha/ring.ts`). The state the
   panel connects with, the same state sent again on reconnect, `unknown` and

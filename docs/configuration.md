@@ -148,7 +148,9 @@ one 7 days, so a strip or outlook that asks for more simply stops at the end.
 A `door` tile is a doorbell: `ring` is its ring `event` entity and `camera` its
 camera. A ring brings up the door's camera on whatever screen the panel is
 showing, and so does a tap on the tile. `timeoutSeconds` (optional, 5 to 600,
-default 45) sets how long the overlay stays up. See [Doorbell](entities.md#doorbell) for
+default 45) sets how long the overlay stays up, and `recentMinutes` (optional, 1 to
+1440, default 30) how long the tile shows "Rang 09:41" after a ring unless
+someone presses Dismiss on the overlay. See [Doorbell](entities.md#doorbell) for
 which entities to use.
 
 ```jsonc

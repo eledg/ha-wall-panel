@@ -26,7 +26,12 @@ import type {
   WeatherDetailsConfig,
   WeatherStat,
 } from './config.ts';
-import { DOORBELL_TIMEOUT_LIMITS, DOORBELL_TIMEOUT_S } from './constants.ts';
+import {
+  DOORBELL_RECENT_LIMITS,
+  DOORBELL_RECENT_MIN,
+  DOORBELL_TIMEOUT_LIMITS,
+  DOORBELL_TIMEOUT_S,
+} from './constants.ts';
 import { stripJsonComments } from './jsonc.ts';
 import { configUrl } from './url.ts';
 
@@ -274,6 +279,13 @@ const parseExtras = (
         DOORBELL_TIMEOUT_LIMITS,
         `${at}.timeoutSeconds`,
         DOORBELL_TIMEOUT_S,
+        problem,
+      ),
+      recentMinutes: integerIn(
+        raw.recentMinutes,
+        DOORBELL_RECENT_LIMITS,
+        `${at}.recentMinutes`,
+        DOORBELL_RECENT_MIN,
         problem,
       ),
     };

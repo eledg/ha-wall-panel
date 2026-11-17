@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HaConnection } from '@/components/layout/ha-connection.tsx';
 import { createMockHa } from '@/dev/mock/engine.ts';
+import { createDoorDismissals } from '@/lib/door-dismissed.ts';
 import { createDoorbell, type DoorEvent } from '@/services/ha/doorbell.ts';
 import { createHaStore } from '@/services/ha/store.ts';
 import { entityId, tileOf } from '@/tests/ids.ts';
@@ -18,20 +19,26 @@ const setup = async () => {
   const mock = createMockHa();
   const store = createHaStore(mock.deps);
   const doorbell = createDoorbell(store);
+  const dismissals = createDoorDismissals();
   const events: DoorEvent[] = [];
   doorbell.subscribe((event) => events.push(event));
   await act(async () => {
     await store.start(mock.getAuth);
     render(
       <HaConnection store={store}>
-        <DoorTile tile={tileOf('door')} store={store} doorbell={doorbell} />
+        <DoorTile
+          tile={tileOf('door')}
+          store={store}
+          doorbell={doorbell}
+          dismissals={dismissals}
+        />
       </HaConnection>,
       document.body,
     );
   });
   const button = () => document.querySelector('button');
   const tile = () => document.querySelector('.tile-place')!;
-  return { mock, events, button, tile };
+  return { mock, store, events, button, tile, dismissals };
 };
 
 afterEach(() => {
@@ -60,6 +67,22 @@ describe('DoorTile', () => {
     await act(() => mock.controls.ring());
     expect(tile().textContent).toContain('Rang');
     expect(tile().querySelector('time')).not.toBeNull();
+  });
+
+  it('hides a dismissed ring, but shows a later one', async () => {
+    const { mock, store, tile, dismissals } = await setup();
+    await act(() => mock.controls.ring());
+    const rangAt = Date.parse(store.getSnapshot().entities[RING]!.state);
+
+    await act(async () => dismissals.dismiss('door', rangAt));
+    expect(tile().textContent).not.toContain('Rang');
+
+    await act(() =>
+      mock.controls.setState(RING, new Date(rangAt + 5_000).toISOString(), {
+        event_type: 'ring',
+      }),
+    );
+    expect(tile().textContent).toContain('Rang');
   });
 
   it('opens the camera on tap, without a ring', async () => {

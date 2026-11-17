@@ -371,6 +371,27 @@ describe('parseConfig', () => {
     ).toEqual([20, 45]);
   });
 
+  it('sets how long the door tile shows a ring, 30 minutes by default', () => {
+    const door = { type: 'door', ring: 'event.r', camera: 'camera.c', row: 1 };
+    const { config, issues } = parseConfig({
+      tiles: [
+        { ...door, col: 1, recentMinutes: 5 },
+        { ...door, col: 2 },
+        { ...door, col: 3, recentMinutes: 0 },
+      ],
+    });
+
+    expect(issues).toEqual([
+      {
+        key: 'tiles[2].recentMinutes',
+        message: 'must be a whole number from 1 to 1440',
+      },
+    ]);
+    expect(
+      config.tiles.map((t) => ('recentMinutes' in t ? t.recentMinutes : 0)),
+    ).toEqual([5, 30, 30]);
+  });
+
   it('rejects a timeoutSeconds out of range or on another type of tile', () => {
     const { issues } = parseConfig({
       tiles: [

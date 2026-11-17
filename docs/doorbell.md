@@ -131,4 +131,11 @@ diagnostics and the night dimming. It is `z-50`, above the `z-40` wake overlay.
   On a narrow screen the camera stacks above them.
 - It closes after the door tile's `timeoutSeconds` (default 45), on Dismiss, on
   a tap on the picture, or on Escape. A new ring while it is open restarts the countdown.
+- **Dismiss clears the tile's ring.** Someone at the panel has seen it, so the
+  door tile goes back to the camera badge; closing by timeout, a tap on the picture or
+  Escape leaves "Rang 14:32" until `recentMinutes` runs out. The dismissed ring's time is
+  kept in `localStorage` (`ha-wall-panel:door-dismissed:<tile id>`, see
+  `src/lib/door-dismissed.ts`) and any ring at or before it stays hidden, so a reload
+  neither brings it back nor loses an undismissed one (the time comes from the ring
+  entity). If storage fails, the ring shows again after a reload.
 - While open it sets `data-blocks-reload`, so auto-reload waits.
