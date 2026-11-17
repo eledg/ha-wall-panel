@@ -107,11 +107,17 @@ A ring, or a tap on the door tile, opens `DoorbellOverlay`
 (`src/components/doorbell/doorbell-overlay.tsx`) over everything: the sheets,
 diagnostics and the night dimming. It is `z-50`, above the `z-40` wake overlay.
 
-- The camera is a still snapshot on the left (portrait 3:4, `object-contain`),
-  read from `/api/camera_proxy/<camera>?token=<access_token>`. The token is read
-  from the entity each time the overlay opens, because HA rotates it about every
-  5 minutes. There is no greyscale filter: the camera sends greyscale frames itself
-  when it switches to infrared. Live video is a later issue.
+- The camera is on the left (portrait 3:4, `object-contain`). It plays HA's MJPEG stream,
+  `/api/camera_proxy_stream/<camera>?token=<access_token>`, in an `<img>`
+  (`camera-feed.tsx`). The token is read from the entity each time the overlay opens,
+  because HA rotates it about every 5 minutes. A badge shows the state: "Connecting"
+  until the first frame, "● Live" on the stream, "Snapshot mode" on the fallback.
+  If the stream errors, or shows no frame within 5 s, the picture falls back to
+  `/api/camera_proxy/<camera>`, refreshed every second. A stream that stalls after its
+  first frame is not detected (an `<img>` reports no per-frame event). Closing the
+  overlay empties the image's `src`, so the browser drops the connection. There is no
+  greyscale filter: the camera sends greyscale frames itself when it switches to infrared.
+  WebRTC is a later issue.
 - On the right: "Doorbell", the door's label, "Rang at 14:32" while the ring is
   recent (30 minutes) or "Live view" if not, the auto-close countdown and Dismiss.
   On a narrow screen the camera stacks above them.

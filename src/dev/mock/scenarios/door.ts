@@ -11,7 +11,8 @@ export const ringAttributes = (eventType?: string) => ({
 });
 
 /** A portrait 3:4 stand-in for the camera's snapshot, like the G6 Entry's. */
-const PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 1024">
+export const placeholder =
+  () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 1024">
 <rect width="768" height="1024" fill="#2a2f36"/>
 <rect x="234" y="180" width="300" height="720" rx="8" fill="#3b424b"/>
 <circle cx="480" cy="560" r="12" fill="#8a929c"/>
@@ -19,8 +20,18 @@ const PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 10
 <text x="384" y="110" fill="#8a929c" font-family="sans-serif" font-size="40" text-anchor="middle">Mock camera</text>
 </svg>`;
 
-/** The camera entity's attributes; `entity_picture` is a placeholder image. */
-export const cameraAttributes = () => ({
-  entity_picture: `data:image/svg+xml,${encodeURIComponent(PLACEHOLDER)}`,
+/**
+ * The token that makes the mock's camera stream fail (HTTP 500), so the
+ * overlay's snapshot fallback can be seen.
+ */
+export const FAILING_TOKEN = 'fail';
+
+/**
+ * The camera entity's attributes. The token lets the panel stream from the
+ * dev server (`dev-ha.ts`); `entity_picture` is a placeholder image.
+ */
+export const cameraAttributes = (token = 'mock') => ({
+  access_token: token,
+  entity_picture: `data:image/svg+xml,${encodeURIComponent(placeholder())}`,
   friendly_name: 'Front door',
 });

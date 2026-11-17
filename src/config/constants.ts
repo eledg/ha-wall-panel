@@ -21,3 +21,9 @@ export const DOORBELL_TIMEOUT_S = 45;
 
 /** The door tile shows "Rang HH:MM" for this long after a ring. */
 export const RECENT_RING_MS = 30 * 60_000;
+
+/** The doorbell's live view falls back to snapshots if the stream has not shown a frame by now. */
+export const STREAM_STALL_MS = 5_000;
+
+/** In snapshot mode the doorbell picture is refreshed this often. */
+export const SNAPSHOT_REFRESH_MS = 1_000;

@@ -7,34 +7,20 @@ import type { Doorbell, DoorEvent } from '@/services/ha/doorbell.ts';
 import { doorbell as appDoorbell, haStore } from '@/services/ha/instance.ts';
 import type { HaStore } from '@/services/ha/store.ts';
 
+import { CameraFeed, type FeedUrls, feedUrls } from './camera-feed.tsx';
+
 type Shown = {
   /** Bumped by every event, so a new ring restarts the countdown. */
   session: number;
   label: string;
-  src?: string;
+  urls: FeedUrls;
   ringAt?: number;
   timeoutSeconds: number;
 };
 
 /**
- * The snapshot URL. The access token rotates about every 5 minutes, so it is
- * read when the overlay opens, not kept. Without one (the mock's placeholder
- * has none) the entity's own `entity_picture` is used.
- */
-const snapshotUrl = (
-  camera: string,
-  attributes: Record<string, unknown> | undefined,
-) => {
-  const token = attributes?.access_token;
-  if (typeof token === 'string' && token !== '')
-    return `/api/camera_proxy/${camera}?token=${encodeURIComponent(token)}`;
-  const picture = attributes?.entity_picture;
-  return typeof picture === 'string' ? picture : undefined;
-};
-
-/**
  * The doorbell's camera over everything, on a ring or a tap on the door tile:
- * a still snapshot (uncropped, portrait 3:4), when it rang, a countdown to
+ * the live MJPEG stream, or snapshots when it fails (uncropped, portrait 3:4), when it rang, a countdown to
  * closing and a large Dismiss. While open it blocks auto-reload. A ring while open restarts the countdown, not a second
  * overlay. The picture is not greyed: the camera sends greyscale frames itself
  * when it switches to infrared (docs/doorbell.md).
@@ -52,7 +38,6 @@ export const DoorbellOverlay = ({
 }) => {
   const [shown, setShown] = useState<Shown | undefined>();
   const [left, setLeft] = useState(0);
-  const [failed, setFailed] = useState(false);
 
   useEffect(
     () =>
@@ -64,11 +49,10 @@ export const DoorbellOverlay = ({
         const { entities } = store.getSnapshot();
         const { camera, ring } = tile.entities;
         const ringed = recentRing(entities[ring], now());
-        setFailed(false);
         setShown((prev) => ({
           session: (prev?.session ?? 0) + 1,
           label: tile.label,
-          src: snapshotUrl(camera, entities[camera]?.attributes),
+          urls: feedUrls(camera, entities[camera]?.attributes),
           ringAt: ringed ?? (event.kind === 'ring' ? event.at : undefined),
           timeoutSeconds: tile.timeoutSeconds,
         }));
@@ -112,18 +96,7 @@ export const DoorbellOverlay = ({
         onClick={close}
         class="relative mx-auto aspect-[3/4] w-full max-w-[360px] shrink-0 block overflow-hidden rounded-tile border border-line bg-surface min-[600px]:mx-0 min-[600px]:h-full min-[600px]:w-auto min-[600px]:max-w-none"
       >
-        {shown.src && !failed ? (
-          <img
-            src={shown.src}
-            alt={`${shown.label} camera`}
-            class="size-full object-contain"
-            onError={() => setFailed(true)}
-          />
-        ) : (
-          <span class="grid size-full place-items-center text-fg-dim">
-            Camera unavailable
-          </span>
-        )}
+        <CameraFeed key={shown.session} urls={shown.urls} label={shown.label} />
       </button>
       <div class="flex min-w-0 flex-1 flex-col justify-between gap-4">
         <div>
