@@ -72,6 +72,19 @@ const BOX =
 const LARGE =
   'order-first mx-auto w-full min-[600px]:mx-0 min-[600px]:h-full min-[600px]:w-auto min-[600px]:max-w-none';
 const SMALL = 'min-[600px]:absolute min-[600px]:right-4 min-[600px]:top-4';
+const VISITOR_BOX = {
+  large: `${BOX} aspect-[3/4] max-w-[360px] ${LARGE}`,
+  small: `${BOX} aspect-[3/4] mx-auto w-[135px] min-[600px]:h-[180px] ${SMALL}`,
+};
+const PACKAGE_BOX = {
+  large: `${BOX} aspect-[4/3] max-w-[548px] ${LARGE}`,
+  small: `${BOX} aspect-[4/3] w-full min-[600px]:h-[180px] min-[600px]:w-[240px] ${SMALL}`,
+};
+/** Room beside the heading for the small box, which sits over the top right. */
+const HEADING_ROOM = {
+  visitor: 'min-[600px]:pr-[151px]',
+  package: 'min-[600px]:pr-[256px]',
+};
 
 /**
  * The doorbell's camera over everything, on a ring or a tap on the door tile:
@@ -181,6 +194,9 @@ export const DoorbellOverlay = ({
   if (!shown) return null;
   const packageLarge =
     shown.packageCamera !== undefined && shown.large === 'package';
+  let headingRoom = '';
+  if (shown.packageCamera !== undefined)
+    headingRoom = packageLarge ? HEADING_ROOM.visitor : HEADING_ROOM.package;
   const closeButton = (
     <button
       type="button"
@@ -197,9 +213,7 @@ export const DoorbellOverlay = ({
       data-blocks-reload
       class="fixed inset-0 m-0 flex size-full max-h-none max-w-none flex-col gap-4 overflow-y-auto border-0 bg-bg p-4 text-fg z-50 min-[600px]:flex-row"
     >
-      <div
-        class={`${BOX} aspect-[3/4] ${packageLarge ? `w-[135px] mx-auto min-[600px]:h-[180px] ${SMALL}` : `max-w-[360px] ${LARGE}`}`}
-      >
+      <div class={packageLarge ? VISITOR_BOX.small : VISITOR_BOX.large}>
         {packageLarge ? (
           <button
             type="button"
@@ -228,9 +242,7 @@ export const DoorbellOverlay = ({
         </div>
       </div>
       {shown.packageCamera !== undefined && (
-        <div
-          class={`${BOX} aspect-[4/3] ${packageLarge ? `max-w-[548px] ${LARGE}` : `w-full min-[600px]:h-[180px] min-[600px]:w-[240px] ${SMALL}`}`}
-        >
+        <div class={packageLarge ? PACKAGE_BOX.large : PACKAGE_BOX.small}>
           {packageLarge && closeButton}
           <div
             class={`absolute inset-0 ${packageLarge ? 'pointer-events-none' : ''}`}
@@ -249,15 +261,7 @@ export const DoorbellOverlay = ({
         </div>
       )}
       <div class="flex min-w-0 flex-1 flex-col justify-between gap-4">
-        <div
-          class={
-            shown.packageCamera === undefined
-              ? ''
-              : packageLarge
-                ? 'min-[600px]:pr-[151px]'
-                : 'min-[600px]:pr-[256px]'
-          }
-        >
+        <div class={headingRoom}>
           <h2 id="doorbell-title" class="text-3xl font-semibold">
             Doorbell
           </h2>

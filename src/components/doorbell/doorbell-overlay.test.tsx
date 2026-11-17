@@ -602,7 +602,7 @@ describe('DoorbellOverlay', () => {
         await vi.advanceTimersByTimeAsync(PACKAGE_REFRESH_MS * 3);
       });
 
-      expect(fetch.mock.calls.length).toBe(calls);
+      expect(fetch.mock.calls).toHaveLength(calls);
     });
   });
 });

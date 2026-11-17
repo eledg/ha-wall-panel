@@ -167,13 +167,12 @@ export const PackageCamera = ({
         </div>
       )}
       {!still && !failed && (
-        <div
-          role="status"
+        <output
           aria-label="Package camera loading"
           class="absolute inset-0 grid place-items-center text-fg-dim"
         >
           <CameraIcon />
-        </div>
+        </output>
       )}
     </>
   );
